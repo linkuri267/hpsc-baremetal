@@ -55,121 +55,121 @@ hang:   b .
 
 .thumb_func
 irq0:    
-    bl myirq0
+    bl irq0
     b hang
     b hang
 
 .thumb_func
 irq1:    
-    bl myirq1
+    bl irq1
     b hang
     b hang
 
 .thumb_func
 irq2:    
-    bl myirq2
+    bl irq2
     b hang
     b hang
 
 .thumb_func
 irq3:    
-    bl myirq3
+    bl irq3
     b hang
     b hang
 
 .thumb_func
 irq4:    
-    bl myirq4
+    bl irq4
     b hang
     b hang
 
 .thumb_func
 irq5:    
-    bl myirq5
+    bl irq5
     b hang
     b hang
 
 .thumb_func
 irq6:    
-    bl myirq6
+    bl irq6
     b hang
     b hang
 
 .thumb_func
 irq7:    
-    bl myirq7
+    bl irq7
     b hang
     b hang
 
 .thumb_func
 irq8:    
-    bl myirq8
+    bl irq8
     b hang
     b hang
 
 .thumb_func
 irq9:    
-    bl myirq9
+    bl irq9
     b hang
     b hang
 
 .thumb_func
 irq10:   
-    bl myirq10
+    bl irq10
     b hang
     b hang
 
 .thumb_func
 irq11:   
-    bl myirq11
+    bl irq11
     b hang
     b hang
 
 .thumb_func
 irq12:   
-    bl myirq12
+    bl irq12
     b hang
     b hang
 
 .thumb_func
 irq13:   
-    bl myirq13
+    bl irq13
     b hang
     b hang
 
 .thumb_func
 irq14:   
-    bl myirq14
+    bl irq14
     b hang
     b hang
 
 .thumb_func
 irq15:   
-    bl myirq15
+    bl irq15
     b hang
     b hang
 
 .thumb_func
 irq16:   
-    bl myirq16
+    bl irq16
     b hang
     b hang
 
 .thumb_func
 irq17:   
-    bl myirq17
+    bl irq17
     b hang
     b hang
 
 .thumb_func
 irq18:   
-    bl myirq18
+    bl irq18
     b hang
     b hang
 
 .thumb_func
 irq19:   
-    bl myirq19
+    bl irq19
     b hang
     b hang
 
