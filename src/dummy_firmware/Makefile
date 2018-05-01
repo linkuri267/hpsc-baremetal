@@ -36,7 +36,7 @@ m4resetA53.o : m4resetA53.c
 	$(ARMGNU)-gcc $(COPS) -c m4resetA53.c -o m4resetA53.o
 #	$(ARMGNU)-gcc $(COPS) -mthumb -c m4resetA53.c -o m4resetA53.o
 
-m4resetA53.elf: resetA53-memmap m4resetA53.o
-	$(ARMGNU)-ld -o m4resetA53.elf -T resetA53-memmap m4resetA53.o
+m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o
+	$(ARMGNU)-ld -o m4resetA53.elf -T resetA53-memmap vectors.o m4resetA53.o
 	$(ARMGNU)-objdump -D m4resetA53.elf > m4resetA53.list
 	$(ARMGNU)-objcopy m4resetA53.elf m4resetA53.bin -O binary
