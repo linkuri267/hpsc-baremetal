@@ -2,7 +2,7 @@
 ARMGNU = arm-none-eabi
 
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4
-COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4
+COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb
 
 all : m4uart.bin m4fsb.bin m4resetA53.elf
 
