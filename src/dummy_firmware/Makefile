@@ -4,7 +4,7 @@ ARMGNU = arm-none-eabi
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4
 COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb
 
-all : m4uart.bin m4fsb.bin m4resetA53.elf
+all : m4uart.bin m4fsb.bin m4resetA53.bin
 
 clean:
 	rm -f *.bin
@@ -12,13 +12,21 @@ clean:
 	rm -f *.elf
 	rm -f *.list
 
+vectors.s : genvec.py
+	./genvec.py $@
+
+isr.c : genisr.py
+	./genisr.py $@
+
 vectors.o : vectors.s
 	$(ARMGNU)-as $(AOPS) vectors.s -o vectors.o
 
+isr.o : isr.c
+	$(ARMGNU)-gcc $(COPS) -c isr.c -o isr.o
+
 m4uart.o : m4uart.c
 	$(ARMGNU)-gcc $(COPS) -c m4uart.c -o m4uart.o
-#	$(ARMGNU)-gcc $(COPS) -mthumb -c m4uart.c -o m4uart.o
-#
+
 uart.o : uart.c
 	$(ARMGNU)-gcc $(COPS) -c uart.c -o uart.o
 
@@ -37,10 +45,12 @@ m4fsb.bin : uart-memmap m4fsb.o
 
 m4resetA53.o : m4resetA53.c
 	$(ARMGNU)-gcc $(COPS) -c m4resetA53.c -o m4resetA53.o
-#	$(ARMGNU)-gcc $(COPS) -mthumb -c m4resetA53.c -o m4resetA53.o
-#
 
-m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o uart.o
-	$(ARMGNU)-ld -o m4resetA53.elf -T resetA53-memmap vectors.o m4resetA53.o uart.o
-	$(ARMGNU)-objdump -D m4resetA53.elf > m4resetA53.list
-	$(ARMGNU)-objcopy m4resetA53.elf m4resetA53.bin -O binary
+m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o uart.o isr.o
+	$(ARMGNU)-ld -o $@ -T $<
+
+m4resetA53.list: m4resetA53.elf
+	$(ARMGNU)-objdump -D $< > $@
+
+m4resetA53.bin: m4reset53.elf
+	$(ARMGNU)-objcopy $< $@ -O binary
