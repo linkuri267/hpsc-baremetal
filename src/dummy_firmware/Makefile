@@ -18,6 +18,9 @@ vectors.o : vectors.s
 m4uart.o : m4uart.c
 	$(ARMGNU)-gcc $(COPS) -c m4uart.c -o m4uart.o
 #	$(ARMGNU)-gcc $(COPS) -mthumb -c m4uart.c -o m4uart.o
+#
+uart.o : uart.c
+	$(ARMGNU)-gcc $(COPS) -c uart.c -o uart.o
 
 m4uart.bin : uart-memmap vectors.o m4uart.o
 	$(ARMGNU)-ld -o m4uart.elf -T uart-memmap vectors.o m4uart.o
@@ -35,8 +38,9 @@ m4fsb.bin : uart-memmap m4fsb.o
 m4resetA53.o : m4resetA53.c
 	$(ARMGNU)-gcc $(COPS) -c m4resetA53.c -o m4resetA53.o
 #	$(ARMGNU)-gcc $(COPS) -mthumb -c m4resetA53.c -o m4resetA53.o
+#
 
-m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o
-	$(ARMGNU)-ld -o m4resetA53.elf -T resetA53-memmap vectors.o m4resetA53.o
+m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o uart.o
+	$(ARMGNU)-ld -o m4resetA53.elf -T resetA53-memmap vectors.o m4resetA53.o uart.o
 	$(ARMGNU)-objdump -D m4resetA53.elf > m4resetA53.list
 	$(ARMGNU)-objcopy m4resetA53.elf m4resetA53.bin -O binary

@@ -1,118 +1,119 @@
+#include <stdint.h>
+#include "uart.h"
 
-void cPUT32 ( unsigned int addr, unsigned int data)
-{
-	unsigned int * uart = (unsigned int *) addr;
-	* uart = data;
-}
-//#define UART0BASE 0x4000C000
-#define UART0BASE 0xffd40000
 #define APU_RESET_ADDR 0xfd1a0104
 #define APU_RESET_VALUE 0x800000fe
 
 int notmain ( void )
 {
-    cPUT32(APU_RESET_ADDR, APU_RESET_VALUE);
-    asm("wfi");
-    while (1) asm("wfi");
+    cdns_uart_startup(); // init UART peripheral
+    puts("TRCH\n");
+
+    // Turn on/reset the A53 cluster.
+    *((uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
+
+    while (1) {
+        asm("wfi");
+    }
 }
 
 int irq0 (void) {
-    cPUT32(UART0BASE+0x00,0x90);
+    puts("IRQ 0\n");
     return(0);
 }
 
 int irq1 (void) {
-    cPUT32(UART0BASE+0x00,0x91);
+    puts("IRQ 1\n");
     return(0);
 }
 
 int irq2 (void) {
-    cPUT32(UART0BASE+0x00,0x92);
+    puts("IRQ 2\n");
     return(0);
 }
 
 int irq3 (void) {
-    cPUT32(UART0BASE+0x00,0x93);
+    puts("IRQ 3\n");
     return(0);
 }
 
 int irq4 (void) {
-    cPUT32(UART0BASE+0x00,0x94);
+    puts("IRQ 4\n");
     return(0);
 }
 
 int irq5 (void) {
-    cPUT32(UART0BASE+0x00,0x95);
+    puts("IRQ 5\n");
     return(0);
 }
 
 int irq6 (void) {
-    cPUT32(UART0BASE+0x00,0x96);
+    puts("IRQ 6\n");
     return(0);
 }
 
 int irq7 (void) {
-    cPUT32(UART0BASE+0x00,0x97);
+    puts("IRQ 7\n");
     return(0);
 }
 
 int irq8 (void) {
-    cPUT32(UART0BASE+0x00,0x98);
+    puts("IRQ 8\n");
     return(0);
 }
 
 int irq9 (void) {
-    cPUT32(UART0BASE+0x00,0x99);
+    puts("IRQ 9\n");
     return(0);
 }
 
 int irq10 (void) {
-    cPUT32(UART0BASE+0x00,0x9a);
+    puts("IRQ 10\n");
     return(0);
 }
 
 int irq11 (void) {
-    cPUT32(UART0BASE+0x00,0x9b);
+    puts("IRQ 11\n");
     return(0);
 }
 
 int irq12 (void) {
-    cPUT32(UART0BASE+0x00,0x9c);
+    puts("IRQ 12\n");
     return(0);
 }
 
 int irq13 (void) {
-    cPUT32(UART0BASE+0x00,0x9d);
+    puts("IRQ 13\n");
     return(0);
 }
 
 int irq14 (void) {
-    cPUT32(UART0BASE+0x00,0x9e);
+    puts("IRQ 14\n");
     return(0);
 }
 
 int irq15 (void) {
-    cPUT32(UART0BASE+0x00,0x9f);
+    puts("IRQ 15\n");
     return(0);
 }
 
 int irq16 (void) {
-    cPUT32(UART0BASE+0x00,0xa0);
+    puts("IRQ 16\n");
     return(0);
 }
 
 int irq17 (void) {
-    cPUT32(UART0BASE+0x00,0xa1);
+    puts("IRQ 17\n");
     return(0);
 }
 
 int irq18 (void) {
-    cPUT32(UART0BASE+0x00,0xa2);
+    puts("IRQ 18\n");
     return(0);
 }
 
 int irq19 (void) {
-    cPUT32(UART0BASE+0x00,0xa3);
+    puts("IRQ 19\n");
     return(0);
 }
 
