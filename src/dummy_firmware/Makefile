@@ -4,6 +4,8 @@ ARMGNU = arm-none-eabi
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4
 COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb
 
+IRQS = 161,162
+
 all : m4uart.bin m4fsb.bin m4resetA53.bin
 
 clean:
@@ -12,11 +14,8 @@ clean:
 	rm -f *.elf
 	rm -f *.list
 
-vectors.s : genvec.py
-	./genvec.py $@
-
-isr.c : genisr.py
-	./genisr.py $@
+vectors.s isr.c: genvec.py
+	./genisr.py --handlers $(IRQS) vectors.s isr.c
 
 vectors.o : vectors.s
 	$(ARMGNU)-as $(AOPS) vectors.s -o vectors.o
