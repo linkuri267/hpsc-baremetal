@@ -10,7 +10,7 @@ int notmain ( void )
     puts("TRCH\n");
 
     // Turn on/reset the A53 cluster.
-    *((uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
+    *((volatile uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
 
     while (1) {
         asm("wfi");
