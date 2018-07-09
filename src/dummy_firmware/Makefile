@@ -51,5 +51,5 @@ m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o uart.o isr.o
 m4resetA53.list: m4resetA53.elf
 	$(ARMGNU)-objdump -D $< > $@
 
-m4resetA53.bin: m4reset53.elf
+m4resetA53.bin: m4resetA53.elf
 	$(ARMGNU)-objcopy $< $@ -O binary
