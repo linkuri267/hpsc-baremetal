@@ -17,36 +17,25 @@ clean:
 vectors.s isr.c: genvec.py
 	./genisr.py --handlers $(IRQS) vectors.s isr.c
 
-vectors.o : vectors.s
-	$(ARMGNU)-as $(AOPS) vectors.s -o vectors.o
+%.o : %.s
+	$(ARMGNU)-as $(AOPS) $< -o $@
 
-isr.o : isr.c
-	$(ARMGNU)-gcc $(COPS) -c isr.c -o isr.o
+%.o : %.c
+	$(ARMGNU)-gcc $(COPS) -c $< -o $@
 
-m4uart.o : m4uart.c
-	$(ARMGNU)-gcc $(COPS) -c m4uart.c -o m4uart.o
-
-uart.o : uart.c
-	$(ARMGNU)-gcc $(COPS) -c uart.c -o uart.o
-
-m4uart.bin : uart-memmap vectors.o m4uart.o
-	$(ARMGNU)-ld -o m4uart.elf -T uart-memmap vectors.o m4uart.o
+m4uart.bin : uart-memmap vectors-orig.o m4uart.o
+	$(ARMGNU)-ld -o m4uart.elf -T uart-memmap vectors-orig.o m4uart.o
 	$(ARMGNU)-objdump -D m4uart.elf > m4uart.list
 	$(ARMGNU)-objcopy m4uart.elf m4uart.bin -O binary
 
-m4fsb.o : m4fsb.S
-	$(ARMGNU)-as $(AOPS) m4fsb.S -o m4fsb.o
 
 m4fsb.bin : uart-memmap m4fsb.o 
 	$(ARMGNU)-ld -o m4fsb.elf -T uart-memmap m4fsb.o 
 	$(ARMGNU)-objdump -D m4fsb.elf > m4fsb.list
 	$(ARMGNU)-objcopy m4fsb.elf m4fsb.bin -O binary
 
-m4resetA53.o : m4resetA53.c
-	$(ARMGNU)-gcc $(COPS) -c m4resetA53.c -o m4resetA53.o
-
 m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o uart.o isr.o
-	$(ARMGNU)-ld -o $@ -T $<
+	$(ARMGNU)-ld -o $@ -T $^
 
 m4resetA53.list: m4resetA53.elf
 	$(ARMGNU)-objdump -D $< > $@
