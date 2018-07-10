@@ -86,9 +86,9 @@ hang:   b .
 for irq in args.handlers:
     f.write((".thumb_func\n" + \
              "isr%u:\n" + \
+	     "    push {lr}\n" + \
              "    bl c_isr%u\n" + \
-             "    b hang\n" + \
-             "    b hang\n\n") % (irq, irq))
+             "    pop {pc}\n") % (irq, irq))
 
 # Generate C source for stub IRQ handlers (ISRs)
 
@@ -105,14 +105,18 @@ f.write(
 
 f.write(
 """
-#include "uart.h"
+#include <libmspprintf/printf.h>
 """)
 
 for irq in args.handlers:
     f.write(
 """
 int c_isr%u (void) {
-    puts("IRQ %u\\n");
+    static unsigned num_invoc = 0;
+    void *p = 0x0;
+    asm ("mov %%0, lr\\n" : "=r" (p));
+    printf("IRQ %u (%%lu): LR %%p\\n", num_invoc, p);
+    num_invoc++;
     return(0);
 }
 """ % (irq, irq))
