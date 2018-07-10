@@ -14,7 +14,7 @@ clean:
 	rm -f *.elf
 	rm -f *.list
 
-vectors.s isr.c: genvec.py
+vectors.s isr.c: genisr.py
 	./genisr.py --handlers $(IRQS) vectors.s isr.c
 
 %.o : %.s
