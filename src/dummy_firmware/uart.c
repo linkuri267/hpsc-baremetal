@@ -201,7 +201,7 @@ int cdns_uart_startup()
 	return retval;
 }
 
-void cdns_uart_poll_put_char(unsigned char c)
+void io_putchar(unsigned char c)
 {
 
 #if 0
@@ -228,8 +228,8 @@ void cdns_uart_poll_put_char(unsigned char c)
 	return;
 }
 
-void cdns_uart_poll_puts(const char *c)
+void io_puts_no_newline(const char *c)
 {
     while (*c != 0)
-        cdns_uart_poll_put_char(*c++);
+        io_putchar(*c++);
 }
