@@ -1,9 +1,14 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-// Command field length is limited to 4-bits right now
-#define CMD_RESET_HPPS 0x1
+#include <stdbool.h>
 
-void cmd_handle(unsigned cmd);
+// Command field length is limited to 4-bits right now
+#define CMD_ECHO       0x1
+#define CMD_ECHO_REPLY 0x2
+#define CMD_RESET_HPPS 0x3
+
+void cmd_send(unsigned cmd, unsigned arg);
+void cmd_handle(unsigned msg);
 
 #endif // COMMAND_H
