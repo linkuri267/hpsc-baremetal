@@ -2,8 +2,15 @@
 
 import argparse
 
-def int_list(s):
-    return map(int, s.split(','))
+def int_str_map(s):
+    d = {}
+    for p in s.split(','):
+       if ':' in p: # explicitly named C ISR
+           kv = p.split(':')
+           d[int(kv[0])] = kv[1]
+       else: # create an ISR stub
+           d[int(p)] = None
+    return d
 
 parser = argparse.ArgumentParser(
     description="Generate assembly source for vector table")
@@ -11,8 +18,8 @@ parser.add_argument('--internal-irqs', type=int, default=16,
     help='Number internal IRQs')
 parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
-parser.add_argument('--handlers', type=int_list,
-    help='Number external IRQs')
+parser.add_argument('--handlers', type=int_str_map,
+    help='IRQ to ISR handler map (syntax: "irq[:isr_name],...", if isr_name is omitted, default stub is created)')
 parser.add_argument('out_asm',
     help='Output file with generated C source')
 parser.add_argument('out_c',
@@ -24,6 +31,9 @@ if args.handlers is None:
 
 def external(irq):
 	return irq - args.internal_irqs
+
+NVIC_BASE = 0xe000e000
+NVIC_ICPR = 0x280
 
 # ISR handlers for each vector number
 # The rest of the vectors (not in this dict) get default handler
@@ -84,11 +94,31 @@ hang:   b .
 + "\n");
 
 for irq in args.handlers:
-    f.write((".thumb_func\n" + \
-             "isr%u:\n" + \
-	     "    push {lr}\n" + \
-             "    bl c_isr%u\n" + \
-             "    pop {pc}\n") % (irq, irq))
+    nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq / 32) * 4
+    nvic_icpr_val = 1 << (irq % 32)
+    if args.handlers[irq] is not None:
+	isr = args.handlers[irq]
+    else:
+	isr = "c_isr%u" % irq
+
+    f.write(("""
+.thumb_func
+isr%u:
+    push {r0, r1, lr}
+
+    bl %s
+
+    /* Clear Pending flag */
+    ldrh r0, isr%u_icpr_addr
+    mov r1, #%u
+    strh r1, [r0]
+
+    pop {r0, r1, pc}
+
+    .align 2
+isr%u_icpr_addr:
+    .word 0x%08x
+""") % (irq, isr, irq, nvic_icpr_val, irq, nvic_icpr_addr))
 
 # Generate C source for stub IRQ handlers (ISRs)
 
@@ -108,8 +138,10 @@ f.write(
 #include <libmspprintf/printf.h>
 """)
 
+# Create stub ISRs for IRQs for which no ISR func was named
 for irq in args.handlers:
-    f.write(
+    if args.handlers[irq] is None:
+        f.write(
 """
 int c_isr%u (void) {
     static unsigned num_invoc = 0;
