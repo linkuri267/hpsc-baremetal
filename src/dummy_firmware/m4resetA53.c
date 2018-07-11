@@ -3,14 +3,13 @@
 #include <libmspprintf/printf.h>
 
 #include "uart.h"
+#include "mailbox.h"
 
 #define APU_RESET_ADDR 0xfd1a0104
 #define APU_RESET_VALUE 0x800000fe
 
 #define NVIC_BASE 0xe000e000
 #define NVIC_ISER0_OFFSET 0x100
-
-#define MBOX_IRQ 162 /* External IRQ numbering (i.e. vector #16 has index 0). */
 
 int notmain ( void )
 {
