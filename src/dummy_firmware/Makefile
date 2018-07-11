@@ -7,7 +7,7 @@ COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4
 
 IRQS = 161,162:mbox_have_data_isr
 
-all : m4uart.bin m4fsb.bin m4resetA53.bin
+all : m4uart.bin m4fsb.bin trch.bin
 
 clean:
 	rm -f *.bin
@@ -35,11 +35,11 @@ m4fsb.bin : uart-memmap m4fsb.o
 	$(ARMGNU)-objdump -D m4fsb.elf > m4fsb.list
 	$(ARMGNU)-objcopy m4fsb.elf m4fsb.bin -O binary
 
-m4resetA53.elf: resetA53-memmap vectors.o m4resetA53.o isr.o mailbox.o nvic.o libmspprintf/src/printf.o uart.o
+trch.elf: resetA53-memmap vectors.o trch.o isr.o mailbox.o nvic.o libmspprintf/src/printf.o uart.o
 	$(ARMGNU)-ld -o $@ -T $^
 
-m4resetA53.list: m4resetA53.elf
+trch.list: trch.elf
 	$(ARMGNU)-objdump -D $< > $@
 
-m4resetA53.bin: m4resetA53.elf
+trch.bin: trch.elf
 	$(ARMGNU)-objcopy $< $@ -O binary
