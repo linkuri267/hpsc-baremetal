@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "nvic.h"
 #include "mailbox.h"
+#include "reset.h"
 #include "command.h"
 
 int notmain ( void )
