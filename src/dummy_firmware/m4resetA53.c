@@ -3,13 +3,11 @@
 #include <libmspprintf/printf.h>
 
 #include "uart.h"
+#include "nvic.h"
 #include "mailbox.h"
 
 #define APU_RESET_ADDR 0xfd1a0104
 #define APU_RESET_VALUE 0x800000fe
-
-#define NVIC_BASE 0xe000e000
-#define NVIC_ISER0_OFFSET 0x100
 
 int notmain ( void )
 {
@@ -20,18 +18,11 @@ int notmain ( void )
     printf("PRV: svc #0\n");
     asm("svc #0");
 
-    // Enable interrupt from mailbox
-    volatile uint32_t *nvic_reg_ie = (volatile uint32_t *)(NVIC_BASE + NVIC_ISER0_OFFSET + (MBOX_IRQ/32)*4);
-    uint32_t nvic_reg_ie_val = 1 << (MBOX_IRQ % 32);
-
-    printf("NVIC IE: %p <- 0x%08lx\n", nvic_reg_ie, nvic_reg_ie_val);
-    *nvic_reg_ie |= nvic_reg_ie_val;
-
+    nvic_int_enable(MBOX_HAVE_DATA_IRQ);
 
     // Turn on/reset the A53 cluster.
     printf("A53 RST: %p <- 0x%08lx\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_VALUE);
     *((volatile uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
-
 
     while (1) {
         asm("wfi");
