@@ -14,6 +14,7 @@ OBJS = \
        command.o \
        mailbox.o \
        nvic.o \
+       reset.o \
        libmspprintf/src/printf.o \
        uart.o \
 

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <libmspprintf/printf.h>
 
@@ -17,7 +18,7 @@ int notmain ( void )
     asm("svc #0");
 
     nvic_int_enable(MBOX_HAVE_DATA_IRQ);
-    cmd_reset_hpps();
+    reset_hpps(/* first_boot */ true);
 
     while (1) {
         asm("wfi");

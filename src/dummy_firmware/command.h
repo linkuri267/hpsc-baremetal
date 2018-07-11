@@ -5,6 +5,5 @@
 #define CMD_RESET_HPPS 0x1
 
 void cmd_handle(unsigned cmd);
-void cmd_reset_hpps();
 
 #endif // COMMAND_H
