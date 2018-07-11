@@ -5,9 +5,7 @@
 #include "uart.h"
 #include "nvic.h"
 #include "mailbox.h"
-
-#define APU_RESET_ADDR 0xfd1a0104
-#define APU_RESET_VALUE 0x800000fe
+#include "command.h"
 
 int notmain ( void )
 {
@@ -19,10 +17,7 @@ int notmain ( void )
     asm("svc #0");
 
     nvic_int_enable(MBOX_HAVE_DATA_IRQ);
-
-    // Turn on/reset the A53 cluster.
-    printf("A53 RST: %p <- 0x%08lx\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_VALUE);
-    *((volatile uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
+    cmd_reset_hpps();
 
     while (1) {
         asm("wfi");
