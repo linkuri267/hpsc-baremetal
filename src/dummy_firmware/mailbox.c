@@ -16,6 +16,14 @@
 
 #define OFFSET_PAYLOAD 4
 
+void mbox_init()
+{
+    volatile uint32_t *addr = (volatile uint32_t *)(MBOX_BASE + MBOX_REG_MAIL1_CNF);
+    uint32_t val = MBOX_BIT_IHAVEDATAIRQEN;
+    printf("mbox_init: rcv irq en: %p <- %08lx\r\n", addr, val);
+    *addr = val;
+}
+
 void mbox_send(uint8_t msg)
 {
     volatile uint32_t *slot = (volatile uint32_t *)(MBOX_BASE + MBOX_REG_MAIL0);
