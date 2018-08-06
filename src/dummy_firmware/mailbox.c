@@ -20,7 +20,7 @@ void mbox_send(uint8_t msg)
 {
     volatile uint32_t *slot = (volatile uint32_t *)(MBOX_BASE + MBOX_REG_MAIL0);
     uint32_t val = msg << OFFSET_PAYLOAD; // see layout above
-    printf("%p <- %08lx\n", slot, val);
+    printf("mbox_send: %p <- %08lx\r\n", slot, val);
     *slot = val;
 }
 
@@ -28,7 +28,7 @@ uint8_t mbox_receive()
 {
     volatile uint32_t *slot = (volatile uint32_t *)(MBOX_BASE + MBOX_REG_MAIL1);
     uint32_t val = *slot;
-    printf("%p -> %08lx\r\n", slot, val);
+    printf("mbox_receive: %p -> %08lx\r\n", slot, val);
     uint8_t msg = val >> OFFSET_PAYLOAD; // see layout above
     return msg;
 }
@@ -36,6 +36,6 @@ uint8_t mbox_receive()
 void mbox_have_data_isr()
 {
     uint8_t msg = mbox_receive();
-    printf("MBOX ISR: rcved msg %x\n", msg);
+    printf("MBOX ISR: rcved msg %x\r\n", msg);
     cmd_handle(msg);
 }
