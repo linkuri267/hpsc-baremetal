@@ -12,10 +12,10 @@
 int notmain ( void )
 {
     cdns_uart_startup(); // init UART peripheral
-    printf("TRCH\n");
+    printf("TRCH\r\n");
 
     /* TODO: This doesn't make a difference: access succeeds without this */
-    printf("PRV: svc #0\n");
+    printf("PRV: svc #0\r\n");
     asm("svc #0");
 
     nvic_int_enable(MBOX_HAVE_DATA_IRQ);

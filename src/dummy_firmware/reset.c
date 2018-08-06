@@ -14,10 +14,10 @@ void reset_hpps(bool first_boot)
     // For subsequent reset to happen, need to toggle to pwron value before clearing the bits
     // TODO: A reset after boot does happen, but kernel fails to boot a second time
     if (!first_boot) {
-        printf("A53 RST: %p <- 0x%08lx\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_PWRON_VALUE);
+        printf("A53 RST: %p <- 0x%08lx\r\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_PWRON_VALUE);
         *((volatile uint32_t *)APU_RESET_ADDR) = APU_RESET_PWRON_VALUE;
     }
 
-    printf("A53 RST: %p <- 0x%08lx\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_VALUE);
+    printf("A53 RST: %p <- 0x%08lx\r\n", ((volatile uint32_t *)APU_RESET_ADDR), APU_RESET_VALUE);
     *((volatile uint32_t *)APU_RESET_ADDR) = APU_RESET_VALUE;
 }
