@@ -28,7 +28,7 @@ uint8_t mbox_receive()
 {
     volatile uint32_t *slot = (volatile uint32_t *)(MBOX_BASE + MBOX_REG_MAIL1);
     uint32_t val = *slot;
-    printf("%p -> %08lx\n", slot, val);
+    printf("%p -> %08lx\r\n", slot, val);
     uint8_t msg = val >> OFFSET_PAYLOAD; // see layout above
     return msg;
 }

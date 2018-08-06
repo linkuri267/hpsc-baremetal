@@ -147,7 +147,7 @@ int c_isr%u (void) {
     static unsigned num_invoc = 0;
     void *p = 0x0;
     asm ("mov %%0, lr\\n" : "=r" (p));
-    printf("IRQ %u (%%lu): LR %%p\\n", num_invoc, p);
+    printf("IRQ %u (%%lu): LR %%p\\r\\n", num_invoc, p);
     num_invoc++;
     return(0);
 }
