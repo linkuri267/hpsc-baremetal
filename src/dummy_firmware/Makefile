@@ -25,6 +25,7 @@ clean:
 	rm -f *.o
 	rm -f *.elf
 	rm -f *.list
+	rm -f vectors.s isr.c
 
 vectors.s isr.c: genisr.py
 	./genisr.py --handlers $(IRQS) vectors.s isr.c
