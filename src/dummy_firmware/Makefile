@@ -5,7 +5,7 @@ AOPS = --warn --fatal-warnings -mcpu=cortex-m4
 COPS = -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb \
        -I$(PWD)/libmspprintf/src/include
 
-IRQS = 161,162:mbox_have_data_isr
+IRQS = 163,164:mbox_have_data_isr
 
 OBJS = \
        vectors.o \

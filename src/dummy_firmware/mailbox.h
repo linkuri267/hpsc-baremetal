@@ -2,9 +2,9 @@
 #define MAILBOX_H
 
 /* External IRQ numbering (i.e. vector #16 has index 0). */
-#define MBOX_HAVE_DATA_IRQ 162
+#define MBOX_HAVE_DATA_IRQ 164
 
-#define MBOX_BASE 0xF9240000
+#define MBOX_BASE 0xF9220000
 
 #define MBOX_REG_MAIL0 0x80
 #define MBOX_REG_MAIL1 0xA0
