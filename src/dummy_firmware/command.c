@@ -7,14 +7,14 @@
 
 #include "command.h"
 
-void send_cmd(unsigned cmd, unsigned arg)
+void send_cmd(volatile uint32_t *mbox_base, unsigned cmd, unsigned arg)
 {
     uint32_t msg = ((cmd & 0x3) << 2) | (arg & 0x3);
     printf("CMD send cmd %x arg %x: msg %x\r\n", cmd, arg, msg);
-    mbox_send(msg);
+    mbox_send(mbox_base, msg);
 }
 
-void cmd_handle(unsigned msg)
+void cmd_handle(volatile uint32_t *mbox_base, unsigned msg)
 {
     unsigned cmd = (msg & 0xc) >> 2;
     unsigned arg = (msg & 0x3);
@@ -24,7 +24,7 @@ void cmd_handle(unsigned msg)
     switch (cmd) {
         case CMD_ECHO:
             printf("ECHO %x\r\n", arg);
-            send_cmd(CMD_ECHO_REPLY, arg);
+            send_cmd(mbox_base, CMD_ECHO_REPLY, arg);
             break;
         case CMD_RESET_HPPS:
             reset_hpps(/* first boot */ false);

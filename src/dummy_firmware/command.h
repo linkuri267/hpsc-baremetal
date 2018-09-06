@@ -8,7 +8,7 @@
 #define CMD_ECHO_REPLY 0x2
 #define CMD_RESET_HPPS 0x3
 
-void cmd_send(unsigned cmd, unsigned arg);
-void cmd_handle(unsigned msg);
+void cmd_send(volatile uint32_t *mbox_base, unsigned cmd, unsigned arg);
+void cmd_handle(volatile uint32_t *mbox_base, unsigned msg);
 
 #endif // COMMAND_H
