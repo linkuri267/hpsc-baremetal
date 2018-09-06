@@ -9,7 +9,13 @@ def int_str_map(s):
            kv = p.split(':')
            d[int(kv[0])] = kv[1]
        else: # create an ISR stub
-           d[int(p)] = None
+           if '-' in p:
+               r = map(int, p.split('-'))
+               irq_nums = range(r[0], r[1])
+           else:
+               irq_nums = [int(p)]
+           for n in irq_nums:
+               d[n] = None
     return d
 
 parser = argparse.ArgumentParser(
@@ -19,7 +25,7 @@ parser.add_argument('--internal-irqs', type=int, default=16,
 parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
 parser.add_argument('--handlers', type=int_str_map,
-    help='IRQ to ISR handler map (syntax: "irq[:isr_name],...", if isr_name is omitted, default stub is created)')
+    help='IRQ to ISR handler map (syntax: "irq[:isr_name]|irq|irq_from-irq_to,...", if isr_name is omitted, default stub is created)')
 parser.add_argument('out_asm',
     help='Output file with generated C source')
 parser.add_argument('out_c',
