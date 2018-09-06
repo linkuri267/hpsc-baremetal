@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <libmspprintf/printf.h>
+#include "printf.h"
 
 #include "reset.h"
 

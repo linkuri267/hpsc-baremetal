@@ -3,10 +3,9 @@ ARMGNU = arm-none-eabi
 
 FLOAT_FLAG = -mfloat-abi=hard 
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
-COPS = -Wall -Werror -O0 -g -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG) \
-       -I$(PWD)/libmspprintf/src/include
+COPS = -Wall -Werror -O0 -g -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
 
-IRQS = 161,162:mbox_have_data_isr
+IRQS = 161,162:mbox_rtps_have_data_isr,163,164:mbox_rtps_have_data_isr
 
 OBJS = \
        vectors.o \
@@ -17,7 +16,7 @@ OBJS = \
        mailbox.o \
        nvic.o \
        reset.o \
-       libmspprintf/src/printf.o \
+       printf.o \
        uart.o \
 
 all : trch.elf
@@ -26,7 +25,6 @@ clean:
 	rm -f *.o
 	rm -f *.elf
 	rm -f *.list
-	rm -f libmspprintf/src/*.o
 	rm -f vectors.s
 
 vectors.s isr.c: genisr.py

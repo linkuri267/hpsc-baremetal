@@ -1,7 +1,6 @@
 #include <stdint.h>
 
-#include <libmspprintf/printf.h>
-
+#include "printf.h"
 #include "mailbox.h"
 #include "command.h"
 
@@ -48,15 +47,11 @@ void mbox_have_data_isr(volatile uint32_t *base)
     cmd_handle(base, msg);
 }
 
-void mbox_rtps_trch_have_data_isr()
+void mbox_rtps_have_data_isr()
 {
      mbox_have_data_isr(RTPS_TRCH_MBOX_BASE);
 }
-void mbox_hpps_trch_have_data_isr()
+void mbox_hpps_have_data_isr()
 {
      mbox_have_data_isr(HPPS_TRCH_MBOX_BASE);
-}
-void mbox_hpps_rtps_have_data_isr()
-{
-     mbox_have_data_isr(HPPS_RTPS_MBOX_BASE);
 }

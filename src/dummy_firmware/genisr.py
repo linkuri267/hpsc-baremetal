@@ -155,7 +155,7 @@ f.write(
 
 f.write(
 """
-#include <libmspprintf/printf.h>
+#include "printf.h"
 """)
 
 # Create stub ISRs for IRQs for which no ISR func was named

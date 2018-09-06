@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <libmspprintf/printf.h>
-
+#include "printf.h"
 #include "uart.h"
 #include "float.h"
 #include "nvic.h"

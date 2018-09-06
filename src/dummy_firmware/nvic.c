@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <libmspprintf/printf.h>
+#include "printf.h"
 
 #include "nvic.h"
 

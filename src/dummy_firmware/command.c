@@ -1,7 +1,6 @@
 #include <stdint.h>
 
-#include <libmspprintf/printf.h>
-
+#include "printf.h"
 #include "mailbox.h"
 #include "reset.h"
 
