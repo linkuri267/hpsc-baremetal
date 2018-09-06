@@ -4,7 +4,10 @@
 /* External IRQ numbering (i.e. vector #16 has index 0). */
 #define MBOX_HAVE_DATA_IRQ 164
 
-#define MBOX_BASE 0xF9220000
+#define HPPS_RTPC_MBOX_BASE 	0xF9230000
+#define HPPS_TRCH_MBOX_BASE 	0xF9220000
+#define RTPS_TRCH_MBOX_BASE	0xF9240000
+//#define RTPS_TRCH_MBOX_BASE	0x3000A000
 
 #define MBOX_MAIL0 0x80
 #define MBOX_MAIL1 0xA0
