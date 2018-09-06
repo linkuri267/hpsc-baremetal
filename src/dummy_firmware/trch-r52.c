@@ -9,7 +9,9 @@
 #include "reset.h"
 #include "command.h"
 
-inline void disable_fpu()
+#define M4_UART
+#define FPU_TEST
+void disable_fpu()
 {
     /* Disable FPU: Code from M4 TRM */
     // CPACR is located at address 0xE000ED88 LDR.W R0, =0xE000ED88
@@ -26,6 +28,21 @@ inline void disable_fpu()
     asm("ISB");
 }
 
+void enable_fpu()
+{
+    asm("LDR R0, =0xE000ED88");
+    // Read CPACR
+    asm("LDR R1, [R0]");
+    // Set bits 20-23 to enable CP10 and CP11 coprocessors 
+    asm("LDR R2, =0x00F00000");
+    asm("ORR R1, R1, R2");
+    // Write back the modified value to the CPACR
+    asm("STR R1, [R0]");  // wait for store to complete
+    asm("DSB");
+    //reset pipeline now the FPU is enabled ISB
+    asm("ISB");
+}
+
 float gc;
 float calculate(float a, float b) {
 
@@ -34,19 +51,6 @@ float calculate(float a, float b) {
    if (b == 3.0) printf("argument is OK\n");
    else printf("argument is NOT OK\n"); 
    float c = (a + b)/ b;
-
-/*    asm("LDR R0, =0xE000ED88");
-    // Read CPACR
-    asm("LDR R1, [R0]");
-    // Set bits 20-23 to enable CP10 and CP11 coprocessors 
-    asm("LDR R2, =0xFF0FFFFF");
-    asm("AND R1, R1, R2");
-    // Write back the modified value to the CPACR
-    asm("STR R1, [R0]");  // wait for store to complete
-    asm("DSB");
-    //reset pipeline now the FPU is enabled ISB
-    asm("ISB");
-*/
    if ((a+b)/b == (1.5 + 3.0)/3.0) printf("internal calculation is correct\n");
    else printf("NO: internal calculation is NOT correct\n");
    gc = (a + b) /b;
@@ -68,7 +72,11 @@ int notmain ( void )
     printf("PRV: svc #0\n");
 //    asm("svc #0");
 
-float a, b, c;
+#ifdef FPU_TEST
+    float a, b, c;
+
+    enable_fpu();
+
     a = 1.5;
     b = 3.0;
     c = calculate(a,b);
@@ -78,7 +86,7 @@ float a, b, c;
     else printf("Not Equal\n");
 
     printf("%f = (%f + %f) / %f\n", c, a, b, b);
-
+#endif
     nvic_int_enable(MBOX_HAVE_DATA_IRQ);
 #endif
     reset_r52(/* first_boot */ true);
