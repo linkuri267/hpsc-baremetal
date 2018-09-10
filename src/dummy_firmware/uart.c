@@ -201,7 +201,7 @@ int cdns_uart_startup()
 	return retval;
 }
 
-void _putchar(unsigned char c)
+void _putchar(char c)
 {
 
 #if 0
