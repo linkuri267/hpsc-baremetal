@@ -26,11 +26,11 @@ int notmain ( void )
     asm("svc #0");
 
 #ifdef TEST_RTPS
-    reset_r52();
+    reset_component(COMPONENT_RTPS, /* first boot */ true);
 #endif // TEST_RTPS
 
 #ifdef TEST_HPPS
-    reset_hpps(/* first_boot */ true);
+    reset_component(COMPONENT_HPPS, /* first_boot */ true);
 #endif // TEST_HPPS
 
 #ifdef TEST_FLOAT
