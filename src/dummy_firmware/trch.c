@@ -77,5 +77,5 @@ void mbox_rtps_have_data_isr()
 void mbox_hpps_have_data_isr()
 {
     uint8_t msg = mbox_have_data_isr(HPPS_TRCH_MBOX1_BASE);
-    cmd_handle(RTPS_TRCH_MBOX0_BASE, msg);
+    cmd_handle(HPPS_TRCH_MBOX0_BASE, msg);
 }
