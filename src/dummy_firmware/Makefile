@@ -22,10 +22,7 @@ OBJS = \
 all : trch.elf
 
 clean:
-	rm -f *.o
-	rm -f *.elf
-	rm -f *.list
-	rm -f vectors.s
+	rm -f *.o *.d *.elf *.list vectors.s
 
 vectors.s isr.c: genisr.py
 	./genisr.py --handlers $(IRQS) vectors.s isr.c
@@ -34,7 +31,9 @@ vectors.s isr.c: genisr.py
 	$(ARMGNU)-as $(AOPS) $< -o $@
 
 %.o : %.c
-	$(ARMGNU)-gcc $(COPS) -c $< -o $@
+	$(ARMGNU)-gcc -MMD $(COPS) -c $< -o $@
 
 trch.elf: trch.ld $(OBJS)
 	$(ARMGNU)-ld -o $@ -T $^
+
+-include $(OBJS:.o=.d)
