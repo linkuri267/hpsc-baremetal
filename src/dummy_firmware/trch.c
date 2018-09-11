@@ -40,7 +40,7 @@ int notmain ( void )
 
 #ifdef TEST_HPPS_TRCH_MAILBOX
     printf("Testing HPPS-TRCH mailbox...\r\n");
-    mbox_init(RTPS_TRCH_MBOX_BASE);
+    mbox_init(HPPS_TRCH_MBOX_BASE);
     nvic_int_enable(HPPS_TRCH_MBOX_HAVE_DATA_IRQ);
 #endif
 
