@@ -5,12 +5,22 @@
 
 #include "reset.h"
 
-#define APU_RESET_ADDR 0xfd1a0104
-#define APU_RESET_PWRON_VALUE 0x3fdff
-#define APU_RESET_VALUE 0x800000fe
+#define APU       ((volatile uint8_t *)0xfd5c0000)
+#define CRF       ((volatile uint8_t *)0xfd1a0000)
+#define CRL       ((volatile uint8_t *)0xff5e0000)
+#define RPU_CTRL  ((volatile uint8_t *)0xff9a0000)
 
-#define RPU_RESET_ADDR 0xff5e023c
-#define RPU_RESET_VALUE 0x188fde
+#define APU__PWRCTL 0x90
+#define APU__PWRCTL__CPUPWRDWNREQ 0x1
+
+#define CRF__RST_FPD_APU 0x104
+#define CRF__RST_FPD_APU__ACPU0_RESET 0x1
+
+#define CRL__RST_LPD_TOP 0x23c
+#define CRL__RST_LPD_TOP__RPU_R50_RESET 0x1
+
+#define RPU_CTRL__RPU_0_CFG  0x100
+#define RPU_CTRL__RPU_0_CFG__NCPUHALT 0x1
 
 static const char *component_name(component_t c)
 {
@@ -21,29 +31,40 @@ static const char *component_name(component_t c)
    }
 }
 
-void reset_component(component_t component, bool first_boot)
+void reset_component(component_t component)
 {
     volatile uint32_t *reg_addr;
-    uint32_t reg_val, pwr_on_reg_val;
+    uint32_t reg_val;
 
     switch (component) {
         case COMPONENT_HPPS:
-            reg_addr = (volatile uint32_t *)APU_RESET_ADDR;
-            reg_val = APU_RESET_VALUE;
-            pwr_on_reg_val = APU_RESET_PWRON_VALUE;
+            reg_addr = (volatile uint32_t *)(APU + APU__PWRCTL);
+            reg_val = APU__PWRCTL__CPUPWRDWNREQ;
+
+            printf("reset: %s: %p <&- ~0x%08lx\r\n", component_name(component), reg_addr, reg_val);
+            *reg_addr &= ~reg_val;
+
+            reg_addr = (volatile uint32_t *)(CRF + CRF__RST_FPD_APU);
+            reg_val = CRF__RST_FPD_APU__ACPU0_RESET;
+
+            printf("reset: %s: %p <&- ~0x%08lx\r\n", component_name(component), reg_addr, reg_val);
+            *reg_addr &= ~reg_val;
+
+
             break;
         case COMPONENT_RTPS:
-            reg_addr = (volatile uint32_t *)RPU_RESET_ADDR;
-            reg_val = RPU_RESET_VALUE;
+            reg_addr = (volatile uint32_t *)(CRL + CRL__RST_LPD_TOP);
+            reg_val = CRL__RST_LPD_TOP__RPU_R50_RESET;
+
+            printf("reset: %s: %p <&- ~0x%08lx\r\n", component_name(component), reg_addr, reg_val);
+            *reg_addr &= ~reg_val;
+
+            reg_addr = (volatile uint32_t *)(RPU_CTRL + RPU_CTRL__RPU_0_CFG);
+            reg_val = RPU_CTRL__RPU_0_CFG__NCPUHALT;
+
+            printf("clear halt: %s: %p <|- 0x%08lx\r\n", component_name(component), reg_addr, reg_val);
+            *reg_addr |= reg_val;
+
             break;
    };
-    // For subsequent reset to happen, need to toggle to pwron reg_val before clearing the bits
-    // TODO: A reset after boot does happen, but kernel fails to boot a second time
-    if (!first_boot) {
-        printf("reset: %s: %p <- 0x%08lx\r\n", component_name(component), reg_addr, pwr_on_reg_val);
-        *reg_addr = pwr_on_reg_val;
-    }
-
-    printf("reset: %s: %p <- 0x%08lx\r\n", component_name(component), reg_addr, reg_val);
-    *reg_addr = reg_val;
 }

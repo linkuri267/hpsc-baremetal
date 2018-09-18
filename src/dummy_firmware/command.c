@@ -26,7 +26,7 @@ void cmd_handle(volatile uint32_t *mbox_base, unsigned msg)
             send_cmd(mbox_base, CMD_ECHO_REPLY, arg);
             break;
         case CMD_RESET_HPPS:
-            reset_component(COMPONENT_HPPS, /* first boot */ false);
+            reset_component(COMPONENT_HPPS);
             break;
         default:
             printf("ERROR: unknown cmd: %x\r\n", cmd);

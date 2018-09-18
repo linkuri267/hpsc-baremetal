@@ -8,6 +8,6 @@ typedef enum {
     COMPONENT_HPPS,
 } component_t;
 
-void reset_component(component_t component, bool first_boot);
+void reset_component(component_t component);
 
 #endif // RESET_H

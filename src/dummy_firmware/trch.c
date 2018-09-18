@@ -43,11 +43,11 @@ int notmain ( void )
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #ifdef TEST_RTPS
-    reset_component(COMPONENT_RTPS, /* first boot */ true);
+    reset_component(COMPONENT_RTPS);
 #endif // TEST_RTPS
 
 #ifdef TEST_HPPS
-    reset_component(COMPONENT_HPPS, /* first_boot */ true);
+    reset_component(COMPONENT_HPPS);
 #endif // TEST_HPPS
 
 #ifdef TEST_IPI
