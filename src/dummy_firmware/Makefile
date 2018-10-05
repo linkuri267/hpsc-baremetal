@@ -15,6 +15,7 @@ OBJS = \
        command.o \
        mailbox.o \
        nvic.o \
+       mmu.o \
        reset.o \
        printf.o \
        uart.o \

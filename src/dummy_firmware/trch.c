@@ -8,6 +8,7 @@
 #include "mailbox.h"
 #include "reset.h"
 #include "command.h"
+#include "mmu.h"
 
 #define TEST_RTPS
 #define TEST_HPPS
@@ -16,6 +17,7 @@
 #define TEST_HPPS_TRCH_MAILBOX
 #define TEST_RTPS_TRCH_MAILBOX
 // #define TEST_IPI
+#define TEST_RTPS_HPPS_MMU
 
 int notmain ( void )
 {
@@ -41,6 +43,10 @@ int notmain ( void )
     mbox_init(RTPS_TRCH_MBOX1_BASE);
     nvic_int_enable(RTPS_TRCH_MBOX_HAVE_DATA_IRQ);
 #endif // TEST_RTPS_TRCH_MAILBOX
+
+#ifdef TEST_RTPS_HPPS_MMU
+    mmu_init();
+#endif // TEST_RTPS_HPPS_MMU
 
 #ifdef TEST_RTPS
     reset_component(COMPONENT_RTPS);
