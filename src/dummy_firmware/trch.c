@@ -45,7 +45,7 @@ int notmain ( void )
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #ifdef TEST_RTPS_HPPS_MMU
-    mmu_init();
+    mmu_init((void *)0x80000000, 0x100000000);
 #endif // TEST_RTPS_HPPS_MMU
 
 #ifdef TEST_RTPS

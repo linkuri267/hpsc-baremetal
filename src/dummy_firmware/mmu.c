@@ -70,20 +70,20 @@
 // We put it in HPPS DRAM, because that seems to be the only option, judging from high-level Chiplet diagram.
 #define RTPS_HPPS_PT_ADDR 0x80000000
 
-int mmu_init() { // TODO: figure out a reasonable API
+int mmu_init(void *vaddr, uint64_t paddr) { // TODO: figure out a reasonable API
 
-    // entry=#2 out of 4 total (zero-base); (37-T0SZ+26-30+1) bits are the entry index in the page table
-    uint32_t va =  0x80000000;
-    uint64_t pa = 0x100000000;
+    uint32_t va = (uint32_t)vaddr;
+
+    // (37-T0SZ+26-30+1) bits are the entry index in the page table
 
     unsigned index = ((va >> 30) & 0b11); // should evaluate to 2 for 0x80000000
-    printf("MMU: mapping: 0x%08x -> 0x%08x%08x PT idxbits = %u size = %u idx = %u\r\n", va, (uint32_t)(pa >> 32), (uint32_t)pa, TABLE_IDX_BITS, TABLE_SIZE, index);
+    printf("MMU: mapping: 0x%08x -> 0x%08x%08x PT idxbits = %u size = %u idx = %u\r\n", va, (uint32_t)(paddr >> 32), (uint32_t)paddr, TABLE_IDX_BITS, TABLE_SIZE, index);
 
     uint64_t *rtps_hpps_pt0 = (uint64_t *)RTPS_HPPS_PT_ADDR; // must be aligned to TABLE_ALIGN bits
     for (int i = 0; i < TABLE_SIZE; ++i)
         rtps_hpps_pt0[i] = 0x0;
 
-    rtps_hpps_pt0[index] = (pa & ~0x3fffffff) |
+    rtps_hpps_pt0[index] = (paddr & ~0x3fffffff) |
                 VMSA8_DESC__VALID |
                 VMSA8_DESC__TYPE__BLOCK |
                 VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
