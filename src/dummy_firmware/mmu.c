@@ -44,10 +44,13 @@
 #define SMMU__CB0_TCR__VMSA8__TG0_16KB  (0b10 << 14)
 #define SMMU__CB0_TCR__VMSA8__TG0_64KB  (0b01 << 14)
 #define SMMU__CB0_TCR__T0SZ__SHIFT 0
-#define SMMU__CB0_TCR__TG0_4KB  0x0000
+#define SMMU__CB0_TCR__TG0_4KB   0x0000
+#define SMMU__CB0_TCR__TG0_16KB  0x8000
+#define SMMU__CB0_TCR__TG0_64KB  0x4000
 #define SMMU__CBA2R0__VA64 0x1
 
 // VMSAv8 Long-descriptor fields
+#define VMSA8_DESC__BITS   12 // Lower attributes in stage 1 (D4-2150)
 #define VMSA8_DESC__VALID 0b1
 #define VMSA8_DESC__TYPE__BLOCK 0b00
 #define VMSA8_DESC__TYPE__TABLE 0b10
@@ -61,37 +64,56 @@
 #define VMSA8_DESC__PXN    (1LL << 53)
 #define VMSA8_DESC__XN     (1LL << 54)
 
+// See 2.6.4 in ARM MMU Architecture Specificaion
+
 #define T0SZ 32  // use Table 0 for 0x0 to 0x0000_0000_FFFF_FFFF
-#define TABLE_IDX_BITS (37-T0SZ+26-30+1)
+#define TG_KB 40
+
+#if TG_KB == 4
+#define TABLE_BASE_LSB_BIT (37-T0SZ) // "x"
+#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+26) // "y"
+#define TABLE_IA_LSB_BIT 30
+
+#elif TG_KB == 64
+#define TABLE_BASE_LSB_BIT (38-T0SZ) // "x"
+#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+25) // "y"
+#define TABLE_IA_LSB_BIT 29
+#endif
+
+#define TABLE_IDX_BITS (TABLE_IA_HSB_BIT-TABLE_IA_LSB_BIT+1)
+#define TABLE_ALIGN (TABLE_BASE_LSB_BIT + TABLE_IDX_BITS + 3) // TODO: should this be TABLE_BASE_LSB_BIT+1 instead of TABLE_BASE_LSB_BIT?
 #define TABLE_SIZE (1 << TABLE_IDX_BITS) // in number of entries
-#define TABLE_ALIGN ((37 - T0SZ) + TABLE_IDX_BITS + 3) // 10 bits for T0SZ=32
 
 // Page table should be in memory that is on a bus accessible from the MMUs master port ('dma' prop in MMU node in Qemu DT).
 // We put it in HPPS DRAM, because that seems to be the only option, judging from high-level Chiplet diagram.
-#define RTPS_HPPS_PT_ADDR 0x80000000
+#define RTPS_HPPS_PT_ADDR 0x8e000000
 
 int mmu_init(void *vaddr, uint64_t paddr) { // TODO: figure out a reasonable API
 
     uint32_t va = (uint32_t)vaddr;
 
-    // (37-T0SZ+26-30+1) bits are the entry index in the page table
-
-    unsigned index = ((va >> 30) & 0b11); // should evaluate to 2 for 0x80000000
+    unsigned index = ((va >> TABLE_IA_LSB_BIT) & ~(~0 << TABLE_IDX_BITS));
     printf("MMU: mapping: 0x%08x -> 0x%08x%08x PT idxbits = %u size = %u idx = %u\r\n", va, (uint32_t)(paddr >> 32), (uint32_t)paddr, TABLE_IDX_BITS, TABLE_SIZE, index);
 
     uint64_t *rtps_hpps_pt0 = (uint64_t *)RTPS_HPPS_PT_ADDR; // must be aligned to TABLE_ALIGN bits
-    for (int i = 0; i < TABLE_SIZE; ++i)
-        rtps_hpps_pt0[i] = 0x0;
+    for (uint32_t i = 0; i < TABLE_SIZE; ++i) {
 
-    rtps_hpps_pt0[index] = (paddr & ~0x3fffffff) |
-                VMSA8_DESC__VALID |
-                VMSA8_DESC__TYPE__BLOCK |
-                VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
-                VMSA8_DESC__AP__EL0 |
-                VMSA8_DESC__AP__RW |
-                VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
+        // Identity map for all except the requested one
+        uint64_t pa = (i == index) ? paddr : (i << TABLE_IA_LSB_BIT);
 
-    printf("table desc: 0x%08x%08x\r\n", (uint32_t)(rtps_hpps_pt0[index] >> 32), (uint32_t)rtps_hpps_pt0[index]);
+        rtps_hpps_pt0[i] = (pa & (~0 << VMSA8_DESC__BITS)) |
+                    VMSA8_DESC__VALID |
+                    VMSA8_DESC__TYPE__BLOCK |
+                    VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
+                    VMSA8_DESC__AP__EL0 |
+                    VMSA8_DESC__AP__RW |
+                    VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
+
+        uint32_t desc_hi = (uint32_t)((rtps_hpps_pt0[i] >> 32) & 0xffffffff);
+        uint32_t desc_lo = (uint32_t)(rtps_hpps_pt0[i]         & 0xffffffff);
+
+        printf("%04u: 0x%p: 0x%08x%08x\r\n", i, &rtps_hpps_pt0[i], desc_hi, desc_lo);
+   }
 
     unsigned ctxidx = 0;
     volatile uint32_t *addr;
@@ -106,7 +128,7 @@ int mmu_init(void *vaddr, uint64_t paddr) { // TODO: figure out a reasonable API
     *addr |= SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS;
     addr = (volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + SMMU__CB0_TCR) + ctxidx;
     *addr |= (T0SZ << SMMU__CB0_TCR__T0SZ__SHIFT)
-           | SMMU__CB0_TCR__VMSA8__TG0_4KB;
+           | SMMU__CB0_TCR__VMSA8__TG0_64KB;
     addr = (volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + SMMU__CB0_TCR2) + ctxidx;
     *addr |= SMMU__CB0_TCR2__PASIZE__40BIT;
 
