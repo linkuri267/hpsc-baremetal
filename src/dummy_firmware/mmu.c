@@ -67,7 +67,7 @@
 // See 2.6.4 in ARM MMU Architecture Specificaion
 
 #define T0SZ 32  // use Table 0 for 0x0 to 0x0000_0000_FFFF_FFFF
-#define TG_KB 40
+#define TG_KB 64
 
 #if TG_KB == 4
 #define TABLE_BASE_LSB_BIT (37-T0SZ) // "x"
