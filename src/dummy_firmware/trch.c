@@ -75,10 +75,10 @@ int notmain ( void )
 
 void mbox_rtps_isr()
 {
-    mbox_isr(RTPS_TRCH_MBOX_BASE, 0);
+    mbox_request_isr(RTPS_TRCH_MBOX_BASE);
 }
 
 void mbox_hpps_isr()
 {
-    mbox_isr(HPPS_TRCH_MBOX_BASE, 0);
+    mbox_request_isr(HPPS_TRCH_MBOX_BASE);
 }
