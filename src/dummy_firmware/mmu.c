@@ -57,13 +57,13 @@
 
 #if TG_KB == 4
 #define TABLE_BASE_LSB_BIT (37-T0SZ) // "x"
-#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+26) // "y"
 #define TABLE_IA_LSB_BIT 30
+#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+26) // "y"
 
 #elif TG_KB == 64
 #define TABLE_BASE_LSB_BIT (38-T0SZ) // "x"
-#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+25) // "y"
 #define TABLE_IA_LSB_BIT 29
+#define TABLE_IA_HSB_BIT (TABLE_BASE_LSB_BIT+25) // "y"
 #endif
 
 #define TABLE_IDX_BITS (TABLE_IA_HSB_BIT-TABLE_IA_LSB_BIT+1)
