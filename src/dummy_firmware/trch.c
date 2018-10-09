@@ -8,6 +8,7 @@
 #include "mailbox.h"
 #include "reset.h"
 #include "command.h"
+#include "busid.h"
 #include "mmu.h"
 
 #define TEST_RTPS
@@ -34,14 +35,14 @@ int notmain ( void )
 
 #ifdef TEST_HPPS_TRCH_MAILBOX
     printf("Testing HPPS-TRCH mailbox...\r\n");
-    mbox_init(HPPS_TRCH_MBOX1_BASE);
-    nvic_int_enable(HPPS_TRCH_MBOX_HAVE_DATA_IRQ);
+    mbox_init_server(HPPS_TRCH_MBOX_BASE, /* instance */ 0, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0, cmd_handle, NULL);
+    nvic_int_enable(HPPS_TRCH_MAILBOX_IRQ_A);
 #endif
 
 #ifdef TEST_RTPS_TRCH_MAILBOX
     printf("Testing RTPS-TRCH mailbox...\r\n");
-    mbox_init(RTPS_TRCH_MBOX1_BASE);
-    nvic_int_enable(RTPS_TRCH_MBOX_HAVE_DATA_IRQ);
+    mbox_init_server(RTPS_TRCH_MBOX_BASE, /* instance */ 0, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0, cmd_handle, NULL);
+    nvic_int_enable(RTPS_TRCH_MAILBOX_IRQ_A);
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #ifdef TEST_RTPS_HPPS_MMU
@@ -72,16 +73,12 @@ int notmain ( void )
     }
 }
 
-// These are in main, not in mailbox.c, because different users of mailbox.c
-// (sender vs. receiver) receive from different indexes. This way mailbox.c
-// can be shared between sender and receiver.
-void mbox_rtps_have_data_isr()
+void mbox_rtps_isr()
 {
-    uint8_t msg = mbox_have_data_isr(RTPS_TRCH_MBOX1_BASE);
-    cmd_handle(RTPS_TRCH_MBOX0_BASE, msg);
+    mbox_isr(RTPS_TRCH_MBOX_BASE, 0);
 }
-void mbox_hpps_have_data_isr()
+
+void mbox_hpps_isr()
 {
-    uint8_t msg = mbox_have_data_isr(HPPS_TRCH_MBOX1_BASE);
-    cmd_handle(HPPS_TRCH_MBOX0_BASE, msg);
+    mbox_isr(HPPS_TRCH_MBOX_BASE, 0);
 }
