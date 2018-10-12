@@ -2,6 +2,7 @@
 #define MAILBOX_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define RTPS_TRCH_MBOX_BASE	((volatile uint32_t *)0x3000a000)
 #define HPPS_RTPS_MBOX_BASE 	((volatile uint32_t *)0xf9230000)
@@ -51,13 +52,19 @@
 #define HPSC_MBOX_INSTANCES 32
 #define HPSC_MBOX_INSTANCE_REGION (REG_DATA + HPSC_MBOX_DATA_REGS * 4)
 
-typedef void (*cb_t)(void *arg, volatile uint32_t *base, uint32_t *msg);
+typedef void (*rcv_cb_t)(void *arg, uint32_t *msg, size_t size);
+typedef void (*ack_cb_t)(void *arg);
 
-int mbox_init_server(volatile uint32_t *ip_base, unsigned instance, uint32_t owner, uint32_t dest, cb_t req_cb, void *cb_arg);
-int mbox_init_client(volatile uint32_t *ip_base, unsigned instance, uint32_t dest, cb_t reply_cb, void *cb_arg);
-void mbox_request(volatile uint32_t *ip_base, uint32_t *msg, size_t len);
-void mbox_reply(volatile uint32_t *ip_base, uint32_t *msg, size_t len);
-void mbox_request_isr(volatile uint32_t *ip_base);
-void mbox_reply_isr(volatile uint32_t *ip_base);
+struct mbox;
+
+struct mbox *mbox_claim_owner(volatile uint32_t * ip_base, unsigned instance, uint32_t owner, uint32_t dest);
+struct mbox *mbox_claim_dest(volatile uint32_t * ip_base, unsigned instance, uint32_t dest);
+int mbox_release(struct mbox *m);
+int mbox_init_in(struct mbox *m, rcv_cb_t cb, void *cb_arg);
+int mbox_init_out(struct mbox *m, ack_cb_t cb, void *cb_arg);
+int mbox_send(struct mbox *m, uint32_t *msg, size_t len);
+
+void mbox_rcv_isr(volatile uint32_t *ip_base);
+void mbox_ack_isr(volatile uint32_t *ip_base);
 
 #endif // MAILBOX_H

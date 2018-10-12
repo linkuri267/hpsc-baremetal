@@ -2,11 +2,22 @@
 #define COMMAND_H
 
 #include <stdbool.h>
+#include "mailbox.h"
 
 // Command field length is limited to 4-bits right now
 #define CMD_ECHO       0x1
 #define CMD_RESET_HPPS 0x3
 
-void cmd_handle(void *arg, volatile uint32_t *mbox_base, uint32_t *msg);
+struct cmd {
+    uint32_t cmd;
+    uint32_t arg;
+    struct mbox *reply_mbox;
+    volatile bool *reply_acked;
+};
+
+void cmd_handle(struct cmd *cmd);
+
+int cmd_enqueue(struct cmd *cmd);
+int cmd_dequeue(struct cmd *cmd);
 
 #endif // COMMAND_H
