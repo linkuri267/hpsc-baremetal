@@ -20,11 +20,13 @@
 // #define TEST_IPI
 // #define TEST_RTPS_HPPS_MMU
 
+#if defined(TEST_RTPS_TRCH_MAILBOX) || defined(TEST_HPPS_TRCH_MAILBOX)
 struct cmd_ctx {
     struct mbox *reply_mbox;
     volatile bool reply_acked;
     const char *origin; // for pretty-print
 };
+#endif
 
 #ifdef TEST_RTPS_TRCH_MAILBOX
 
@@ -50,17 +52,18 @@ static void panic(const char *msg)
     while (1); // halt
 }
 
-static void handle_ack(void *cbarg)
+#if defined(TEST_RTPS_TRCH_MAILBOX) || defined(TEST_HPPS_TRCH_MAILBOX)
+static void handle_ack(void *arg)
 {
-    struct cmd_ctx *ctx = (struct cmd_ctx *)cbarg;
+    struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
     printf("ACK from %s\r\n", ctx->origin);
     ctx->reply_acked = true;
 }
 
 
-void handle_cmd(void *cbarg, uint32_t *msg, size_t size)
+void handle_cmd(void *arg, uint32_t *msg, size_t size)
 {
-    struct cmd_ctx *ctx = (struct cmd_ctx *)cbarg;
+    struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
 
     struct cmd cmd = { .cmd = msg[0], .arg = msg[1],
                        .reply_mbox = ctx->reply_mbox,
@@ -71,6 +74,7 @@ void handle_cmd(void *cbarg, uint32_t *msg, size_t size)
     if (cmd_enqueue(&cmd))
         panic("failed to enqueue command");
 }
+#endif // defined(TEST_RTPS_TRCH_MAILBOX) || defined(TEST_HPPS_TRCH_MAILBOX)
 
 int notmain ( void )
 {
@@ -90,13 +94,13 @@ int notmain ( void )
 
     nvic_int_enable(HPPS_MAILBOX_IRQ_A(MBOX_FROM_HPPS_INSTANCE));
 
-    mbox_from_hpps = mbox_claim_owner(HPPS_TRCH_MBOX_BASE, MBOX_FROM_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
+    mbox_from_hpps = mbox_claim_owner(HPPS_MBOX_BASE, MBOX_FROM_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
     if (!mbox_from_hpps)
         panic("claim HPPS in mbox\r\n");
 
     nvic_int_enable(HPPS_MAILBOX_IRQ_B(MBOX_TO_HPPS_INSTANCE));
 
-    mbox_to_hpps = mbox_claim_owner(HPPS_TRCH_MBOX_BASE, MBOX_TO_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
+    mbox_to_hpps = mbox_claim_owner(HPPS_MBOX_BASE, MBOX_TO_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
     if (!mbox_to_hpps)
         panic("claim HPPS out mbox\r\n");
 
@@ -120,13 +124,13 @@ int notmain ( void )
 
     nvic_int_enable(LSIO_MAILBOX_IRQ_A(MBOX_FROM_RTPS_INSTANCE));
 
-    mbox_from_rtps = mbox_claim_owner(RTPS_TRCH_MBOX_BASE, MBOX_FROM_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
+    mbox_from_rtps = mbox_claim_owner(LSIO_MBOX_BASE, MBOX_FROM_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
     if (!mbox_from_rtps)
         panic("claim RTPS in mbox\r\n");
 
     nvic_int_enable(LSIO_MAILBOX_IRQ_B(MBOX_TO_RTPS_INSTANCE));
 
-    mbox_to_rtps = mbox_claim_owner(RTPS_TRCH_MBOX_BASE, MBOX_TO_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
+    mbox_to_rtps = mbox_claim_owner(LSIO_MBOX_BASE, MBOX_TO_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
     if (!mbox_to_rtps)
         panic("claim RTPS out mbox\r\n");
 
