@@ -12,10 +12,10 @@
 #include "mmu.h"
 
 #define TEST_RTPS
-// #define TEST_HPPS
+#define TEST_HPPS
 
 // #define TEST_FLOAT
-// #define TEST_HPPS_TRCH_MAILBOX
+#define TEST_HPPS_TRCH_MAILBOX
 #define TEST_RTPS_TRCH_MAILBOX
 // #define TEST_IPI
 // #define TEST_RTPS_HPPS_MMU
