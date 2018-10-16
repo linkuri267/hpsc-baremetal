@@ -33,6 +33,7 @@ struct cmd_ctx {
 #define MBOX_FROM_RTPS_INSTANCE 0
 #define MBOX_TO_RTPS_INSTANCE 1
 
+// Globals because used in ISRs
 static struct mbox *mbox_from_rtps;
 static struct mbox *mbox_to_rtps;
 #endif // TEST_RTPS_TRCH_MAILBOX
@@ -42,6 +43,7 @@ static struct mbox *mbox_to_rtps;
 #define MBOX_FROM_HPPS_INSTANCE 0
 #define MBOX_TO_HPPS_INSTANCE 1
 
+// Globals because used in ISRs
 static struct mbox *mbox_from_hpps;
 static struct mbox *mbox_to_hpps;
 #endif // TEST_HPPS_TRCH_MAILBOX
@@ -64,12 +66,16 @@ static void handle_ack(void *arg)
 void handle_cmd(void *arg, uint32_t *msg, size_t size)
 {
     struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
+    unsigned i;
 
-    struct cmd cmd = { .cmd = msg[0], .arg = msg[1],
-                       .reply_mbox = ctx->reply_mbox,
-                       .reply_acked = &ctx->reply_acked };
-    printf("CMD (%u, %u) from %s\r\n",
-           cmd.cmd, cmd.arg, ctx->origin);
+    struct cmd cmd; // can't use initializer, because GCC inserts a memset for initing .arg
+    cmd.reply_mbox = ctx->reply_mbox;
+    cmd.reply_acked = &ctx->reply_acked;
+    cmd.cmd = msg[0];
+    for (i = 0; i < HPSC_MBOX_DATA_REGS - 1 && i < MAX_CMD_ARG_LEN; ++i)
+        cmd.arg[i] = msg[1 + i];
+
+    printf("CMD (%u, %u ...) from %s\r\n", cmd.cmd, cmd.arg[0], ctx->origin);
 
     if (cmd_enqueue(&cmd))
         panic("failed to enqueue command");

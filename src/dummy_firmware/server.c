@@ -10,10 +10,12 @@
 
 int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_len)
 {
+    unsigned i;
     switch (cmd->cmd) {
         case CMD_ECHO:
-            printf("ECHO %x\r\n", cmd->arg);
-            reply[0] = cmd->arg;
+            printf("ECHO %x...\r\n", cmd->arg[0]);
+            for (i = 0; i < MAX_CMD_ARG_LEN && i < reply_len; ++i)
+                reply[i] = cmd->arg[i];
             break;
         case CMD_RESET_HPPS:
             reset_component(COMPONENT_HPPS);

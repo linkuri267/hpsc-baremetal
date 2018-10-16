@@ -4,12 +4,14 @@
 #include <stdbool.h>
 #include "mailbox.h"
 
+#define MAX_CMD_ARG_LEN 16
+
 #define CMD_ECHO       0x1
 #define CMD_RESET_HPPS 0x3
 
 struct cmd {
     uint32_t cmd;
-    uint32_t arg;
+    uint32_t arg[MAX_CMD_ARG_LEN];
     struct mbox *reply_mbox;
     volatile bool *reply_acked;
 };
