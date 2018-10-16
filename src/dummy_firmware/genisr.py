@@ -115,7 +115,7 @@ exc%u:
 
 for irq in args.handlers:
     nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq / 32) * 4
-    nvic_icpr_val = 1 << (irq % 32)
+    nvic_icpr_shift = irq % 32
     if args.handlers[irq] is not None:
 	isr = args.handlers[irq]
     else:
@@ -130,7 +130,8 @@ isr%u:
 
     /* Clear Pending flag */
     ldrh r0, isr%u_icpr_addr
-    mov r1, #%u
+    mov r1, #1
+    lsl r1, #%u
     strh r1, [r0]
 
     pop {r0, r1, pc}
@@ -138,7 +139,7 @@ isr%u:
     .align 2
 isr%u_icpr_addr:
     .word 0x%08x
-""") % (irq, isr, irq, nvic_icpr_val, irq, nvic_icpr_addr))
+""") % (irq, isr, irq, nvic_icpr_shift, irq, nvic_icpr_addr))
 
 # Generate C source for stub IRQ handlers (ISRs)
 
