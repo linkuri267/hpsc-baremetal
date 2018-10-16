@@ -182,9 +182,6 @@ int notmain ( void )
             cmd_handle(&cmd);
 #endif // endif
 
-        // TODO: need to disable the interrupts between check and wfi, and
-        // re-enable them atomically, otherwise will sleep with commands
-        // in the queue.
         printf("Waiting for interrupt...\r\n");
         asm("wfi");
     }
