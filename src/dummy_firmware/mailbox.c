@@ -12,7 +12,6 @@ struct mbox {
         volatile uint32_t *base;
         unsigned instance;
         bool owner; // whether this mailbox was claimed as owner
-        uint32_t int_enabled;
         union {
             rcv_cb_t rcv_cb;
             ack_cb_t ack_cb;
@@ -32,17 +31,6 @@ static struct mbox *alloc_mbox(volatile uint32_t *ip_base, unsigned instance)
     mboxes[num_mboxes].base = (volatile uint32_t *)((uint8_t *)ip_base + instance * HPSC_MBOX_INSTANCE_REGION);
     num_mboxes++;
     return &mboxes[num_mboxes - 1];
-}
-
-static struct mbox *find_mbox(volatile uint32_t *ip_base, unsigned instance)
-{
-   unsigned i;
-   for (i = 0; i < num_mboxes; ++i) {
-       if (mboxes[i].ip_base == ip_base && mboxes[i].instance == instance)
-           return &mboxes[i];
-   }
-   printf("error: mbox %p not registered\r\n", ip_base);
-   return NULL;
 }
 
 struct mbox *mbox_claim_owner(volatile uint32_t * ip_base, unsigned instance, uint32_t owner, uint32_t dest)
@@ -118,7 +106,6 @@ int mbox_init_in(struct mbox *m, rcv_cb_t cb, void *cb_arg)
     m->cb_arg = cb_arg;
 
     uint32_t val = HPSC_MBOX_INT_A;
-    m->int_enabled |= val;
 
     volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_INT_ENABLE);
     printf("mbox_init: int A en: %p <|- %08lx\r\n", addr, val);
@@ -136,7 +123,6 @@ int mbox_init_out(struct mbox *m, ack_cb_t cb, void *cb_arg)
     m->cb_arg = cb_arg;
 
     uint32_t val = HPSC_MBOX_INT_B;
-    m->int_enabled |= val;
 
     volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_INT_ENABLE);
     printf("mbox_init: int B en: %p <|- %08lx\r\n", addr, val);
@@ -169,103 +155,53 @@ int mbox_send(struct mbox *m, uint32_t *msg, size_t len)
     return 0;
 }
 
-void mbox_rcv_isr(volatile uint32_t *ip_base)
+void mbox_rcv_isr(struct mbox *mbox)
 {
-    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)ip_base + REG_INT_A_INSTANCES);
-    uint32_t val_instances = *addr;
+    volatile uint32_t *addr;
     uint32_t val;
-    int i;
     uint32_t msg[HPSC_MBOX_DATA_REGS];
 
-    printf("MBOX RCV ISR: int instances: %p -> %08lx\r\n", addr, val_instances);
+    printf("mbox_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    for (i = 0; i < HPSC_MBOX_INSTANCES; ++i) { // could be replaced with find-first-set-bit instruction
-        if (val_instances & (1 << i)) {
-            volatile uint32_t *base = (volatile uint32_t *)((uint8_t *)ip_base + i * HPSC_MBOX_INSTANCE_REGION);
-            printf("MBOX RCV ISR: int instance %u: %p\r\n", i, base);
-
-            printf("%p %u\r\n", &num_mboxes, num_mboxes);
-            struct mbox *mbox = find_mbox(ip_base, i);
-            if (!mbox) {
-                printf("ERROR: cannot find mailbox by base addr: %p\r\n", ip_base);
-                return;
-            }
-
-            // We have to not handle, despite being notified because we are
-            // multiplexing multiple signals (from all instances) onto one
-            // interrupt line.
-            // Have to check own state, not HW state, because the other party
-            // may enable this interrupt.
-            if (!(mbox->int_enabled & HPSC_MBOX_INT_A)) {
-                printf("RCV interrupt not enabled for instance %u\r\n", i);
-                continue;
-            }
-
-            // We don't have to copy, but let's copy for simplicity and to go over the
-            // bus to the IP block only once
-            printf("mbox_receive: rcved: ", msg);
-            volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)mbox->base + REG_DATA);
-            int len;
-            for (len = 0; len < HPSC_MBOX_DATA_REGS; len++) {
-                msg[len] = *data++; 
-                printf("%x ", msg[len]);
-            }
-            printf("\r\n");
-
-            // ACK before the callback, because if callback wants to block,
-            // we might have a deadlock.
-            addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_SET);
-            val = HPSC_MBOX_INT_B;
-            printf("mbox_receive: set int B: %p <- %08lx\r\n", addr, val);
-            *addr = val;
-
-            if (mbox->cb.rcv_cb)
-                mbox->cb.rcv_cb(mbox->cb_arg, &msg[0], HPSC_MBOX_DATA_REGS);
-
-            addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_CLEAR);
-            val = HPSC_MBOX_INT_A;
-            printf("mbox_receive: clear int A: %p <- %08lx\r\n", addr, val);
-            *addr = val;
-        }
+    // We don't have to copy, but let's copy for simplicity and to go over the
+    // bus to the IP block only once
+    printf("mbox_receive: rcved: ", msg);
+    volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)mbox->base + REG_DATA);
+    int len;
+    for (len = 0; len < HPSC_MBOX_DATA_REGS; len++) {
+        msg[len] = *data++;
+        printf("%x ", msg[len]);
     }
+    printf("\r\n");
+
+    // ACK before the callback, because if callback wants to block,
+    // we might have a deadlock.
+    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_SET);
+    val = HPSC_MBOX_INT_B;
+    printf("mbox_receive: set int B: %p <- %08lx\r\n", addr, val);
+    *addr = val;
+
+    if (mbox->cb.rcv_cb)
+        mbox->cb.rcv_cb(mbox->cb_arg, &msg[0], HPSC_MBOX_DATA_REGS);
+
+    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_CLEAR);
+    val = HPSC_MBOX_INT_A;
+    printf("mbox_receive: clear int A: %p <- %08lx\r\n", addr, val);
+    *addr = val;
 }
-void mbox_ack_isr(volatile uint32_t *ip_base)
+
+void mbox_ack_isr(struct mbox *mbox)
 {
-    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)ip_base + REG_INT_B_INSTANCES);
-    uint32_t val_instances = *addr;
+    volatile uint32_t *addr;
     uint32_t val;
-    int i;
 
-    printf("MBOX ACK ISR: int instances: %p -> %08lx\r\n", addr, val_instances);
+    printf("mbox_ack_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    for (i = 0; i < HPSC_MBOX_INSTANCES; ++i) { // could be replaced with find-first-set-bit instruction
-        if (val_instances & (1 << i)) {
-            volatile uint32_t *base = (volatile uint32_t *)((uint8_t *)ip_base + i * HPSC_MBOX_INSTANCE_REGION);
-            printf("MBOX ACK ISR: checking int instance %u: %p\r\n", i, base);
+    if (mbox->cb.ack_cb)
+        mbox->cb.ack_cb(mbox->cb_arg);
 
-            struct mbox *mbox = find_mbox(ip_base, i);
-            if (!mbox) {
-                printf("ERROR: cannot find mailbox by base addr %p instance %u\r\n", ip_base, i);
-                return;
-            }
-
-            // We have to not handle, despite being notified because we are
-            // multiplexing multiple signals (from all instances) onto one
-            // interrupt line.
-            // Have to check own state, not HW state, because the other party
-            // may enable this interrupt.
-            if (!(mbox->int_enabled & HPSC_MBOX_INT_B)) {
-                printf("ACK interrupt not enabled for instance %u\r\n", i);
-                continue;
-            }
-
-            if (mbox->cb.ack_cb)
-                mbox->cb.ack_cb(mbox->cb_arg);
-
-            addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_CLEAR);
-            val = HPSC_MBOX_INT_B;
-            printf("mbox_receive: clear int B: %p <- %08lx\r\n", addr, val);
-            *addr = val;
-        }
-    }
+    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_CLEAR);
+    val = HPSC_MBOX_INT_B;
+    printf("mbox_receive: clear int B: %p <- %08lx\r\n", addr, val);
+    *addr = val;
 }

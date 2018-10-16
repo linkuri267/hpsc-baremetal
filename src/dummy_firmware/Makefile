@@ -5,7 +5,7 @@ FLOAT_FLAG = -mfloat-abi=hard
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
 COPS = -Wall -Werror -O0 -g -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
 
-IRQS = 161:mbox_rtps_rcv_isr,162:mbox_rtps_ack_isr,163:mbox_hpps_isr,164
+IRQS = 72:mbox_rtps_rcv_isr,75:mbox_rtps_ack_isr,136:mbox_hpps_rcv_isr,139:mbox_hpps_ack_isr
 
 OBJS = \
        vectors.o \
