@@ -2,11 +2,11 @@
 
 #include "printf.h"
 #include "mailbox.h"
-#include "reset.h"
 
 #include "command.h"
 
 #define CMD_QUEUE_LEN 2
+#define REPLY_SIZE 2 // words
 
 static unsigned cmdq_head = 0;
 static unsigned cmdq_tail = 0;
@@ -39,30 +39,21 @@ int cmd_dequeue(struct cmd *cmd)
 
 void cmd_handle(struct cmd *cmd)
 {
-    uint32_t reply[1];
+    uint32_t reply[REPLY_SIZE];
+    int rc;
 
     printf("CMD handle cmd %x arg %x\r\n", cmd->cmd, cmd->arg);
 
-    switch (cmd->cmd) {
-        case CMD_ECHO:
-            printf("ECHO %x\r\n", cmd->arg);
-            reply[0] = cmd->arg;
+    rc = server_process(cmd, &reply[1], REPLY_SIZE - 1); // 1 word for header
 
-            *cmd->reply_acked = false;
-            if (mbox_send(cmd->reply_mbox, reply, 1)) {
-                printf("failed to send reply\r\n");
-            } else {
-                printf("waiting for ACK for our reply\r\n");
-                while(!*cmd->reply_acked); // block
-                printf("ACK for our reply received\r\n");
-            }
-            break;
-        case CMD_RESET_HPPS:
-            reset_component(COMPONENT_HPPS);
-            //reply[0] = 0;
-            // mbox_reply(mbox_base, reply, 1); // TODO
-            break;
-        default:
-            printf("ERROR: unknown cmd: %x\r\n", cmd->cmd);
+    reply[0] = rc;
+
+    *cmd->reply_acked = false;
+    if (mbox_send(cmd->reply_mbox, &reply[1], REPLY_SIZE - 1)) {
+        printf("failed to send reply\r\n");
+    } else {
+        printf("waiting for ACK for our reply\r\n");
+        while(!*cmd->reply_acked); // block
+        printf("ACK for our reply received\r\n");
     }
 }

@@ -19,4 +19,7 @@ void cmd_handle(struct cmd *cmd);
 int cmd_enqueue(struct cmd *cmd);
 int cmd_dequeue(struct cmd *cmd);
 
+// Implementation defined in a consumer's source
+int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_len);
+
 #endif // COMMAND_H

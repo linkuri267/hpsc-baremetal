@@ -13,6 +13,7 @@ OBJS = \
        isr.o \
        float.o \
        command.o \
+       server.o \
        mailbox.o \
        nvic.o \
        mmu.o \
