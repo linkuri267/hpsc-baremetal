@@ -6,7 +6,7 @@
 
 #include "command.h"
 
-#define CMD_QUEUE_LEN 4
+#define CMD_QUEUE_LEN 2
 
 static unsigned cmdq_head = 0;
 static unsigned cmdq_tail = 0;
