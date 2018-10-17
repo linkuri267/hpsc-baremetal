@@ -20,6 +20,8 @@ OBJS = \
        reset.o \
        printf.o \
        uart.o \
+       panic.o \
+       test-mailbox.o \
 
 all : trch.elf
 
