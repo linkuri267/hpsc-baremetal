@@ -49,7 +49,7 @@ static void handle_cmd(void *arg, uint32_t *msg, size_t size)
     cmd.reply_mbox = ctx->reply_mbox;
     cmd.reply_acked = &ctx->reply_acked;
     cmd.cmd = msg[0];
-    for (i = 0; i < HPSC_MBOX_DATA_REGS - 1 && i < MAX_CMD_ARG_LEN; ++i)
+    for (i = 0; i < HPSC_MBOX_DATA_REGS - 1 && i < size - 1; ++i)
         cmd.arg[i] = msg[1 + i];
 
     printf("CMD (%u, %u ...) from %s\r\n", cmd.cmd, cmd.arg[0], ctx->origin);
