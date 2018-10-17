@@ -7,6 +7,8 @@
 #include "busid.h"
 #include "panic.h"
 
+#include "test-mailbox.h"
+
 struct cmd_ctx {
     struct mbox *reply_mbox;
     volatile bool reply_acked;
