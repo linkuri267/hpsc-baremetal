@@ -64,7 +64,7 @@ f.write(
 .thumb_func
 .global _start
 _start:
-stacktop: .word 0x20004000
+stacktop: .word __stacktop
 """
 )
 
