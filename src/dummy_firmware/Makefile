@@ -5,8 +5,6 @@ FLOAT_FLAG = -mfloat-abi=hard
 AOPS = --warn --fatal-warnings -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
 COPS = -Wall -Werror -O0 -g -nostdlib -nostartfiles -ffreestanding  -mcpu=cortex-m4 -mthumb $(FLOAT_FLAG)
 
-IRQS = 72:mbox_rtps_rcv_isr,75:mbox_rtps_ack_isr,136:mbox_hpps_rcv_isr,139:mbox_hpps_ack_isr
-
 OBJS = \
        vectors.o \
        trch.o \
@@ -28,8 +26,8 @@ all : trch.elf
 clean:
 	rm -f *.o *.d *.elf *.list vectors.s
 
-vectors.s isr.c: genisr.py
-	./genisr.py --handlers $(IRQS) vectors.s isr.c
+vectors.s isr.c: genisr.py irqmap
+	./genisr.py --irqmap irqmap vectors.s isr.c
 
 %.o : %.s
 	$(ARMGNU)-as $(AOPS) $< -o $@

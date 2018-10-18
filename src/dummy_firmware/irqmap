@@ -1,0 +1,6 @@
+# Syntax per line: irq[:isr_name]|irq_from-irq_to
+
+72:mbox_rtps_rcv_isr
+75:mbox_rtps_ack_isr
+136:mbox_hpps_rcv_isr
+139:mbox_hpps_ack_isr

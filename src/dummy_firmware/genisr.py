@@ -2,20 +2,24 @@
 
 import argparse
 
-def int_str_map(s):
+def parse_irqmap(fname):
     d = {}
-    for p in s.split(','):
-       if ':' in p: # explicitly named C ISR
-           kv = p.split(':')
-           d[int(kv[0])] = kv[1]
-       else: # create an ISR stub
-           if '-' in p:
-               r = map(int, p.split('-'))
-               irq_nums = range(r[0], r[1])
-           else:
-               irq_nums = [int(p)]
-           for n in irq_nums:
-               d[n] = None
+    for line in open(fname):
+        line = line.strip()
+        if len(line) == 0 or line.startswith('#'):
+                continue
+        p = line
+        if ':' in p: # explicitly named C ISR
+            kv = p.split(':')
+            d[int(kv[0])] = kv[1]
+        else: # create an ISR stub
+            if '-' in p:
+                r = map(int, p.split('-'))
+                irq_nums = range(r[0], r[1])
+            else:
+                irq_nums = [int(p)]
+            for n in irq_nums:
+                d[n] = None
     return d
 
 parser = argparse.ArgumentParser(
@@ -24,16 +28,18 @@ parser.add_argument('--internal-irqs', type=int, default=16,
     help='Number internal IRQs')
 parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
-parser.add_argument('--handlers', type=int_str_map,
-    help='IRQ to ISR handler map (syntax: "irq[:isr_name]|irq|irq_from-irq_to,...", if isr_name is omitted, default stub is created)')
+parser.add_argument('--irqmap',
+    help='IRQ to ISR handler map file')
 parser.add_argument('out_asm',
     help='Output file with generated C source')
 parser.add_argument('out_c',
     help='Output file with generated assembly source')
 args = parser.parse_args()
 
-if args.handlers is None:
-        args.handlers = range(0, 240)
+irqmap = parse_irqmap(args.irqmap)
+
+if irqmap is None:
+        irqmap = range(0, 240)
 
 def external(irq):
 	return irq - args.internal_irqs
@@ -73,7 +79,7 @@ for i in range(0, args.internal_irqs + args.external_irqs):
     if i in isr:
         if isr[i] is not None:
             handler = isr[i]
-    elif external(i) in args.handlers:
+    elif external(i) in irqmap:
 	handler = "isr%u" % external(i)
     elif is_internal(i):
 	handler = "exc%u" % i
@@ -113,11 +119,11 @@ exc%u:
     b exc%u
 """) % (irq, irq))
 
-for irq in args.handlers:
+for irq in irqmap:
     nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq / 32) * 4
     nvic_icpr_shift = irq % 32
-    if args.handlers[irq] is not None:
-	isr = args.handlers[irq]
+    if irqmap[irq] is not None:
+	isr = irqmap[irq]
     else:
 	isr = "c_isr%u" % irq
 
@@ -160,8 +166,8 @@ f.write(
 """)
 
 # Create stub ISRs for IRQs for which no ISR func was named
-for irq in args.handlers:
-    if args.handlers[irq] is None:
+for irq in irqmap:
+    if irqmap[irq] is None:
         f.write(
 """
 int c_isr%u (void) {
