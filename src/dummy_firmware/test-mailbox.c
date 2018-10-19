@@ -3,7 +3,7 @@
 #include "mailbox.h"
 #include "command.h"
 #include "printf.h"
-#include "nvic.h"
+#include "intc.h"
 #include "busid.h"
 #include "panic.h"
 
@@ -61,13 +61,13 @@ static void handle_cmd(void *arg, uint32_t *msg, size_t size)
 void setup_hpps_trch_mailbox() {
     printf("Testing HPPS-TRCH mailbox...\r\n");
 
-    nvic_int_enable(HPPS_MAILBOX_IRQ_A(MBOX_FROM_HPPS_INSTANCE));
+    intc_int_enable(HPPS_MAILBOX_IRQ_A(MBOX_FROM_HPPS_INSTANCE), IRQ_TYPE_EDGE);
 
     mbox_from_hpps = mbox_claim_owner(HPPS_MBOX_BASE, MBOX_FROM_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
     if (!mbox_from_hpps)
         panic("claim HPPS in mbox\r\n");
 
-    nvic_int_enable(HPPS_MAILBOX_IRQ_B(MBOX_TO_HPPS_INSTANCE));
+    intc_int_enable(HPPS_MAILBOX_IRQ_B(MBOX_TO_HPPS_INSTANCE), IRQ_TYPE_EDGE);
 
     mbox_to_hpps = mbox_claim_owner(HPPS_MBOX_BASE, MBOX_TO_HPPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_HPPS_CPU0);
     if (!mbox_to_hpps)
@@ -89,13 +89,13 @@ void setup_hpps_trch_mailbox() {
 void setup_rtps_trch_mailbox() {
     printf("Testing RTPS-TRCH mailbox...\r\n");
 
-    nvic_int_enable(LSIO_MAILBOX_IRQ_A(MBOX_FROM_RTPS_INSTANCE));
+    intc_int_enable(LSIO_MAILBOX_IRQ_A(MBOX_FROM_RTPS_INSTANCE), IRQ_TYPE_EDGE);
 
     mbox_from_rtps = mbox_claim_owner(LSIO_MBOX_BASE, MBOX_FROM_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
     if (!mbox_from_rtps)
         panic("claim RTPS in mbox\r\n");
 
-    nvic_int_enable(LSIO_MAILBOX_IRQ_B(MBOX_TO_RTPS_INSTANCE));
+    intc_int_enable(LSIO_MAILBOX_IRQ_B(MBOX_TO_RTPS_INSTANCE), IRQ_TYPE_EDGE);
 
     mbox_to_rtps = mbox_claim_owner(LSIO_MBOX_BASE, MBOX_TO_RTPS_INSTANCE, MASTER_ID_TRCH_CPU, MASTER_ID_RTPS_CPU0);
     if (!mbox_to_rtps)
