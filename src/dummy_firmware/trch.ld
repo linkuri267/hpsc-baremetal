@@ -8,7 +8,7 @@ SECTIONS
 {
     .text : { *(.text*) } > SRAM
     .rodata : { *(.rodata*) } > SRAM
-    .bss : { *(.bss*) } > SRAM
+    .bss : { *(.bss*) *(COMMON) } > SRAM
 
     __stacktop = LENGTH(SRAM) - 4;
 }
