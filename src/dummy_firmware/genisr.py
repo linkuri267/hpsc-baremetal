@@ -132,6 +132,10 @@ for irq in irqmap:
 isr%u:
     push {r0, r1, lr}
 
+    mov r1, #%u
+    ldrh r0, isr%u_fmt_str_addr
+    bl printf
+
     bl %s
 
     /* Clear Pending flag */
@@ -145,7 +149,15 @@ isr%u:
     .align 2
 isr%u_icpr_addr:
     .word 0x%08x
-""") % (irq, isr, irq, nvic_icpr_shift, irq, nvic_icpr_addr))
+isr%u_fmt_str_addr:
+    .word isr_fmt_str
+""") % (irq, irq, irq, isr, irq, nvic_icpr_shift, irq, nvic_icpr_addr, irq))
+
+if len(irqmap) > 0:
+    f.write("""
+isr_fmt_str:
+    .string "IRQ #%u\\r\\n"
+""")
 
 # Generate C source for stub IRQ handlers (ISRs)
 
