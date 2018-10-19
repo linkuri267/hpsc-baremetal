@@ -67,10 +67,8 @@ f.write(
 .cpu cortex-m4
 .thumb
 
-.thumb_func
-.global _start
-_start:
-stacktop: .word __stacktop
+.global __entry
+.word __stacktop
 """
 )
 
@@ -93,6 +91,8 @@ f.write("\n")
 
 f.write(
 """
+__entry: /* same as 'reset', but must not be marked with .thumb_func */
+
 .thumb_func
 reset:
     bl notmain

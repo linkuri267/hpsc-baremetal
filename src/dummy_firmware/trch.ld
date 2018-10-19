@@ -13,3 +13,4 @@ SECTIONS
     __stacktop = LENGTH(SRAM) - 4;
 }
 
+ENTRY(__entry)
