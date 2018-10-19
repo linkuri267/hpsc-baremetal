@@ -8,7 +8,9 @@
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"
-#include "test-mailbox.h"
+#include "mailbox-link.h"
+#include "mailbox.h"
+#include "busid.h"
 
 #define TEST_RTPS
 #define TEST_HPPS
@@ -33,11 +35,23 @@ int notmain ( void )
 #endif // TEST_FLOAT
 
 #ifdef TEST_HPPS_TRCH_MAILBOX
-    setup_hpps_trch_mailbox();
+    struct mbox_link *hpps_link = mbox_link_connect(HPPS_MBOX_BASE,
+                    /* from mbox */ 0, /* to mbox */ 1,
+                    /* owner */ MASTER_ID_TRCH_CPU, /* dest  */ MASTER_ID_HPPS_CPU0,
+                    /* endpoint */ "HPPS");
+    if (!hpps_link)
+        panic("HPPS link");
+    // Never release the link, because we listen on it in main loop
 #endif
 
 #ifdef TEST_RTPS_TRCH_MAILBOX
-    setup_rtps_trch_mailbox();
+    struct mbox_link *rtps_link = mbox_link_connect(LSIO_MBOX_BASE,
+                    /* from mbox */ 0, /* to mbox */ 1,
+                    /* owner */ MASTER_ID_TRCH_CPU, /* dest  */ MASTER_ID_RTPS_CPU0,
+                    /* endpoint */ "RTPS");
+    if (!rtps_link)
+        panic("RTPS link");
+    // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #ifdef TEST_RTPS_HPPS_MMU

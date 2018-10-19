@@ -19,7 +19,8 @@ OBJS = \
        printf.o \
        uart.o \
        panic.o \
-       test-mailbox.o \
+       mailbox-link.o \
+       mailbox-isr.o \
 
 all : trch.elf
 
