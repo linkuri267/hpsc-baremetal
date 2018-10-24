@@ -30,6 +30,8 @@ parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
 parser.add_argument('--irqmap',
     help='IRQ to ISR handler map file')
+parser.add_argument('--verbose', '-v', action='store_true',
+    help='Print IRQ map')
 parser.add_argument('out_asm',
     help='Output file with generated C source')
 parser.add_argument('out_c',
@@ -37,6 +39,9 @@ parser.add_argument('out_c',
 args = parser.parse_args()
 
 irqmap = parse_irqmap(args.irqmap)
+if args.verbose:
+    for irq in irqmap:
+        print("%4u: %s" % (irq, irqmap[irq]))
 
 if irqmap is None:
         irqmap = range(0, 240)

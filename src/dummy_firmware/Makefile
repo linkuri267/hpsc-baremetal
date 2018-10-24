@@ -28,7 +28,7 @@ clean:
 	rm -f *.o *.d *.elf *.list vectors.s
 
 vectors.s isr.c: genisr.py irqmap
-	./genisr.py --irqmap irqmap vectors.s isr.c
+	./genisr.py -v --irqmap irqmap vectors.s isr.c
 
 %.o : %.s
 	$(ARMGNU)-as $(AOPS) $< -o $@
