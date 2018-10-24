@@ -37,7 +37,7 @@ def parse_irqmap(fname):
         p = line
         if ':' in p: # explicitly named C ISR
             kv = [s.strip() for s in p.split(':')]
-            irq = eval(kv[0])
+            irq = int(eval(kv[0]))
             d[irq] = kv[1]
         else: # create an ISR stub
             if '-' in p:
