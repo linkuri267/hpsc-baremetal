@@ -152,7 +152,7 @@ exc%u:
 """) % (irq, irq))
 
 for irq in irqmap:
-    nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq / 32) * 4
+    nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq // 32) * 4
     nvic_icpr_shift = irq % 32
     if irqmap[irq] is not None:
         isr = irqmap[irq]
