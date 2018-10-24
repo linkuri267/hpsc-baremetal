@@ -1,14 +1,14 @@
-# Syntax per line: irq[:isr_name]|irq_from-irq_to
-#
-#
-# Mailbox IRQs
-# ------------
-# ISRs are defined in mailbox-link.c and also there
-# Mailbox IP Blocks are indexed as follows:
-#   BLOCK_LSIO 0
-#   BLOCK_HPPS 1
-#
-#  Script to generate mailbox irqmap segment: gen-mbox-irqmap.py
+// Syntax per line: irq[:isr_name]|irq_from-irq_to
+//
+//
+// Mailbox IRQs
+// ------------
+// ISRs are defined in mailbox-link.c and also there
+// Mailbox IP Blocks are indexed as follows:
+//   BLOCK_LSIO 0
+//   BLOCK_HPPS 1
+//
+//  Script to generate mailbox irqmap segment: gen-mbox-irqmap.py
 
 72:mbox_0_0_rcv_isr
 73:mbox_0_0_ack_isr

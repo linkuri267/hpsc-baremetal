@@ -1,17 +1,44 @@
 #!/usr/bin/python3
 
 import argparse
+import re
+import sys
+
+def parse_defs(fname):
+    defs = {}
+    for line in open(fname):
+        line = line.strip()
+        m = re.match(r'^#define\s+(\w+)\s+(\w+)', line)
+        if m:
+            key = m.group(1)
+            val = m.group(2)
+            defs[key] = val
+    return defs
+
+def expand_macros(defs, s):
+    for v in defs:
+        s = s.replace(v, defs[v])
+    return s
 
 def parse_irqmap(fname):
     d = {}
+    defs = {}
     for line in open(fname):
         line = line.strip()
-        if len(line) == 0 or line.startswith('#'):
+        if len(line) == 0 or line.startswith('//'):
                 continue
+        m = re.match(r'^#include ["<]([^">]+)[>"]', line)
+        if m:
+                incfile = m.group(1)
+                defs.update(parse_defs(incfile))
+                continue
+
+        line = expand_macros(defs, line)
         p = line
         if ':' in p: # explicitly named C ISR
-            kv = p.split(':')
-            d[int(kv[0])] = kv[1]
+            kv = [s.strip() for s in p.split(':')]
+            irq = eval(kv[0])
+            d[irq] = kv[1]
         else: # create an ISR stub
             if '-' in p:
                 r = map(int, p.split('-'))
