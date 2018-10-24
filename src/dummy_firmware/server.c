@@ -5,6 +5,8 @@
 #include "reset.h"
 #include "command.h"
 #include "mailbox-link.h"
+#include "mailbox-map.h"
+#include "busid.h"
 
 #define CMD_ECHO                        0x1
 #define CMD_NOP                         0x2
@@ -54,26 +56,31 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 1;
         case CMD_MBOX_LINK_CONNECT: {
             int rc;
-            const char *endpoint_name;
             volatile uint32_t *base;
+            unsigned irq_base;
+            unsigned rcv_int_idx, ack_int_idx;
             switch (cmd->arg[0]) {
                 case ENDPOINT_RTPS:
                     base = LSIO_MBOX_BASE;
-                    endpoint_name = "RTPS";
+                    irq_base = LSIO_MBOX_IRQ_START;
+                    rcv_int_idx = MBOX_LSIO_TRCH_RCV_INT;
+                    ack_int_idx = MBOX_LSIO_TRCH_ACK_INT;
                     break;
                 case ENDPOINT_HPPS:
                     base = HPPS_MBOX_BASE;
-                    endpoint_name = "HPPS";
+                    irq_base = HPPS_MBOX_IRQ_START;
+                    rcv_int_idx = MBOX_HPPS_TRCH_RCV_INT;
+                    ack_int_idx = MBOX_HPPS_TRCH_ACK_INT;
                     break;
                 default:
                     reply[0] = -1;
                     return 1;
             }
 
-            struct mbox_link *link = mbox_link_connect(base,
+            struct mbox_link *link = mbox_link_connect(base, irq_base,
                             /* from mbox */ cmd->arg[1], /* to mbox */ cmd->arg[2],
-                            /* owner */ 0, /* dest  */ cmd->arg[3],
-                            /* endpoint */ endpoint_name);
+                            rcv_int_idx, ack_int_idx,
+                            /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
             if (!link) {
                 rc = -2;
             } else {

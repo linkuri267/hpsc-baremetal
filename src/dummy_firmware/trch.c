@@ -9,8 +9,10 @@
 #include "mmu.h"
 #include "panic.h"
 #include "mailbox-link.h"
+#include "mailbox-map.h"
 #include "mailbox.h"
 #include "busid.h"
+#include "intc.h"
 
 #define TEST_RTPS
 #define TEST_HPPS
@@ -35,22 +37,28 @@ int notmain ( void )
 #endif // TEST_FLOAT
 
 #ifdef TEST_HPPS_TRCH_MAILBOX
-    struct mbox_link *hpps_link = mbox_link_connect(HPPS_MBOX_BASE,
-                    /* from mbox */ 0, /* to mbox */ 1,
-                    /* owner */ MASTER_ID_TRCH_CPU, /* dest  */ MASTER_ID_HPPS_CPU0,
-                    /* endpoint */ "HPPS");
+    struct mbox_link *hpps_link = mbox_link_connect(
+                    HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
+                    MBOX_HPPS_HPPS_TRCH, MBOX_HPPS_TRCH_HPPS,
+                    MBOX_HPPS_TRCH_RCV_INT, MBOX_HPPS_TRCH_ACK_INT,
+                    /* server */ MASTER_ID_TRCH_CPU,
+                    /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
         panic("HPPS link");
+
     // Never release the link, because we listen on it in main loop
 #endif
 
 #ifdef TEST_RTPS_TRCH_MAILBOX
-    struct mbox_link *rtps_link = mbox_link_connect(LSIO_MBOX_BASE,
-                    /* from mbox */ 0, /* to mbox */ 1,
-                    /* owner */ MASTER_ID_TRCH_CPU, /* dest  */ MASTER_ID_RTPS_CPU0,
-                    /* endpoint */ "RTPS");
+    struct mbox_link *rtps_link = mbox_link_connect(
+                    LSIO_MBOX_BASE, LSIO_MBOX_IRQ_START,
+                    MBOX_LSIO_RTPS_TRCH, MBOX_LSIO_TRCH_RTPS,
+                    MBOX_LSIO_TRCH_RCV_INT, MBOX_LSIO_TRCH_ACK_INT,
+                    /* server */ MASTER_ID_TRCH_CPU,
+                    /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
         panic("RTPS link");
+
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
 
