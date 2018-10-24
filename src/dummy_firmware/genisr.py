@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import argparse
 
@@ -78,9 +78,9 @@ for i in range(0, args.internal_irqs + args.external_irqs):
         if isr[i] is not None:
             handler = isr[i]
     elif external(i) in irqmap:
-	handler = "isr%u" % external(i)
+        handler = "isr%u" % external(i)
     elif is_internal(i):
-	handler = "exc%u" % i
+        handler = "exc%u" % i
     else:
         handler = DEFAULT_ISR
 
@@ -123,9 +123,9 @@ for irq in irqmap:
     nvic_icpr_addr = NVIC_BASE + NVIC_ICPR + (irq / 32) * 4
     nvic_icpr_shift = irq % 32
     if irqmap[irq] is not None:
-	isr = irqmap[irq]
+        isr = irqmap[irq]
     else:
-	isr = "c_isr%u" % irq
+        isr = "c_isr%u" % irq
 
     f.write(("""
 .thumb_func
