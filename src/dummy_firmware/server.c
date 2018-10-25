@@ -86,6 +86,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             } else {
                 rc = linkp_alloc(link);
             }
+            printf("link connect rc: %u\r\n", rc);
             reply[0] = rc;
             return 1;
         }
@@ -95,9 +96,10 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             if (index >= MAX_MBOX_LINKS) {
                 rc = -1;
             } else {
+                rc = mbox_link_disconnect(links[index]);
                 linkp_free(index);
-                rc = 0;
             }
+            printf("link disconnect rc: %u\r\n", rc);
             reply[0] = rc;
             return 1;
         }
