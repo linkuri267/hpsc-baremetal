@@ -105,7 +105,7 @@ int notmain ( void )
 
 #if defined(TEST_RTPS_TRCH_MAILBOX) || defined(TEST_HPPS_TRCH_MAILBOX)
         struct cmd cmd;
-        if (!cmd_dequeue(&cmd))
+        while (!cmd_dequeue(&cmd))
             cmd_handle(&cmd);
 #endif // endif
 
