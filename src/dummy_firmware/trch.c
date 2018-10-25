@@ -18,6 +18,7 @@
 #define TEST_HPPS
 
 // #define TEST_FLOAT
+#define TEST_HPPS_TRCH_MAILBOX_SSW
 #define TEST_HPPS_TRCH_MAILBOX
 #define TEST_RTPS_TRCH_MAILBOX
 // #define TEST_IPI
@@ -35,6 +36,19 @@ int notmain ( void )
     printf("Testing float...\r\n");
     float_test();
 #endif // TEST_FLOAT
+
+#ifdef TEST_HPPS_TRCH_MAILBOX_SSW
+    struct mbox_link *hpps_link_ssw = mbox_link_connect(
+                    HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
+                    MBOX_HPPS_HPPS_TRCH_SSW, MBOX_HPPS_TRCH_HPPS_SSW,
+                    MBOX_HPPS_TRCH_RCV_INT, MBOX_HPPS_TRCH_ACK_INT,
+                    /* server */ MASTER_ID_TRCH_CPU,
+                    /* client */ MASTER_ID_HPPS_CPU0);
+    if (!hpps_link_ssw)
+        panic("HPPS link SSW");
+
+    // Never release the link, because we listen on it in main loop
+#endif
 
 #ifdef TEST_HPPS_TRCH_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect(
