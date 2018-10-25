@@ -20,7 +20,7 @@
 
 #define MAX_MBOX_LINKS          8
 
-static struct mbox_link *links[MAX_MBOX_LINKS];
+static struct mbox_link *links[MAX_MBOX_LINKS] = {0};
 
 static int linkp_alloc(struct mbox_link *link)
 {
