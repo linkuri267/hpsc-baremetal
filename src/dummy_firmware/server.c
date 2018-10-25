@@ -38,9 +38,23 @@ static void linkp_free(int index)
      links[index] = NULL;
 }
 
+static const char *cmd_to_str(unsigned cmd)
+{
+    switch (cmd) {
+        case CMD_ECHO:                  return "ECHO";
+        case CMD_NOP:                   return "NOP";
+        case CMD_RESET_HPPS:            return "RESET_HPPS";
+        case CMD_MBOX_LINK_CONNECT:     return "MBOX_LINK_CONNECT";
+        case CMD_MBOX_LINK_DISCONNECT:  return "MBOX_LINK_DISCONNECT";
+        case CMD_MBOX_LINK_ECHO:        return "MBOX_LINK_ECHO";
+        default:                        return "?";
+    }
+}
+
 int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
 {
     unsigned i;
+    printf("Processing CMD: %s\r\n", cmd_to_str(cmd->cmd));
     switch (cmd->cmd) {
         case CMD_ECHO:
             printf("ECHO %x...\r\n", cmd->arg[0]);
