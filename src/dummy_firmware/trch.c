@@ -22,7 +22,14 @@
 #define TEST_HPPS_TRCH_MAILBOX
 #define TEST_RTPS_TRCH_MAILBOX
 // #define TEST_IPI
-// #define TEST_RTPS_HPPS_MMU
+#define TEST_RTPS_HPPS_MMU
+
+// Page table should be in memory that is on a bus
+// accessible from the MMUs master port ('dma' prop
+// in MMU node in Qemu DT).  We put it in HPPS DRAM,
+// because that seems to be the only option, judging
+// from high-level Chiplet diagram.
+#define RTPS_HPPS_PT_ADDR 0x8e000000
 
 int notmain ( void )
 {
@@ -36,6 +43,18 @@ int notmain ( void )
     printf("Testing float...\r\n");
     float_test();
 #endif // TEST_FLOAT
+
+#ifdef TEST_RTPS_HPPS_MMU
+    if (mmu_init(RTPS_HPPS_PT_ADDR))
+	panic("MMU init");
+    if (mmu_map(0x8e050000,  0x8e050000, 0x10000))
+	panic("MMU identity mapping");
+    if (mmu_map(0xc0000000, 0x100000000, 0x10000))
+	panic("MMU window mapping");
+
+    if (mmu_map((uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, 0x10000))
+	panic("MMU mbox mapping");
+#endif // TEST_RTPS_HPPS_MMU
 
 #ifdef TEST_HPPS_TRCH_MAILBOX_SSW
     struct mbox_link *hpps_link_ssw = mbox_link_connect(
@@ -75,10 +94,6 @@ int notmain ( void )
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
-
-#ifdef TEST_RTPS_HPPS_MMU
-    mmu_init((void *)0xc0000000, 0x100000000);
-#endif // TEST_RTPS_HPPS_MMU
 
 #ifdef TEST_RTPS
     reset_component(COMPONENT_RTPS);
