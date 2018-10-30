@@ -30,6 +30,7 @@
 // because that seems to be the only option, judging
 // from high-level Chiplet diagram.
 #define RTPS_HPPS_PT_ADDR 0x8e000000
+#define RTPS_HPPS_PT_SIZE   0x200000
 
 int notmain ( void )
 {
@@ -45,15 +46,55 @@ int notmain ( void )
 #endif // TEST_FLOAT
 
 #ifdef TEST_RTPS_HPPS_MMU
-    if (mmu_init(RTPS_HPPS_PT_ADDR))
+    if (mmu_init(RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE))
 	panic("MMU init");
-    if (mmu_map(0x8e050000,  0x8e050000, 0x10000))
-	panic("MMU identity mapping");
-    if (mmu_map(0xc0000000, 0x100000000, 0x10000))
-	panic("MMU window mapping");
 
-    if (mmu_map((uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, 0x10000))
-	panic("MMU mbox mapping");
+    int rtps_ctx = mmu_context_create();
+    if (rtps_ctx < 0)
+	panic("MMU RTPS ctx");
+
+    if (mmu_map(rtps_ctx, 0x8e100000,  0x8e100000, 0x10000))
+	panic("MMU RTPS identity mapping");
+    if (mmu_map(rtps_ctx, 0xc0000000, 0x100000000, 0x10000))
+	panic("MMU RTPS window mapping");
+    if (mmu_map(rtps_ctx, (uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, 0x10000))
+	panic("MMU RTPS mbox mapping");
+
+    unsigned rtps_stream = mmu_stream_create(MASTER_ID_RTPS_CPU0, rtps_ctx);
+    if (rtps_stream < 0)
+	panic("MMU RTPS stream");
+
+    int trch_ctx = mmu_context_create();
+    if (trch_ctx < 0)
+	panic("MMU TRCH ctx");
+
+    if (mmu_map(trch_ctx, 0xc0000000, 0x100010000, 0x10000))
+	panic("MMU TRCH window mapping");
+    if (mmu_map(trch_ctx, 0xc1000000, 0x100000000, 0x10000))
+	panic("MMU TRCH window mapping");
+    if (mmu_map(trch_ctx, (uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, 0x10000))
+	panic("MMU TRCH mbox mapping");
+
+    unsigned trch_stream = mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
+    if (trch_stream < 0)
+	panic("MMU TRCH stream");
+
+    // In an alternative test, both streams could point to the same context
+
+    mmu_enable();
+
+    // In this test, TRCH accesses same location as RTPS but via a different virtual addr.
+    // RTPS should read 0xc0000000 and find 0xbeeff00d, not 0xf00dbeef.
+
+    volatile uint32_t *addr = (volatile uint32_t *)0xc1000000;
+    uint32_t val = 0xbeeff00d;
+    printf("%p <- %08x\r\n", addr, val);
+    *addr = val;
+
+    addr = (volatile uint32_t *)0xc0000000;
+    val = 0xf00dbeef;
+    printf("%p <- %08x\r\n", addr, val);
+    *addr = val;
 #endif // TEST_RTPS_HPPS_MMU
 
 #ifdef TEST_HPPS_TRCH_MAILBOX_SSW
