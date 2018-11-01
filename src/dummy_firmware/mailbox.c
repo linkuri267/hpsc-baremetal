@@ -2,6 +2,7 @@
 
 #include "printf.h"
 #include "object.h"
+#include "panic.h"
 #include "intc.h"
 #include "mailbox.h"
 
@@ -33,19 +34,25 @@
 #define HPSC_MBOX_INSTANCE_REGION (REG_DATA + HPSC_MBOX_DATA_REGS * 4)
 
 #define MAX_BLOCKS 2
-#define MAX_MBOXES 64
+#define MAX_MBOXES (MAX_BLOCKS * HPSC_MBOX_INSTANCES)
 
 struct irq {
         unsigned irq;
         unsigned refcount;
 };
 
+struct mbox_ip_block {
+        struct object obj;
+        volatile uint32_t *base;
+        unsigned refcnt;
+        unsigned irq_refcnt[HPSC_MBOX_EVENTS];
+};
+
 struct mbox {
         struct object obj;
-        volatile uint32_t *ip_base;
+        struct mbox_ip_block *block;
         volatile uint32_t *base;
         unsigned instance;
-        int block;
         int int_idx;
         int irq;
         bool owner; // whether this mailbox was claimed as owner
@@ -53,33 +60,48 @@ struct mbox {
         void *cb_arg;
 };
 
+// The mboxes array is common across all mbox_ip_block's. We could let each
+// block own its own mboxes array, and iterate over blocks in the ISR. Meh.
 static struct mbox mboxes[MAX_MBOXES] = {0};
-static volatile uint32_t *blocks[MAX_BLOCKS] = {0}; // [index] => base addr, populated on demand
+static struct mbox_ip_block blocks[MAX_BLOCKS] = {0};
 
-static unsigned irq_refcnt[MAX_BLOCKS][HPSC_MBOX_EVENTS] = {0};
-
-// TODO: simplify this, simply enable the IRQs on boot permanently
 static void mbox_irq_subscribe(struct mbox *mbox)
 {
-    if (irq_refcnt[mbox->block][mbox->int_idx]++ == 0)
+    if (mbox->block->irq_refcnt[mbox->int_idx]++ == 0)
         intc_int_enable(mbox->irq, IRQ_TYPE_EDGE);
 }
 static void mbox_irq_unsubscribe(struct mbox *mbox)
 {
-    if (--irq_refcnt[mbox->block][mbox->int_idx] == 0)
+    if (--mbox->block->irq_refcnt[mbox->int_idx] == 0)
         intc_int_disable(mbox->irq);
 }
 
-static int ip_base_to_block_idx(volatile uint32_t *ip_base)
+static struct mbox_ip_block *block_get(volatile uint32_t *ip_base)
 {
+    struct mbox_ip_block *b;
     unsigned block = 0;
-    while (block < MAX_BLOCKS && blocks[block] && blocks[block] != ip_base)
+    while (block < MAX_BLOCKS &&
+           (!blocks[block].obj.valid || blocks[block].base != ip_base))
         ++block;
-    if (block == MAX_BLOCKS)
-        return -1;
-    if (!blocks[block]) // assert blocks[block] == ip_base
-        blocks[block] = ip_base;
-    return block;
+    if (block == MAX_BLOCKS) { // no match
+        b = OBJECT_ALLOC(blocks);
+        if (!b)
+            return NULL;
+        b->base = ip_base;
+    } else {
+        b = &blocks[block];
+    }
+    ++b->refcnt;
+    return b;
+}
+static void block_put(struct mbox_ip_block *b)
+{
+    ASSERT(b);
+    ASSERT(b->refcnt);
+    for (unsigned e = 0; e < HPSC_MBOX_EVENTS; ++e)
+        ASSERT(!b->irq_refcnt[e]);
+    if (!--b->refcnt)
+        OBJECT_FREE(b);
 }
 
 struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
@@ -94,16 +116,15 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
     if (!m)
         return NULL;
 
-    m->ip_base = ip_base;
+    m->block = block_get(ip_base);
+    if (!m->block)
+        goto cleanup;
+
     m->instance = instance;
     m->base = (volatile uint32_t *)((uint8_t *)ip_base + instance * HPSC_MBOX_INSTANCE_REGION);
     m->int_idx = int_idx;
     m->irq = irq_base + int_idx;
     m->owner = (owner != 0);
-
-    m->block = ip_base_to_block_idx(ip_base);
-    if (m->block < 0)
-        goto cleanup;
 
     if (m->owner) {
         volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_CONFIG);
@@ -177,7 +198,7 @@ int mbox_release(struct mbox *m)
     }
 
     mbox_irq_unsubscribe(m);
-
+    block_put(m->block);
     OBJECT_FREE(m);
     return 0;
 }
