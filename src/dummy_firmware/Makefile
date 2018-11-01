@@ -15,6 +15,7 @@ OBJS = \
        mailbox.o \
        nvic.o \
        mem.o \
+       object.o \
        balloc.o \
        mmu.o \
        reset.o \
