@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "printf.h"
+#include "object.h"
 #include "intc.h"
 #include "mailbox.h"
 
@@ -40,7 +41,7 @@ struct irq {
 };
 
 struct mbox {
-        bool valid; // for storing in an array
+        struct object obj;
         volatile uint32_t *ip_base;
         volatile uint32_t *base;
         unsigned instance;
@@ -56,39 +57,6 @@ static struct mbox mboxes[MAX_MBOXES] = {0};
 static volatile uint32_t *blocks[MAX_BLOCKS] = {0}; // [index] => base addr, populated on demand
 
 static unsigned irq_refcnt[MAX_BLOCKS][HPSC_MBOX_EVENTS] = {0};
-
-static void mbox_clear(struct mbox *mbox)
-{
-    // Not strictly necessary, but to easy debugging
-    // We don't have a memset
-    mbox->ip_base = 0;
-    mbox->base = 0;
-    mbox->block = 0;
-    mbox->instance = 0;
-    mbox->owner = false;
-    mbox->cb.rcv_cb = NULL;
-    mbox->cb_arg = NULL;
-}
-
-static struct mbox *mbox_alloc()
-{
-    struct mbox *mbox;
-    unsigned i = 0;
-    while (mboxes[i].valid && i < MAX_MBOXES)
-        ++i;
-    if (i == MAX_MBOXES)
-        return NULL;
-    mbox = &mboxes[i];
-    mbox_clear(mbox);
-    mbox->valid = true;
-    return mbox;
-}
-
-static void mbox_free(struct mbox *mbox)
-{
-    mbox->valid = false;
-    mbox_clear(mbox);
-}
 
 // TODO: simplify this, simply enable the IRQs on boot permanently
 static void mbox_irq_subscribe(struct mbox *mbox)
@@ -122,7 +90,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
     printf("mbox claim: ip %x irq base %u instance %u int %u owner %x src %x dest %x dir %u\r\n",
            ip_base, irq_base, instance, int_idx, owner, src, dest, dir);
 
-    struct mbox *m = mbox_alloc();
+    struct mbox *m = OBJECT_ALLOC(mboxes);
     if (!m)
         return NULL;
 
@@ -191,7 +159,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
 
     return m;
 cleanup:
-    mbox_free(m);
+    OBJECT_FREE(m);
     return NULL;
 }
 
@@ -210,7 +178,7 @@ int mbox_release(struct mbox *m)
 
     mbox_irq_unsubscribe(m);
 
-    mbox_free(m);
+    OBJECT_FREE(m);
     return 0;
 }
 
@@ -302,7 +270,7 @@ static void mbox_isr(unsigned event, unsigned interrupt)
     // the main mailbox array into multiple arrays, one per block.
     for (i = 0; i < MAX_MBOXES; ++i) {
         mbox = &mboxes[i];
-        if (!mbox->valid)
+        if (!mbox->obj.valid)
             continue;
 
         // Are we 'signed up' for this event (A) from this mailbox (i)?
