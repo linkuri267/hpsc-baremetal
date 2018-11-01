@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "printf.h"
+#include "object.h"
 #include "regops.h"
 #include "balloc.h"
 #include "panic.h"
@@ -83,9 +84,9 @@
 #define T0SZ 32
 
 #define GL_REG(mmu, reg)    ((volatile uint32_t *)((volatile uint8_t *)mmu->base + reg))
-#define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->index) + reg))
-#define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->index) + reg))
-#define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)stream->ctx->mmu->base + reg) + stream->index)
+#define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg))
+#define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg))
+#define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)stream->ctx->mmu->base + reg) + stream->obj.index)
 
 #define MAX_LEVEL 3 // max level index, not count
 #define MAX_CONTEXTS 8 // TODO: take from ID reg
@@ -146,9 +147,8 @@ struct level { // constant metadata about a level
 };
 
 struct mmu_context {
-    bool valid; // for strogin this object in an array
+    struct object obj;
     struct mmu *mmu;
-    unsigned index; // of context in MMU instance
     struct balloc *balloc;
     const struct granule *granule;
     uint64_t *pt; // top-level page table (always allocated)
@@ -156,14 +156,13 @@ struct mmu_context {
 };
 
 struct mmu_stream {
-    bool valid; // for stroring this object in an array
-    unsigned index; // of stream in MMU instance
+    struct object obj;
     unsigned master; // we don't strictly need to keep this state in SW
     struct mmu_context *ctx;
 };
 
 struct mmu {
-    bool valid; // for storing this object in an array
+    struct object obj;
     const char *name; // for pretty printing
     volatile uint32_t *base;
     struct mmu_context contexts[MAX_CONTEXTS];
@@ -184,7 +183,7 @@ static uint64_t *pt_alloc(struct mmu_context *ctx, unsigned level)
 
     struct level *levp = &ctx->levels[level];
     printf("MMU %s: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
-           m->name, ctx->index, level, levp->pt_size, ctx->granule->page_bits);
+           m->name, ctx->obj.index, level, levp->pt_size, ctx->granule->page_bits);
 
     uint64_t *pt = balloc_alloc(ctx->balloc, levp->pt_size, ctx->granule->page_bits);
     if (!pt)
@@ -204,7 +203,7 @@ static int pt_free(struct mmu_context *ctx, uint64_t *pt, unsigned level)
     ASSERT(ctx->mmu);
     struct mmu *m = ctx->mmu;
     printf("MMU %s: pt_free: ctx %u level %u pt %p\r\n",
-           m->name, ctx->index, level, pt);
+           m->name, ctx->obj.index, level, pt);
 
     int rc;
     struct level *levp = &ctx->levels[level];
@@ -260,16 +259,9 @@ static void dump_pt(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 
 struct mmu *mmu_create(const char *name, volatile uint32_t *base)
 {
-    unsigned idx = 0;
-    while (idx < MAX_MMUS && mmus[idx].valid)
-        ++idx;
-    if (idx == MAX_MMUS) {
-        printf("ERROR: MMU: create failed: no space\r\n");
+    struct mmu *m = OBJECT_ALLOC(mmus);
+    if (!m)
         return NULL;
-    }
-    struct mmu *m = &mmus[idx];
-    bzero(m, sizeof(*m));
-    m->valid = true;
     m->name = name;
     m->base = base;
     printf("MMU %s: created\r\n", m->name);
@@ -281,8 +273,7 @@ int mmu_destroy(struct mmu *m)
     ASSERT(m);
     printf("MMU %s: destroy\r\n", m->name);
     // TODO: cleanup any streams/contexts left by the user
-    m->valid = false;
-    bzero(m, sizeof(*m));
+    OBJECT_FREE(m);
     return 0;
 }
 
@@ -290,30 +281,21 @@ struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mm
 {
     ASSERT(m);
     ASSERT(ba);
+
     ASSERT(pgsz < sizeof(granules) / sizeof(granules[0]));
+    const struct granule *g = &granules[pgsz];
 
     printf("MMU: %s: context_create: pgsz enum %u\r\n", m->name, pgsz);
 
-    // Alloc context state object
-    unsigned idx = 0;
-    while (idx < MAX_CONTEXTS && m->contexts[idx].valid)
-        ++idx;
-    if (idx == MAX_CONTEXTS) {
-        printf("ERROR: MMU: failed to create context: no more\r\n");
+    struct mmu_context *ctx = OBJECT_ALLOC(m->contexts);
+    if (!ctx)
         return NULL;
-    }
-    struct mmu_context *ctx = &m->contexts[idx];
-    bzero(ctx, sizeof(*ctx));
-    ctx->valid = true;
-    ctx->index = idx;
     ctx->mmu = m;
-
-    const struct granule *g = &granules[pgsz];
     ctx->granule = g;
     ctx->balloc = ba;
 
     printf("MMU: context_create: alloced ctx %u start level %u\r\n",
-           ctx->index, g->start_level);
+           ctx->obj.index, g->start_level);
 
     for (unsigned level = g->start_level; level <= MAX_LEVEL; ++level) {
         struct level *levp = &ctx->levels[level];
@@ -335,7 +317,7 @@ struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mm
 
     ctx->pt = pt_alloc(ctx, ctx->granule->start_level);
     if (!ctx->pt) {
-        // TODO: free context object
+        OBJECT_FREE(ctx);
         return NULL;
     }
 
@@ -346,7 +328,7 @@ struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mm
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), SMMU__CB_SCTLR__M);
 
     printf("MMU: created ctx %u pt %p entries %u size 0x%x\r\n",
-           ctx->index, ctx->pt,
+           ctx->obj.index, ctx->pt,
            ctx->levels[ctx->granule->start_level].pt_entries,
            ctx->levels[ctx->granule->start_level].pt_size);
     return ctx;
@@ -360,7 +342,7 @@ int mmu_context_destroy(struct mmu_context *ctx)
     ASSERT(ctx->mmu);
 
     struct mmu *m = ctx->mmu;
-    printf("MMU %s: context_destroy: ctx %u\r\n", m->name, ctx->index);
+    printf("MMU %s: context_destroy: ctx %u\r\n", m->name, ctx->obj.index);
 
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), 0);
@@ -368,10 +350,7 @@ int mmu_context_destroy(struct mmu_context *ctx)
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), 0);
 
     rc = pt_free(ctx, ctx->pt, ctx->granule->start_level);
-
-    // Free context state object
-    ctx->valid = false;
-    bzero(ctx, sizeof(*ctx));
+    OBJECT_FREE(ctx);
     return rc;
 }
 
@@ -381,7 +360,7 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
     ASSERT(ctx->mmu);
 
     printf("MMU: map: ctx %u: 0x%08x%08x -> 0x%08x%08x size = %x\r\n",
-            ctx->index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
+            ctx->obj.index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
             (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
     if (!ALIGNED(sz, ctx->granule->page_bits)) {
@@ -474,7 +453,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
     ASSERT(ctx->mmu);
 
     printf("MMU: unmap: ctx %u: 0x%08x%08x size 0x%x\r\n",
-            ctx->index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr, sz);
+            ctx->obj.index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr, sz);
 
     if (!ALIGNED(sz, ctx->granule->page_bits)) {
         printf("ERROR: MMU unmap: region size (0x%x) not aligned to TG of %u bits\r\n",
@@ -592,27 +571,19 @@ struct mmu_stream *mmu_stream_create(unsigned master, struct mmu_context *ctx)
     ASSERT(ctx->mmu);
 
     struct mmu *m = ctx->mmu;
-    unsigned idx = 0;
-    while (idx < MAX_STREAMS && m->streams[idx].valid)
-        ++idx;
-    if (idx== MAX_STREAMS) {
-        printf("ERROR: MMU %s: failed to create stream: no more match registers\r\n");
+    struct mmu_stream *s = OBJECT_ALLOC(m->streams);
+    if (!s)
         return NULL;
-    }
-    struct mmu_stream *s = &m->streams[idx];
-    bzero(s, sizeof(*s));
-    s->valid = true;
-    s->index = idx;
     s->ctx = ctx;
     s->master = master;
 
     REG_WRITE32(ST_REG(s, SMMU__SMR0), SMMU__SMR0__VALID | master);
-    REG_WRITE32(ST_REG(s, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx->index);
+    REG_WRITE32(ST_REG(s, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx->obj.index);
     REG_WRITE32(ST_REG(s, SMMU__CBAR0), SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS);
     REG_WRITE32(ST_REG(s, SMMU__CBA2R0), SMMU__CBA2R0__VA64);
 
     printf("MMU %s: created stream %u: 0x%x -> ctx %u\r\n",
-           m->name, s->index, s->master, ctx->index);
+           m->name, s->obj.index, s->master, ctx->obj.index);
     return s;
 }
 
@@ -623,15 +594,14 @@ int mmu_stream_destroy(struct mmu_stream *s)
     ASSERT(s->ctx->mmu);
 
     struct mmu *m = s->ctx->mmu;
-    printf("MMU %s: destroy stream %u\r\n", m->name, s->index);
+    printf("MMU %s: destroy stream %u\r\n", m->name, s->obj.index);
 
     REG_WRITE32(ST_REG(s, SMMU__SMR0), 0);
     REG_WRITE32(ST_REG(s, SMMU__S2CR0), 0);
     REG_WRITE32(ST_REG(s, SMMU__CBAR0), 0);
     REG_WRITE32(ST_REG(s, SMMU__CBA2R0), 0);
 
-    s->valid = false;
-    bzero(s, sizeof(*s));
+    OBJECT_FREE(s);
     return 0;
 }
 
