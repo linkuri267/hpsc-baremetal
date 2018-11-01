@@ -114,7 +114,7 @@ void *balloc_alloc(struct balloc *ba, unsigned sz, unsigned align_bits)
         free_blocks[j].addr = free_blocks[i].addr + padding;
         free_blocks[j].size = free_blocks[i].size - padding;
 
-        printf("BLOCK %s: blocks: split block %u (%p,+%x) into %u (%p,+%x) and %u (%p,+%x)\r\n",
+        printf("BALLOC %s: blocks: split block %u (%p,+%x) into %u (%p,+%x) and %u (%p,+%x)\r\n",
                ba->name,
                i, free_blocks[i].addr, free_blocks[i].size,
                i, free_blocks[i].addr, padding,
@@ -129,7 +129,7 @@ void *balloc_alloc(struct balloc *ba, unsigned sz, unsigned align_bits)
     ASSERT(ALIGNED(b, align_bits));
 
 
-    printf("BLOCK %s: balloc_alloc: block %p sz 0x%x from block %u (%p,+%x)\r\n",
+    printf("BALLOC %s: balloc_alloc: block %p sz 0x%x from block %u (%p,+%x)\r\n",
            ba->name, b, sz, i, free_blocks[i].addr, free_blocks[i].size);
 
     free_blocks[i].size -= sz;
