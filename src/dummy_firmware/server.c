@@ -6,7 +6,7 @@
 #include "command.h"
 #include "mailbox-link.h"
 #include "mailbox-map.h"
-#include "busid.h"
+#include "hwinfo.h"
 
 #define CMD_ECHO                        0x1
 #define CMD_NOP                         0x2

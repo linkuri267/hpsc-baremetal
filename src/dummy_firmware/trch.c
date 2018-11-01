@@ -11,7 +11,7 @@
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 #include "mailbox.h"
-#include "busid.h"
+#include "hwinfo.h"
 #include "intc.h"
 
 #define TEST_RTPS

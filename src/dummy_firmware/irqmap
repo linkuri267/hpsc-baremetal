@@ -2,7 +2,7 @@
 
 // We multiplex events from all mailboxes (in one IP block) onto one IRQ pair
 
-#include "mailbox.h"
+#include "hwinfo.h"
 #include "mailbox-map.h"
 
 LSIO_MBOX_IRQ_START+MBOX_HPPS_TRCH_RCV_INT : mbox_hpps_rcv_isr
