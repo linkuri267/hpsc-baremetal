@@ -14,6 +14,7 @@ OBJS = \
        server.o \
        mailbox.o \
        nvic.o \
+       block.o \
        mmu.o \
        reset.o \
        printf.o \
