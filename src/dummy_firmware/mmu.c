@@ -169,7 +169,7 @@ struct mmu {
     struct mmu_stream streams[MAX_STREAMS]; // whether the indexed stream is allocated
 };
 
-static struct mmu mmus[MAX_MMUS];
+static struct mmu mmus[MAX_MMUS] = {0};
 
 static inline unsigned pt_index(struct level *levp, uint64_t vaddr) {
     return ((vaddr >> levp->lsb_bit) & ~(~0 << levp->idx_bits));
