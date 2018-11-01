@@ -2,9 +2,14 @@
 #include <stdbool.h>
 
 #include "printf.h"
-#include "busid.h"
 #include "regops.h"
+#include "block.h"
+#include "panic.h"
 #include "mmu.h"
+
+// References refer to either
+//    ARM System MMU Architecture Specification (IHI0062D), or
+//    ARM Architecture Reference Manual ARMv8 (DDI0487C) (Ch D4)
 
 // TODO: pull from SMMU_IDR1
 #define NUMCB         16
@@ -65,137 +70,237 @@
 #define VMSA8_DESC__NG     0x800
 #define VMSA8_DESC__PXN    (1LL << 53)
 #define VMSA8_DESC__XN     (1LL << 54)
-#define VMSA8_DESC__NEXT_TABLE_MASK 0x0000ffffffff0000 // Figure D4-15, assuming TA[51:48] == 0
+#define VMSA8_DESC_BYTES 8 // each descriptor is 64 bits
 
-// See 2.6.4 in ARM MMU Architecture Specificaion
+// Fig D4-15: desc & ~(~0ULL << 48) & (MASK(granule->page_bits))
+// but since this code runs on Aarch32 and can only address 32-bit ptrs (not
+// 48-bit), we can just truncate the MSB part with a cast.
+#define NEXT_TABLE_PTR(desc, granule) \
+        (uint64_t *)((uint32_t)desc & ~((1 << granule->page_bits)-1)) // Fig D4-15
 
-#define T0SZ 32  // use Table 0 for 0x0 to 0x0000_0000_FFFF_FFFF
-#define TG_KB 64
-
-#define TG_B  (TG_KB << 10)
-
-// The following are from Table 2-11
-#if TG_KB == 4
-#define TG_BITS 12
-#if (25 < T0SZ) && (T0SZ < 33)
-#define TABLE_LVL2_BASE_LSB_BIT (37-T0SZ) // "x"
-#define TABLE_LVL2_IA_LSB_BIT 30
-#define TABLE_LVL2_IA_HSB_BIT (TABLE_LVL2_BASE_LSB_BIT+26) // "y"
-#endif // T0SZ
-
-#elif TG_KB == 16
-#define TG_BITS 14
-#if (28 < T0SZ) && (T0SZ < 38)
-#define TABLE_LVL2_BASE_LSB_BIT (42-T0SZ) // "x"
-#define TABLE_LVL2_IA_LSB_BIT 25
-#define TABLE_LVL2_IA_HSB_BIT (TABLE_LVL2_BASE_LSB_BIT+21) // "y"
-#endif // T0SZ
-
-#elif TG_KB == 64
-#define TG_BITS 16
-#if (22 < T0SZ) && (T0SZ < 34)
-#define TABLE_LVL2_BASE_LSB_BIT (38-T0SZ) // "x"
-#define TABLE_LVL2_IA_LSB_BIT 29
-#define TABLE_LVL2_IA_HSB_BIT (TABLE_LVL2_BASE_LSB_BIT+25) // "y"
-#endif // T0SZ
-#endif // TG_KB
-
-#ifndef TABLE_LVL2_BASE_LSB_BIT
-#error Given T0SZ and TG combination not implemented in this driver
-#endif
-
-#define BLOCK_LVL2_SIZE_BITS TABLE_LVL2_IA_LSB_BIT
-#define BLOCK_LVL2_SIZE (1 << TABLE_LVL2_IA_LSB_BIT)
-
-#define TABLE_LVL2_IDX_BITS (TABLE_LVL2_IA_HSB_BIT-TABLE_LVL2_IA_LSB_BIT+1)
-#define TABLE_LVL2_ALIGN_BITS TABLE_LVL2_BASE_LSB_BIT
-
-#define TABLE_LVL2_ENTRIES (1 << TABLE_LVL2_IDX_BITS) // in number of entries
-#define TABLE_LVL2_SIZE (TABLE_LVL2_ENTRIES * 8) // in bytes
-
-#define TABLE_LVL3_IDX_BITS (TABLE_LVL2_IA_LSB_BIT - TG_BITS)  // also Table D4-9
-#define TABLE_LVL3_ALIGN_BITS TG_BITS
-
-#define TABLE_LVL3_ENTRIES (1 << TABLE_LVL3_IDX_BITS) // in number of entries
-#define TABLE_LVL3_SIZE (TABLE_LVL3_ENTRIES * 8) // in bytes
-
-#define ALIGN_MASK(bits) ((1 << (bits)) - 1)
-#define ALIGN(x, bits) (((x) + ALIGN_MASK(bits)) & ~ALIGN_MASK(bits))
-
-#define CONTEXT_PT_SIZE (TABLE_LVL2_SIZE + TABLE_LVL2_ENTRIES * TABLE_LVL3_SIZE)
+// Use Page Table 0 for 0x0 to 0x0000_0000_FFFF_FFFF
+// NOTE: This the only config supported by this driver
+#define T0SZ 32
 
 #define GL_REG(reg)         ((volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + reg))
 #define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx) + reg))
 #define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx) + reg))
 #define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + reg) + stream)
 
+#define MAX_LEVEL 3
 #define MAX_CONTEXTS 8
 #define MAX_STREAMS  8
 
-static unsigned avail_contexts = 0;
-static uint64_t *pt_addr;
-static uint64_t *pt_lvl2[MAX_CONTEXTS] = {0}; // could be calculated from pt_addr
-static bool streams[MAX_STREAMS]; // indicates whether the stream is allocated or not
+struct level { // constant metadata about a level
+    unsigned pt_size;
+    unsigned pt_entries;
+    unsigned block_size; // size of block or page
+    unsigned idx_bits;
+    unsigned lsb_bit;
+};
 
-int mmu_init(uint32_t ptaddr, unsigned ptspace)
+struct granule { // constant metadata about a translation granule option
+    unsigned tg;
+    unsigned bits_per_level;
+    unsigned bits_in_first_level;
+    unsigned page_bits;
+    unsigned start_level;
+};
+
+struct context {
+    unsigned index; // of context in MMU instance
+    const struct granule *granule;
+    uint64_t *pt; // top-level page table (always allocated)
+    struct level levels[MAX_LEVEL+1];
+};
+
+static const struct granule granules[] = {
+        [MMU_PAGESIZE_4KB]  = {
+                .tg = SMMU__CB_TCR__VMSA8__TG0_4KB,
+                .page_bits = 12,    // Fig D4-15
+                .bits_per_level = 9, // Table D4-9
+#if (25 <= T0SZ) && (T0SZ <= 33)
+                .start_level = 1,    // Table D4-26 (function of T0SZ)
+                .bits_in_first_level = ((37 - T0SZ) + 26) - 30 + 1, // Table D4-26 (function of T0SZ): len([y:lsb])
+#else
+#error Driver does not support given value of T0SZ
+#endif // T0SZ
+        },
+        [MMU_PAGESIZE_16KB]  = {
+                .tg = SMMU__CB_TCR__VMSA8__TG0_16KB,
+                .page_bits = 14,
+                .bits_per_level = 11,
+#if (28 <= T0SZ) && (T0SZ <= 38)
+                .start_level = 2,    // Table D4-26 (function of T0SZ)
+                .bits_in_first_level = ((42 - T0SZ) + 21) - 25 + 1, // Table D4-26 (function of T0SZ): len([y:lsb])
+#else
+#error Driver does not support given value of T0SZ
+#endif // T0SZ
+        },
+        [MMU_PAGESIZE_64KB] = {
+                .tg = SMMU__CB_TCR__VMSA8__TG0_64KB,
+                .page_bits = 16,
+                .bits_per_level = 13,
+#if (22 <= T0SZ) && (T0SZ <= 34)
+                .start_level = 2,    // Table D4-26 (function of T0SZ)
+                .bits_in_first_level = ((38 - T0SZ) + 25) - 29 + 1, // Table D4-26 (function of T0SZ): len([y:lsb])
+#else
+#error Driver does not support given value of T0SZ
+#endif // T0SZ
+        },
+};
+
+static struct context contexts[MAX_CONTEXTS] = {0};
+static bool streams[MAX_STREAMS] = {0}; // whether the indexed stream is allocated
+
+static inline unsigned pt_index(struct level *levp, uint64_t vaddr) {
+    return ((vaddr >> levp->lsb_bit) & ~(~0 << levp->idx_bits));
+}
+
+static uint64_t *pt_alloc(struct context *ctx, unsigned level)
 {
-    // ASSERT(pt_addr & ~(0xffffffff << TABLE_LVL2_ALIGN_BITS) == 0x0) // check alignment of table base address
-    if ((ptaddr & ~(0xffffffff << TABLE_LVL2_ALIGN_BITS)) != 0x0) { // check alignment of table base address
-        printf("ERROR: MMU page table base addr not aligned: %p\r\n", pt_addr);
+    struct level *levp = &ctx->levels[level];
+    printf("MMU: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
+           ctx->index, level, levp->pt_size, ctx->granule->page_bits);
+
+    uint64_t *pt = block_alloc(levp->pt_size, ctx->granule->page_bits);
+    if (!pt)
+        return NULL;
+
+    for (uint32_t i = 0; i < levp->pt_entries; ++i)
+        pt[i] = ~VMSA8_DESC__VALID;
+
+    printf("MMU: pt_alloc: allocated level %u pt at %p, cleared %u entries\r\n",
+           level, pt, levp->pt_entries);
+    return pt;
+}
+
+static int pt_free(struct context *ctx, uint64_t *pt, unsigned level)
+{
+    printf("MMU: pt_free: ctx %u level %u pt %p\r\n", ctx->index, level, pt);
+
+    int rc;
+    struct level *levp = &ctx->levels[level];
+    uint64_t *next_pt;
+    for (unsigned i = 0; i < levp->pt_entries; ++i) {
+        uint64_t desc = pt[i];
+        if (level < MAX_LEVEL && (pt[i] & VMSA8_DESC__VALID) &&
+            ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
+            next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
+            rc = pt_free(ctx, next_pt, level + 1);
+            if (rc)
+                return rc;
+        }
+    }
+    return block_free(pt, levp->pt_size);
+}
+
+static void dump_pt(struct context *ctx, uint64_t *pt, unsigned level)
+{
+    struct level *levp = &ctx->levels[level];
+    for (unsigned index = 0; index < levp->pt_entries; ++index) {
+        uint64_t desc = pt[index];
+        uint64_t *next_pt = NULL;
+        if (desc & VMSA8_DESC__VALID) {
+            const char *type;
+            if (level < MAX_LEVEL &&
+                (desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE) {
+                type = "TABLE";
+                next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
+            } else if ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__PAGE) {
+                type = "PAGE";
+            } else if ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__BLOCK) {
+                type = "BLOCK";
+            } else {
+                type = "INVALID";
+            }
+            printf("MMU:");
+            for (unsigned j = 0; j < level; ++j) // indent
+                printf("    ");
+            printf("L%u: %u: %p: %08x%08x [%s]\r\n",
+                    level, index, &pt[index],
+                    (uint32_t)(desc >> 32), (uint32_t)desc,
+                    type);
+            if (next_pt)
+                dump_pt(ctx, next_pt, level + 1);
+        }
+    }
+}
+
+int mmu_init(uint64_t *ptaddr, unsigned ptspace)
+{
+    printf("MMU: init: addr %p size %x\r\n", ptaddr, ptspace);
+    return block_init(ptaddr, ptspace);
+}
+
+int mmu_context_create(enum mmu_pagesize pgsz)
+{
+    printf("MMU: context_create: pgsz enum %u\r\n", pgsz);
+
+    if (pgsz >= sizeof(granules) / sizeof(granules[0])) {
+        printf("ERROR: MMU: unsupported page size: enum option #%u\r\n", pgsz);
         return -1;
     }
 
-    pt_addr = (uint64_t *)ptaddr;
-    printf("ptspace=%x ctx size %x\r\n", ptspace, CONTEXT_PT_SIZE);
-    avail_contexts = ptspace / CONTEXT_PT_SIZE;
-    avail_contexts = avail_contexts <= MAX_CONTEXTS ? avail_contexts : MAX_CONTEXTS;
-    printf("MMU: have mem for %u contexts\r\n", avail_contexts);
-
-    return 0;
-}
-
-int mmu_context_create()
-{
+    // Alloc context state object
     unsigned ctx = 0;
-    while (ctx < avail_contexts && pt_lvl2[ctx])
+    while (ctx < MAX_CONTEXTS && contexts[ctx].pt)
         ++ctx;
-    if (ctx == avail_contexts) {
+    if (ctx == MAX_CONTEXTS) {
         printf("ERROR: MMU: failed to create context: no more\r\n");
         return -1;
     }
 
-    // Initialize two levels of page tables
-    uint64_t *pt_lvl2_addr = (uint64_t *)ALIGN((uint32_t)pt_addr + ctx * CONTEXT_PT_SIZE,
-                                                TABLE_LVL2_ALIGN_BITS);
-    pt_lvl2[ctx] = pt_lvl2_addr;
+    struct context *ctxp = &contexts[ctx];
+    const struct granule *g = &granules[pgsz];
+    ctxp->granule = g;
+    ctxp->index = ctx;
 
-    uint64_t *pt_lvl3 = (uint64_t *)ALIGN((uint32_t)pt_lvl2_addr + TABLE_LVL2_ENTRIES,
-                                           TABLE_LVL3_ALIGN_BITS);
-    for (uint32_t i = 0; i < TABLE_LVL2_ENTRIES; ++i) {
-        for (uint32_t j = 0; j < TABLE_LVL3_ENTRIES; ++j)
-            pt_lvl3[j] = ~VMSA8_DESC__VALID;
-        pt_lvl2_addr[i] = ~VMSA8_DESC__VALID;
-        pt_lvl3 += TABLE_LVL3_ENTRIES;
+    printf("MMU: context_create: alloced ctx %u start level %u\r\n",
+           ctx, g->start_level);
+
+    for (unsigned level = g->start_level; level <= MAX_LEVEL; ++level) {
+        struct level *levp = &ctxp->levels[level];
+
+        levp->idx_bits = (level == g->start_level) ?
+                g->bits_in_first_level : g->bits_per_level;
+        levp->lsb_bit = g->page_bits + 
+            (MAX_LEVEL - g->start_level - (level - g->start_level)) * g->bits_per_level;
+
+        levp->pt_entries = 1 << levp->idx_bits;
+        levp->pt_size = levp->pt_entries * VMSA8_DESC_BYTES;
+        levp->block_size = 1 << levp->lsb_bit; // value should match Table D4-21
+
+        printf("MMU: context_create: level %u: pt entries %u pt size 0x%x "
+               "block size 0x%x idx bits %u lsb_bit %u\r\n", level,
+               levp->pt_entries, levp->pt_size, levp->block_size,
+               levp->idx_bits, levp->lsb_bit);
     }
 
+    ctxp->pt = pt_alloc(ctxp, ctxp->granule->start_level);
+    if (!ctxp->pt)
+        return -1;
+
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR),
-              (T0SZ << SMMU__CB_TCR__T0SZ__SHIFT) | SMMU__CB_TCR__VMSA8__TG0_64KB);
+              (T0SZ << SMMU__CB_TCR__T0SZ__SHIFT) | g->tg);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), SMMU__CB_TCR2__PASIZE__40BIT);
-    REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), (uint32_t)pt_lvl2_addr);
+    REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), (uint32_t)ctxp->pt);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), SMMU__CB_SCTLR__M);
 
-    printf("MMU: created ctx %u\r\n", ctx);
+    printf("MMU: created ctx %u pt %p entries %u size 0x%x\r\n", ctx, ctxp->pt,
+           ctxp->levels[ctxp->granule->start_level].pt_entries,
+           ctxp->levels[ctxp->granule->start_level].pt_size);
     return ctx;
 }
 
 int mmu_context_destroy(unsigned ctx)
 {
-    if (ctx >= avail_contexts) {
-        printf("ERROR: MMU invalid context index (%u >= %u)\r\n", ctx, avail_contexts);
-        return -1;
-    }
-    if (!pt_lvl2[ctx]) {
-        printf("ERROR: MMU context %u not initialized\r\n", ctx);
+    int rc;
+
+    printf("MMU: context_destroy: ctx %u\r\n", ctx);
+
+    if (ctx >= MAX_CONTEXTS || !contexts[ctx].pt) {
+        printf("ERROR: MMU invalid context index: %u\r\n", ctx);
         return -1;
     }
 
@@ -204,122 +309,223 @@ int mmu_context_destroy(unsigned ctx)
     REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), 0);
 
-    pt_lvl2[ctx] = 0;
+    struct context *ctxp = &contexts[ctx];
+
+    rc = pt_free(ctxp, ctxp->pt, ctxp->granule->start_level);
+
+    // Free context state object
+    ctxp->pt = NULL;
+
     printf("MMU: destroyed ctx %u\r\n", ctx);
-    return 0;
+    return rc;
 }
 
 int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
 {
-    printf("MMU: map: ctx %u 0x%08x%08x -> 0x%08x%08x size = %x\r\n",
-           ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
-           (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
+    printf("MMU: map: ctx %u: 0x%08x%08x -> 0x%08x%08x size = %x\r\n",
+            ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
+            (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
-    if (sz != ALIGN(sz, TG_BITS)) {
-        printf("ERROR: MMU map: region size (%x) not aligned to TG %x (bits %u)\r\n",
-               sz, TG_B, TG_BITS);
+    struct context *ctxp = &contexts[ctx];
+
+    if (!ALIGNED(sz, ctxp->granule->page_bits)) {
+        printf("ERROR: MMU map: region size (0x%x) not aligned to TG of %u bits\r\n",
+                sz, ctxp->granule->page_bits);
         return -1;
     }
 
-    uint64_t *pt_lvl2_addr = pt_lvl2[ctx];
-
     do { // iterate over pages or blocks
-        unsigned index_lvl2 = ((vaddr >> TABLE_LVL2_IA_LSB_BIT) & ~(~0 << TABLE_LVL2_IDX_BITS));
 
-        uint64_t desc_lvl2 = pt_lvl2_addr[index_lvl2];
-        if (vaddr == ALIGN(vaddr, BLOCK_LVL2_SIZE_BITS) && sz >= BLOCK_LVL2_SIZE) {
+        printf("MMU: map: vaddr %08x%08x paddr %08x%08x sz 0x%x\r\n",
+                (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
+                (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
-            desc_lvl2 = (paddr & (~0 << VMSA8_DESC__BITS)) |
-                VMSA8_DESC__VALID |
-                VMSA8_DESC__TYPE__BLOCK |
-                VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
-                VMSA8_DESC__AP__EL0 |
-                VMSA8_DESC__AP__RW |
-                VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
+        unsigned level = ctxp->granule->start_level;
+        struct level *levp = &ctxp->levels[level];
+        uint64_t *pt = ctxp->pt, *next_pt;
+        unsigned index;
+        uint64_t desc;
 
-            vaddr += BLOCK_LVL2_SIZE;
-            paddr += BLOCK_LVL2_SIZE;
-            sz -= BLOCK_LVL2_SIZE;
-        } else { // not aligned to or sized to block size, so use Level 3 PT
+        while (level < MAX_LEVEL) {
 
-            uint64_t *pt_lvl3 = (uint64_t *)ALIGN((uint32_t)pt_lvl2_addr + TABLE_LVL2_SIZE +
-                        index_lvl2 * TABLE_LVL3_SIZE, TABLE_LVL3_ALIGN_BITS);
+            index = pt_index(levp, vaddr);
+            desc = pt[index];
+            next_pt = NULL;
 
-            // Populate the entry in Lvl 2 PT -- if overwritten by a block mapping
-            if (!(desc_lvl2 & VMSA8_DESC__VALID) || 
-                ((desc_lvl2 & VMSA8_DESC__VALID) &&
-                 (desc_lvl2 & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__BLOCK)) {
-                
-                pt_lvl2_addr[index_lvl2] = ((uint64_t)(uint32_t)pt_lvl3 & ~ALIGN_MASK(TABLE_LVL3_ALIGN_BITS)) |
-                    VMSA8_DESC__VALID |
-                    VMSA8_DESC__TYPE__TABLE;
+            printf("MMU: map: walk: level %u pt %p: %u: %p: desc %08x%08x\r\n",
+                    level, pt, index, &pt[index],
+                    (uint32_t)(desc >> 32), (uint32_t)desc);
+
+            if (ALIGNED(vaddr, levp->block_size) && sz >= levp->block_size) {
+                printf("MMU: map: walk: level %u: block of size 0x%x\r\n",
+                        level, levp->block_size);
+                break; // insert a block mapping at this level
             }
 
-            unsigned index_lvl3 = ((vaddr >> TG_BITS) & ~(~0 << TABLE_LVL3_IDX_BITS));
-            pt_lvl3[index_lvl3] = (paddr & (~0 << VMSA8_DESC__BITS)) |
-                VMSA8_DESC__VALID |
-                VMSA8_DESC__TYPE__PAGE |
-                VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
-                VMSA8_DESC__AP__EL0 |
-                VMSA8_DESC__AP__RW |
-                VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
+            if  ((desc & VMSA8_DESC__VALID) &&
+                    ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
+                next_pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+                printf("MMU: map: walk: level %u: next pt %p\r\n", level, next_pt);
+            }
 
-            vaddr += TG_B;
-            paddr += TG_B;
-            sz -= TG_B;
+            if (!next_pt) { // need to alloc a new PT
+                next_pt = pt_alloc(ctxp, level + 1);
+                pt[index] = (uint64_t)(uint32_t)next_pt |
+                    VMSA8_DESC__VALID | VMSA8_DESC__TYPE__TABLE;
+                printf("MMU: map: walk: level %u: pt pointer desc: %u: %p: <- %08x%08x\r\n",
+                        level, index, &pt[index],
+                        (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
+            }
+
+            pt = next_pt;
+            ++level;
+            levp = &ctxp->levels[level];
         }
-   } while (sz > 0);
 
-   for (uint32_t i = 0; i < TABLE_LVL2_ENTRIES; ++i) {
-       uint32_t desc_hi = (uint32_t)((pt_lvl2_addr[i] >> 32) & 0xffffffff);
-       uint32_t desc_lo = (uint32_t)(pt_lvl2_addr[i]         & 0xffffffff);
-       printf("%04u: 0x%p: 0x%08x%08x\r\n", i, &pt_lvl2_addr[i], desc_hi, desc_lo);
-   }
+        index = pt_index(levp, vaddr);
 
-   return 0;
+        if ((pt[index] & VMSA8_DESC__VALID)) {
+            printf("ERROR: MMU: overlapping/overwriting mappings not supported\r\n");
+            // because we don't want to convert block <-> table when a smaller
+            // region is overlapped onto a region mapped as a block, and simply
+            // breaking previously created mappings is confusing semantics.
+            return -1;
+        }
+
+        pt[index] = (paddr & (~0 << VMSA8_DESC__BITS)) |
+            VMSA8_DESC__VALID |
+            (level == MAX_LEVEL ? VMSA8_DESC__TYPE__PAGE : VMSA8_DESC__TYPE__BLOCK) |
+            VMSA8_DESC__PXN | VMSA8_DESC__XN | // no execution permission
+            VMSA8_DESC__AP__EL0 |
+            VMSA8_DESC__AP__RW |
+            VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
+
+        printf("MMU: map: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
+                &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
+
+        vaddr += levp->block_size;
+        paddr += levp->block_size;
+        sz -= levp->block_size;
+    } while (sz > 0);
+
+    dump_pt(ctxp, ctxp->pt, ctxp->granule->start_level);
+    return 0;
 }
 
-int mmu_unmap(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
+int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
 {
-    printf("MMU: unmap: ctx %u 0x%08x%08x -> 0x%08x%08x size = %x\r\n",
-           ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
-           (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
+    printf("MMU: unmap: ctx %u: 0x%08x%08x size 0x%x\r\n",
+            ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr, sz);
 
-    if (sz != ALIGN(sz, TG_BITS)) {
-        printf("ERROR: MMU unmap: region size (%x) not aligned to TG %x (bits %u)\r\n",
-               sz, TG_B, TG_BITS);
+    struct context *ctxp = &contexts[ctx];
+
+    if (!ALIGNED(sz, ctxp->granule->page_bits)) {
+        printf("ERROR: MMU unmap: region size (0x%x) not aligned to TG of %u bits\r\n",
+                sz, ctxp->granule->page_bits);
         return -1;
     }
 
-    uint64_t *pt_lvl2_addr = pt_lvl2[ctx];
+    struct walk_step {
+        uint64_t *pt;
+        unsigned index;
+    };
+    struct walk_step walk[MAX_LEVEL + 1];
 
     do { // iterate over pages or blocks
-        unsigned index_lvl2 = ((vaddr >> TABLE_LVL2_IA_LSB_BIT) & ~(~0 << TABLE_LVL2_IDX_BITS));
 
-        uint64_t desc_lvl2 = pt_lvl2_addr[index_lvl2];
+        int level = ctxp->granule->start_level;
+        struct level *levp = &ctxp->levels[level];
+        uint64_t *pt = contexts[ctx].pt;
+        unsigned index;
+        uint64_t desc;
 
-        if (!(desc_lvl2 & VMSA8_DESC__VALID))
-            continue; // nothing mapped, so nothing to unmap
+        while (level < MAX_LEVEL) {
 
-        if ((desc_lvl2 & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__BLOCK &&
-            (vaddr == ALIGN(vaddr, BLOCK_LVL2_SIZE_BITS) && sz >= BLOCK_LVL2_SIZE)) {
+            index = pt_index(levp, vaddr);
+            desc = pt[index];
 
-            pt_lvl2_addr[index_lvl2] = ~VMSA8_DESC__VALID;
+            printf("MMU: unmap: walk: level %u pt %p %u: %p: %08x%08x\r\n",
+                    level, pt, index, &pt[index],
+                    (uint32_t)(desc >> 32), (uint32_t)desc);
 
-            vaddr += BLOCK_LVL2_SIZE;
-            paddr += BLOCK_LVL2_SIZE;
-            sz -= BLOCK_LVL2_SIZE;
-        } else if ((desc_lvl2 & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE) {
-            uint64_t *pt_lvl3 = (uint64_t *)((uint32_t)(desc_lvl2 & VMSA8_DESC__NEXT_TABLE_MASK));
+            walk[level].pt = pt;
+            walk[level].index = index;
 
-            unsigned index_lvl3 = ((vaddr >> TG_BITS) & ~(~0 << TABLE_LVL3_IDX_BITS));
-            pt_lvl3[index_lvl3] = ~VMSA8_DESC__VALID;
+            if (ALIGNED(vaddr, levp->block_size) && sz >= levp->block_size) {
+                printf("MMU: unmap: walk: level %u: pt %p: block of size 0x%x\r\n",
+                        level, pt, levp->block_size);
+                break; // it's has to be a block mapping at this level, delete it below
+            }
 
-            vaddr += TG_B;
-            paddr += TG_B;
-            sz -= TG_B;
-        } // otherwise it's a block but size is not aligned (the unmap is not symmetrical with map)
+            if  ((desc & VMSA8_DESC__VALID) &&
+                    ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
+                pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+                printf("MMU: unmap: walk: level %u: next pt %p\r\n", level, pt);
+            } else {
+                printf("ERROR: MMU: expected page descriptor does not exist\r\n");
+                return -1;
+            }
+
+            ++level;
+            levp = &ctxp->levels[level];
+        }
+
+        index = pt_index(levp, vaddr);
+
+        if (!(pt[index] & VMSA8_DESC__VALID)) {
+            printf("ERROR: MMU: expected page or block descriptor does not exist\r\n");
+            return -1;
+        }
+
+        printf("MMU: unmap: level %u: desc: %04u: 0x%p: 0x%08x%08x\r\n", level, index,
+                &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
+        pt[index] = ~VMSA8_DESC__VALID;
+        printf("MMU: unmap: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
+                &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
+
+        // Walk the levels backwards and destroy empty tables
+        while (--level >= ctxp->granule->start_level) {
+
+            struct walk_step *step = &walk[level];
+
+            desc = step->pt[step->index];
+
+            ASSERT((desc & VMSA8_DESC__VALID) &&
+                    ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE));
+
+            uint64_t *next_pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+
+            printf("MMU: unmap: backwalk: level %u: %04u: 0x%p: 0x%08x%08x\r\n",
+                    level, step->index, &step->pt[index],
+                    (uint32_t)(desc >> 32), (uint32_t)desc);
+
+            struct level *back_levp = &ctxp->levels[level + 1]; // child level checked for deletion
+            bool pt_empty = true;
+            for (unsigned i = 0; i < back_levp->pt_entries; ++i) {
+                if (next_pt[i] & VMSA8_DESC__VALID) {
+                    pt_empty = false;
+                    break;
+                }
+            }
+            if (!pt_empty)
+                break;
+
+            step->pt[step->index] = ~VMSA8_DESC__VALID;
+
+            printf("MMU: unmap: backwalk: level %u: %04u: 0x%p: <- 0x%08x%08x\r\n",
+                    level, step->index, &step->pt[index],
+                    (uint32_t)(step->pt[step->index] >> 32),
+                    (uint32_t)step->pt[step->index]);
+
+            int rc = pt_free(ctxp, next_pt, level + 1);
+            if (rc)
+                return rc;
+        }
+
+        vaddr += levp->block_size;
+        sz -= levp->block_size;
     } while (sz > 0);
+    dump_pt(ctxp, ctxp->pt, ctxp->granule->start_level);
     return 0;
 }
 
@@ -335,7 +541,7 @@ int mmu_stream_create(unsigned master, unsigned ctx)
     }
     streams[stream] = true;
 
-    printf("stream=%u -> ctx %u\r\n", stream, ctx);
+    printf("MMU: stream %u -> ctx %u\r\n", stream, ctx);
 
     REG_WRITE32(ST_REG(stream, SMMU__SMR0), SMMU__SMR0__VALID | master);
     REG_WRITE32(ST_REG(stream, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx);
@@ -371,10 +577,12 @@ int mmu_stream_destroy(unsigned stream)
 
 void mmu_enable()
 {
+    printf("MMU: enable\r\n");
     REG_CLEAR32(GL_REG(SMMU__SCR0), SMMU__SCR0__CLIENTPD);
 }
 
 void mmu_disable()
 {
+    printf("MMU: disable\r\n");
     REG_SET32(GL_REG(SMMU__SCR0), SMMU__SCR0__CLIENTPD);
 }
