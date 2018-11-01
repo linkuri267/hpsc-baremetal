@@ -9,6 +9,7 @@
 
 #define LSIO_MBOX_BASE ((volatile uint32_t *)0x3000a000)
 #define HPPS_MBOX_BASE ((volatile uint32_t *)0xf9220000)
+#define HPSC_MBOX_AS_SIZE 0x10000 // address allocation in mem map/Qemu DT/Qemu model
 
 #define LSIO_MBOX_IRQ_START         72
 #define HPPS_MBOX_IRQ_START         136
