@@ -15,6 +15,7 @@ OBJS = \
        mailbox.o \
        nvic.o \
        block.o \
+       mem.o \
        mmu.o \
        reset.o \
        printf.o \
