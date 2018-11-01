@@ -51,42 +51,52 @@ int notmain ( void )
 // A macro for testing convenience. Regions don't have to be the same.
 #define MMU_TEST_REGION_SIZE 0x10000
 
-    if (mmu_init((uint64_t *)RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE))
+    struct mmu *rt_mmu = mmu_create("RTPS/TRCH->HPPS",
+		RTPS_TRCH_TO_HPPS_SMMU_BASE);
+    if (!rt_mmu)
 	panic("MMU init");
 
-    int rtps_ctx = mmu_context_create(MMU_PAGESIZE_4KB);
-    if (rtps_ctx < 0)
+    // In this test, we share one allocator for all contexts
+    struct balloc *ba = balloc_create("RT",
+		(uint64_t *)RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE);
+
+    struct mmu_context *rtps_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
+    if (!rtps_ctx)
 	panic("MMU RTPS ctx");
 
     if (mmu_map(rtps_ctx, 0x8e100000,  0x8e100000, MMU_TEST_REGION_SIZE))
 	panic("MMU RTPS identity mapping");
     if (mmu_map(rtps_ctx, 0xc0000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	panic("MMU RTPS window mapping");
-    if (mmu_map(rtps_ctx, (uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
+    if (mmu_map(rtps_ctx, (uint32_t)HPPS_MBOX_BASE,
+			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
 	panic("MMU RTPS mbox mapping");
 
-    unsigned rtps_stream = mmu_stream_create(MASTER_ID_RTPS_CPU0, rtps_ctx);
-    if (rtps_stream < 0)
+    struct mmu_stream *rtps_stream =
+		mmu_stream_create(MASTER_ID_RTPS_CPU0, rtps_ctx);
+    if (!rtps_stream)
 	panic("MMU RTPS stream");
 
-    int trch_ctx = mmu_context_create(MMU_PAGESIZE_4KB);
-    if (trch_ctx < 0)
+    struct mmu_context *trch_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
+    if (!trch_ctx)
 	panic("MMU TRCH ctx");
 
     if (mmu_map(trch_ctx, 0xc0000000, 0x100010000, MMU_TEST_REGION_SIZE))
 	panic("MMU TRCH window mapping");
     if (mmu_map(trch_ctx, 0xc1000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	panic("MMU TRCH window mapping");
-    if (mmu_map(trch_ctx, (uint32_t)HPPS_MBOX_BASE, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
+    if (mmu_map(trch_ctx, (uint32_t)HPPS_MBOX_BASE,
+			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
 	panic("MMU TRCH mbox mapping");
 
-    unsigned trch_stream = mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
-    if (trch_stream < 0)
+    struct mmu_stream *trch_stream =
+		mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
+    if (!trch_stream)
 	panic("MMU TRCH stream");
 
     // In an alternative test, both streams could point to the same context
 
-    mmu_enable();
+    mmu_enable(rt_mmu);
 
 #ifdef TEST_RTPS_TRCH_MMU_ACCESS
     // In this test, TRCH accesses same location as RTPS but via a different virtual addr.
@@ -106,7 +116,7 @@ int notmain ( void )
    // We can't always tear down, because we need to leave the MMU
    // configured for the other subsystems to do their test accesses
 
-    mmu_disable();
+    mmu_disable(rt_mmu);
 
     if (mmu_stream_destroy(rtps_stream))
 	panic("MMU RTPS stream destroy");
@@ -133,6 +143,9 @@ int notmain ( void )
 
     if (mmu_context_destroy(trch_ctx))
 	panic("MMU TRCH ctx destroy");
+
+    if (mmu_destroy(rt_mmu))
+    balloc_destroy(ba);
 #endif // !TEST_RTPS_TRCH_MMU_ACCESS
 #endif // TEST_RTPS_TRCH_MMU
 

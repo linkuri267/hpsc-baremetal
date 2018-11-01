@@ -3,8 +3,9 @@
 
 #include "printf.h"
 #include "regops.h"
-#include "block.h"
+#include "balloc.h"
 #include "panic.h"
+#include "mem.h"
 #include "mmu.h"
 
 // References refer to either
@@ -19,10 +20,9 @@
 // TODO: register map in Qemu model assumes 0x1000 CB size, but minimum allowed by HW is 2 pages (see SMMU_IDR1)
 #define NUMPAGES      1 // (2 * (NUMPAGENDXB + 1))
 
-#define SMMU_BASE      0xf92f0000
 #define SMMU_CB_SIZE   (NUMPAGES * PAGESIZE) // also size of global address space
-#define SMMU_CB_BASE   (SMMU_BASE + 0x10000) // (SMMU_BASE + SMMU_CB_SIZE) // TODO: Qemu model does not agree with HW?
-#define SMMU_CBn_BASE(n)  (SMMU_CB_BASE + (n) * SMMU_CB_SIZE)
+#define SMMU_CB_BASE(base)   ((volatile uint8_t *)base + 0x10000) // (base + SMMU_CB_SIZE) // TODO: Qemu model does not agree with HW?
+#define SMMU_CBn_BASE(base, n)  (SMMU_CB_BASE(base) + (n) * SMMU_CB_SIZE)
 
 #define SMMU__SCR0       0x00000
 #define SMMU__SMR0       0x00800
@@ -82,22 +82,15 @@
 // NOTE: This the only config supported by this driver
 #define T0SZ 32
 
-#define GL_REG(reg)         ((volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + reg))
-#define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx) + reg))
-#define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx) + reg))
-#define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)SMMU_BASE + reg) + stream)
+#define GL_REG(mmu, reg)    ((volatile uint32_t *)((volatile uint8_t *)mmu->base + reg))
+#define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->index) + reg))
+#define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->index) + reg))
+#define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)stream->ctx->mmu->base + reg) + stream->index)
 
-#define MAX_LEVEL 3
-#define MAX_CONTEXTS 8
-#define MAX_STREAMS  8
-
-struct level { // constant metadata about a level
-    unsigned pt_size;
-    unsigned pt_entries;
-    unsigned block_size; // size of block or page
-    unsigned idx_bits;
-    unsigned lsb_bit;
-};
+#define MAX_LEVEL 3 // max level index, not count
+#define MAX_CONTEXTS 8 // TODO: take from ID reg
+#define MAX_STREAMS  8 // TODO: take from ID reg
+#define MAX_MMUS 8
 
 struct granule { // constant metadata about a translation granule option
     unsigned tg;
@@ -107,13 +100,7 @@ struct granule { // constant metadata about a translation granule option
     unsigned start_level;
 };
 
-struct context {
-    unsigned index; // of context in MMU instance
-    const struct granule *granule;
-    uint64_t *pt; // top-level page table (always allocated)
-    struct level levels[MAX_LEVEL+1];
-};
-
+// Reference meta-info about HW that we have to index at runtime
 static const struct granule granules[] = {
         [MMU_PAGESIZE_4KB]  = {
                 .tg = SMMU__CB_TCR__VMSA8__TG0_4KB,
@@ -150,34 +137,74 @@ static const struct granule granules[] = {
         },
 };
 
-static struct context contexts[MAX_CONTEXTS] = {0};
-static bool streams[MAX_STREAMS] = {0}; // whether the indexed stream is allocated
+struct level { // constant metadata about a level
+    unsigned pt_size;
+    unsigned pt_entries;
+    unsigned block_size; // size of block or page
+    unsigned idx_bits;
+    unsigned lsb_bit;
+};
+
+struct mmu_context {
+    bool valid; // for strogin this object in an array
+    struct mmu *mmu;
+    unsigned index; // of context in MMU instance
+    struct balloc *balloc;
+    const struct granule *granule;
+    uint64_t *pt; // top-level page table (always allocated)
+    struct level levels[MAX_LEVEL+1]; // const after first setting
+};
+
+struct mmu_stream {
+    bool valid; // for stroring this object in an array
+    unsigned index; // of stream in MMU instance
+    unsigned master; // we don't strictly need to keep this state in SW
+    struct mmu_context *ctx;
+};
+
+struct mmu {
+    bool valid; // for storing this object in an array
+    const char *name; // for pretty printing
+    volatile uint32_t *base;
+    struct mmu_context contexts[MAX_CONTEXTS];
+    struct mmu_stream streams[MAX_STREAMS]; // whether the indexed stream is allocated
+};
+
+static struct mmu mmus[MAX_MMUS];
 
 static inline unsigned pt_index(struct level *levp, uint64_t vaddr) {
     return ((vaddr >> levp->lsb_bit) & ~(~0 << levp->idx_bits));
 }
 
-static uint64_t *pt_alloc(struct context *ctx, unsigned level)
+static uint64_t *pt_alloc(struct mmu_context *ctx, unsigned level)
 {
-    struct level *levp = &ctx->levels[level];
-    printf("MMU: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
-           ctx->index, level, levp->pt_size, ctx->granule->page_bits);
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
+    struct mmu *m = ctx->mmu;
 
-    uint64_t *pt = block_alloc(levp->pt_size, ctx->granule->page_bits);
+    struct level *levp = &ctx->levels[level];
+    printf("MMU %s: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
+           m->name, ctx->index, level, levp->pt_size, ctx->granule->page_bits);
+
+    uint64_t *pt = balloc_alloc(ctx->balloc, levp->pt_size, ctx->granule->page_bits);
     if (!pt)
         return NULL;
 
     for (uint32_t i = 0; i < levp->pt_entries; ++i)
         pt[i] = ~VMSA8_DESC__VALID;
 
-    printf("MMU: pt_alloc: allocated level %u pt at %p, cleared %u entries\r\n",
-           level, pt, levp->pt_entries);
+    printf("MMU %s: pt_alloc: allocated level %u pt at %p, cleared %u entries\r\n",
+           m->name, level, pt, levp->pt_entries);
     return pt;
 }
 
-static int pt_free(struct context *ctx, uint64_t *pt, unsigned level)
+static int pt_free(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 {
-    printf("MMU: pt_free: ctx %u level %u pt %p\r\n", ctx->index, level, pt);
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
+    struct mmu *m = ctx->mmu;
+    printf("MMU %s: pt_free: ctx %u level %u pt %p\r\n",
+           m->name, ctx->index, level, pt);
 
     int rc;
     struct level *levp = &ctx->levels[level];
@@ -192,11 +219,15 @@ static int pt_free(struct context *ctx, uint64_t *pt, unsigned level)
                 return rc;
         }
     }
-    return block_free(pt, levp->pt_size);
+    return balloc_free(ctx->balloc, pt, levp->pt_size);
 }
 
-static void dump_pt(struct context *ctx, uint64_t *pt, unsigned level)
+static void dump_pt(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 {
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
+    struct mmu *m = ctx->mmu;
+
     struct level *levp = &ctx->levels[level];
     for (unsigned index = 0; index < levp->pt_entries; ++index) {
         uint64_t desc = pt[index];
@@ -214,7 +245,7 @@ static void dump_pt(struct context *ctx, uint64_t *pt, unsigned level)
             } else {
                 type = "INVALID";
             }
-            printf("MMU:");
+            printf("MMU %s:", m->name);
             for (unsigned j = 0; j < level; ++j) // indent
                 printf("    ");
             printf("L%u: %u: %p: %08x%08x [%s]\r\n",
@@ -227,40 +258,65 @@ static void dump_pt(struct context *ctx, uint64_t *pt, unsigned level)
     }
 }
 
-int mmu_init(uint64_t *ptaddr, unsigned ptspace)
+struct mmu *mmu_create(const char *name, volatile uint32_t *base)
 {
-    printf("MMU: init: addr %p size %x\r\n", ptaddr, ptspace);
-    return block_init(ptaddr, ptspace);
+    unsigned idx = 0;
+    while (idx < MAX_MMUS && mmus[idx].valid)
+        ++idx;
+    if (idx == MAX_MMUS) {
+        printf("ERROR: MMU: create failed: no space\r\n");
+        return NULL;
+    }
+    struct mmu *m = &mmus[idx];
+    bzero(m, sizeof(*m));
+    m->valid = true;
+    m->name = name;
+    m->base = base;
+    printf("MMU %s: created\r\n", m->name);
+    return m;
 }
 
-int mmu_context_create(enum mmu_pagesize pgsz)
+int mmu_destroy(struct mmu *m)
 {
-    printf("MMU: context_create: pgsz enum %u\r\n", pgsz);
+    ASSERT(m);
+    printf("MMU %s: destroy\r\n", m->name);
+    // TODO: cleanup any streams/contexts left by the user
+    m->valid = false;
+    bzero(m, sizeof(*m));
+    return 0;
+}
 
-    if (pgsz >= sizeof(granules) / sizeof(granules[0])) {
-        printf("ERROR: MMU: unsupported page size: enum option #%u\r\n", pgsz);
-        return -1;
-    }
+struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mmu_pagesize pgsz)
+{
+    ASSERT(m);
+    ASSERT(ba);
+    ASSERT(pgsz < sizeof(granules) / sizeof(granules[0]));
+
+    printf("MMU: %s: context_create: pgsz enum %u\r\n", m->name, pgsz);
 
     // Alloc context state object
-    unsigned ctx = 0;
-    while (ctx < MAX_CONTEXTS && contexts[ctx].pt)
-        ++ctx;
-    if (ctx == MAX_CONTEXTS) {
+    unsigned idx = 0;
+    while (idx < MAX_CONTEXTS && m->contexts[idx].valid)
+        ++idx;
+    if (idx == MAX_CONTEXTS) {
         printf("ERROR: MMU: failed to create context: no more\r\n");
-        return -1;
+        return NULL;
     }
+    struct mmu_context *ctx = &m->contexts[idx];
+    bzero(ctx, sizeof(*ctx));
+    ctx->valid = true;
+    ctx->index = idx;
+    ctx->mmu = m;
 
-    struct context *ctxp = &contexts[ctx];
     const struct granule *g = &granules[pgsz];
-    ctxp->granule = g;
-    ctxp->index = ctx;
+    ctx->granule = g;
+    ctx->balloc = ba;
 
     printf("MMU: context_create: alloced ctx %u start level %u\r\n",
-           ctx, g->start_level);
+           ctx->index, g->start_level);
 
     for (unsigned level = g->start_level; level <= MAX_LEVEL; ++level) {
-        struct level *levp = &ctxp->levels[level];
+        struct level *levp = &ctx->levels[level];
 
         levp->idx_bits = (level == g->start_level) ?
                 g->bits_in_first_level : g->bits_per_level;
@@ -277,60 +333,60 @@ int mmu_context_create(enum mmu_pagesize pgsz)
                levp->idx_bits, levp->lsb_bit);
     }
 
-    ctxp->pt = pt_alloc(ctxp, ctxp->granule->start_level);
-    if (!ctxp->pt)
-        return -1;
+    ctx->pt = pt_alloc(ctx, ctx->granule->start_level);
+    if (!ctx->pt) {
+        // TODO: free context object
+        return NULL;
+    }
 
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR),
               (T0SZ << SMMU__CB_TCR__T0SZ__SHIFT) | g->tg);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), SMMU__CB_TCR2__PASIZE__40BIT);
-    REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), (uint32_t)ctxp->pt);
+    REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), (uint32_t)ctx->pt);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), SMMU__CB_SCTLR__M);
 
-    printf("MMU: created ctx %u pt %p entries %u size 0x%x\r\n", ctx, ctxp->pt,
-           ctxp->levels[ctxp->granule->start_level].pt_entries,
-           ctxp->levels[ctxp->granule->start_level].pt_size);
+    printf("MMU: created ctx %u pt %p entries %u size 0x%x\r\n",
+           ctx->index, ctx->pt,
+           ctx->levels[ctx->granule->start_level].pt_entries,
+           ctx->levels[ctx->granule->start_level].pt_size);
     return ctx;
 }
 
-int mmu_context_destroy(unsigned ctx)
+int mmu_context_destroy(struct mmu_context *ctx)
 {
     int rc;
 
-    printf("MMU: context_destroy: ctx %u\r\n", ctx);
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
 
-    if (ctx >= MAX_CONTEXTS || !contexts[ctx].pt) {
-        printf("ERROR: MMU invalid context index: %u\r\n", ctx);
-        return -1;
-    }
+    struct mmu *m = ctx->mmu;
+    printf("MMU %s: context_destroy: ctx %u\r\n", m->name, ctx->index);
 
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), 0);
     REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), 0);
 
-    struct context *ctxp = &contexts[ctx];
-
-    rc = pt_free(ctxp, ctxp->pt, ctxp->granule->start_level);
+    rc = pt_free(ctx, ctx->pt, ctx->granule->start_level);
 
     // Free context state object
-    ctxp->pt = NULL;
-
-    printf("MMU: destroyed ctx %u\r\n", ctx);
+    ctx->valid = false;
+    bzero(ctx, sizeof(*ctx));
     return rc;
 }
 
-int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
+int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
 {
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
+
     printf("MMU: map: ctx %u: 0x%08x%08x -> 0x%08x%08x size = %x\r\n",
-            ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
+            ctx->index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
             (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
-    struct context *ctxp = &contexts[ctx];
-
-    if (!ALIGNED(sz, ctxp->granule->page_bits)) {
+    if (!ALIGNED(sz, ctx->granule->page_bits)) {
         printf("ERROR: MMU map: region size (0x%x) not aligned to TG of %u bits\r\n",
-                sz, ctxp->granule->page_bits);
+                sz, ctx->granule->page_bits);
         return -1;
     }
 
@@ -340,9 +396,9 @@ int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
                 (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
                 (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
-        unsigned level = ctxp->granule->start_level;
-        struct level *levp = &ctxp->levels[level];
-        uint64_t *pt = ctxp->pt, *next_pt;
+        unsigned level = ctx->granule->start_level;
+        struct level *levp = &ctx->levels[level];
+        uint64_t *pt = ctx->pt, *next_pt;
         unsigned index;
         uint64_t desc;
 
@@ -364,12 +420,12 @@ int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
 
             if  ((desc & VMSA8_DESC__VALID) &&
                     ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
-                next_pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+                next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
                 printf("MMU: map: walk: level %u: next pt %p\r\n", level, next_pt);
             }
 
             if (!next_pt) { // need to alloc a new PT
-                next_pt = pt_alloc(ctxp, level + 1);
+                next_pt = pt_alloc(ctx, level + 1);
                 pt[index] = (uint64_t)(uint32_t)next_pt |
                     VMSA8_DESC__VALID | VMSA8_DESC__TYPE__TABLE;
                 printf("MMU: map: walk: level %u: pt pointer desc: %u: %p: <- %08x%08x\r\n",
@@ -379,7 +435,7 @@ int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
 
             pt = next_pt;
             ++level;
-            levp = &ctxp->levels[level];
+            levp = &ctx->levels[level];
         }
 
         index = pt_index(levp, vaddr);
@@ -408,20 +464,21 @@ int mmu_map(unsigned ctx, uint64_t vaddr, uint64_t paddr, unsigned sz)
         sz -= levp->block_size;
     } while (sz > 0);
 
-    dump_pt(ctxp, ctxp->pt, ctxp->granule->start_level);
+    dump_pt(ctx, ctx->pt, ctx->granule->start_level);
     return 0;
 }
 
-int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
+int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
 {
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
+
     printf("MMU: unmap: ctx %u: 0x%08x%08x size 0x%x\r\n",
-            ctx, (uint32_t)(vaddr >> 32), (uint32_t)vaddr, sz);
+            ctx->index, (uint32_t)(vaddr >> 32), (uint32_t)vaddr, sz);
 
-    struct context *ctxp = &contexts[ctx];
-
-    if (!ALIGNED(sz, ctxp->granule->page_bits)) {
+    if (!ALIGNED(sz, ctx->granule->page_bits)) {
         printf("ERROR: MMU unmap: region size (0x%x) not aligned to TG of %u bits\r\n",
-                sz, ctxp->granule->page_bits);
+                sz, ctx->granule->page_bits);
         return -1;
     }
 
@@ -433,9 +490,9 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
 
     do { // iterate over pages or blocks
 
-        int level = ctxp->granule->start_level;
-        struct level *levp = &ctxp->levels[level];
-        uint64_t *pt = contexts[ctx].pt;
+        int level = ctx->granule->start_level;
+        struct level *levp = &ctx->levels[level];
+        uint64_t *pt = ctx->pt;
         unsigned index;
         uint64_t desc;
 
@@ -459,7 +516,7 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
 
             if  ((desc & VMSA8_DESC__VALID) &&
                     ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
-                pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+                pt = NEXT_TABLE_PTR(desc, ctx->granule);
                 printf("MMU: unmap: walk: level %u: next pt %p\r\n", level, pt);
             } else {
                 printf("ERROR: MMU: expected page descriptor does not exist\r\n");
@@ -467,7 +524,7 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
             }
 
             ++level;
-            levp = &ctxp->levels[level];
+            levp = &ctx->levels[level];
         }
 
         index = pt_index(levp, vaddr);
@@ -484,7 +541,7 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
                 &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
 
         // Walk the levels backwards and destroy empty tables
-        while (--level >= ctxp->granule->start_level) {
+        while (--level >= ctx->granule->start_level) {
 
             struct walk_step *step = &walk[level];
 
@@ -493,13 +550,13 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
             ASSERT((desc & VMSA8_DESC__VALID) &&
                     ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE));
 
-            uint64_t *next_pt = NEXT_TABLE_PTR(desc, ctxp->granule);
+            uint64_t *next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
 
             printf("MMU: unmap: backwalk: level %u: %04u: 0x%p: 0x%08x%08x\r\n",
                     level, step->index, &step->pt[index],
                     (uint32_t)(desc >> 32), (uint32_t)desc);
 
-            struct level *back_levp = &ctxp->levels[level + 1]; // child level checked for deletion
+            struct level *back_levp = &ctx->levels[level + 1]; // child level checked for deletion
             bool pt_empty = true;
             for (unsigned i = 0; i < back_levp->pt_entries; ++i) {
                 if (next_pt[i] & VMSA8_DESC__VALID) {
@@ -517,7 +574,7 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
                     (uint32_t)(step->pt[step->index] >> 32),
                     (uint32_t)step->pt[step->index]);
 
-            int rc = pt_free(ctxp, next_pt, level + 1);
+            int rc = pt_free(ctx, next_pt, level + 1);
             if (rc)
                 return rc;
         }
@@ -525,64 +582,69 @@ int mmu_unmap(unsigned ctx, uint64_t vaddr, unsigned sz)
         vaddr += levp->block_size;
         sz -= levp->block_size;
     } while (sz > 0);
-    dump_pt(ctxp, ctxp->pt, ctxp->granule->start_level);
+    dump_pt(ctx, ctx->pt, ctx->granule->start_level);
     return 0;
 }
 
-int mmu_stream_create(unsigned master, unsigned ctx)
+struct mmu_stream *mmu_stream_create(unsigned master, struct mmu_context *ctx)
 {
-    int stream = 0;
+    ASSERT(ctx);
+    ASSERT(ctx->mmu);
 
-    while (stream < MAX_STREAMS && streams[stream])
-        ++stream;
-    if (stream == MAX_STREAMS) {
-        printf("ERROR: failed to setup stream: no more match registers\r\n");
-        return -1;
+    struct mmu *m = ctx->mmu;
+    unsigned idx = 0;
+    while (idx < MAX_STREAMS && m->streams[idx].valid)
+        ++idx;
+    if (idx== MAX_STREAMS) {
+        printf("ERROR: MMU %s: failed to create stream: no more match registers\r\n");
+        return NULL;
     }
-    streams[stream] = true;
+    struct mmu_stream *s = &m->streams[idx];
+    bzero(s, sizeof(*s));
+    s->valid = true;
+    s->index = idx;
+    s->ctx = ctx;
+    s->master = master;
 
-    printf("MMU: stream %u -> ctx %u\r\n", stream, ctx);
+    REG_WRITE32(ST_REG(s, SMMU__SMR0), SMMU__SMR0__VALID | master);
+    REG_WRITE32(ST_REG(s, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx->index);
+    REG_WRITE32(ST_REG(s, SMMU__CBAR0), SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS);
+    REG_WRITE32(ST_REG(s, SMMU__CBA2R0), SMMU__CBA2R0__VA64);
 
-    REG_WRITE32(ST_REG(stream, SMMU__SMR0), SMMU__SMR0__VALID | master);
-    REG_WRITE32(ST_REG(stream, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx);
-    REG_WRITE32(ST_REG(stream, SMMU__CBAR0), SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS);
-    REG_WRITE32(ST_REG(stream, SMMU__CBA2R0), SMMU__CBA2R0__VA64);
-
-    printf("MMU: created stream %u -> ctx %u\r\n", stream, ctx);
-    return stream;
+    printf("MMU %s: created stream %u: 0x%x -> ctx %u\r\n",
+           m->name, s->index, s->master, ctx->index);
+    return s;
 }
 
-int mmu_stream_destroy(unsigned stream)
+int mmu_stream_destroy(struct mmu_stream *s)
 {
-    if (stream >= MAX_STREAMS) {
-        printf("ERROR: MMU: stream destroy: invalid stream %u >= %u\r\n",
-               stream, MAX_STREAMS);
-        return -1;
-    }
-    if (!streams[stream]) {
-        printf("ERROR: MMU: stream destroy: stream %u does not exist\r\n",
-               stream);
-        return -1;
-    }
-    streams[stream] = false;
+    ASSERT(s);
+    ASSERT(s->ctx);
+    ASSERT(s->ctx->mmu);
 
-    REG_WRITE32(ST_REG(stream, SMMU__SMR0), 0);
-    REG_WRITE32(ST_REG(stream, SMMU__S2CR0), 0);
-    REG_WRITE32(ST_REG(stream, SMMU__CBAR0), 0);
-    REG_WRITE32(ST_REG(stream, SMMU__CBA2R0), 0);
+    struct mmu *m = s->ctx->mmu;
+    printf("MMU %s: destroy stream %u\r\n", m->name, s->index);
 
-    printf("MMU: destroyed stream %u\r\n", stream);
+    REG_WRITE32(ST_REG(s, SMMU__SMR0), 0);
+    REG_WRITE32(ST_REG(s, SMMU__S2CR0), 0);
+    REG_WRITE32(ST_REG(s, SMMU__CBAR0), 0);
+    REG_WRITE32(ST_REG(s, SMMU__CBA2R0), 0);
+
+    s->valid = false;
+    bzero(s, sizeof(*s));
     return 0;
 }
 
-void mmu_enable()
+void mmu_enable(struct mmu *m)
 {
-    printf("MMU: enable\r\n");
-    REG_CLEAR32(GL_REG(SMMU__SCR0), SMMU__SCR0__CLIENTPD);
+    ASSERT(m);
+    printf("MMU %s: enable\r\n", m->name);
+    REG_CLEAR32(GL_REG(m, SMMU__SCR0), SMMU__SCR0__CLIENTPD);
 }
 
-void mmu_disable()
+void mmu_disable(struct mmu *m)
 {
-    printf("MMU: disable\r\n");
-    REG_SET32(GL_REG(SMMU__SCR0), SMMU__SCR0__CLIENTPD);
+    ASSERT(m);
+    printf("MMU %s: disable\r\n", m->name);
+    REG_SET32(GL_REG(m, SMMU__SCR0), SMMU__SCR0__CLIENTPD);
 }
