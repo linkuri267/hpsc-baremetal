@@ -1,0 +1,17 @@
+# GNU ARM Embedded Toolchain (min version required for RTPS: 7-2018-q2-update)
+# Either add toolchain install dir to PATH or override this var
+ARM_NONE_EABI ?= arm-none-eabi
+
+BLDDIR = bld
+SUBDIRS = \
+	lib \
+	drivers \
+	plat \
+
+define dirrule
+$(BLDDIR)/$(1):
+	mkdir -p $$@
+endef
+$(foreach d,$(SUBDIRS),$(eval $(call dirrule,$(d))))
+
+dirs: | $(addprefix $(BLDDIR)/,$(SUBDIRS))

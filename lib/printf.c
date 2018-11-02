@@ -50,14 +50,17 @@ void _putchar(char);
 #define PRINTF_FTOA_BUFFER_SIZE    32U
 
 // define this to support floating point (%f)
-#define PRINTF_SUPPORT_FLOAT
+// #define PRINTF_SUPPORT_FLOAT
 
 // define this to support long long types (%llu or %p)
 // #define PRINTF_SUPPORT_LONG_LONG
 
+// enable the workaround for float/double args on Aarch32 (see printf.h)
+// #define PRINTF_NO_DOUBLE_WORKAROUND
+
 // define this to support the ptrdiff_t type (%t)
 // ptrdiff_t is normally defined in <stddef.h> as long or long long type
-#define PRINTF_SUPPORT_PTRDIFF_T
+// #define PRINTF_SUPPORT_PTRDIFF_T
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -574,10 +577,20 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
       }
 #if defined(PRINTF_SUPPORT_FLOAT)
       case 'f' :
-      case 'F' :
-        idx = _ftoa(out, buffer, idx, maxlen, va_arg(va, double), precision, width, flags);
+      case 'F' : {
+#if defined(PRINTF_NO_DOUBLE_WORKAROUND)
+        // Passing double arg (also float, because float gets upcasted to
+        // double by vararg semantics) is broken on Aarch32, so we work around
+        // it by passing a float args as unsigned (see FLOAT_ARG() in printf.h).
+        unsigned vu = va_arg(va, unsigned);
+        float v = *(float *)&vu; 
+#else // !PRINTF_NO_DOUBLE_WORKAROUND
+        double v = va_arg(va, double);
+#endif // !PRINTF_NO_DOUBLE_WORKAROUND
+        idx = _ftoa(out, buffer, idx, maxlen, v, precision, width, flags);
         format++;
         break;
+      }
 #endif  // PRINTF_SUPPORT_FLOAT
       case 'c' : {
         unsigned int l = 1U;

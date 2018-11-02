@@ -2,6 +2,7 @@
 
 #include "printf.h"
 #include "mailbox.h"
+#include "server.h"
 
 #include "command.h"
 
