@@ -1,3 +1,0 @@
-[submodule "src/dummy_firmware/libmspprintf"]
-	path = src/dummy_firmware/libmspprintf
-	url = https://github.com/acolinisi/libmspprintf
