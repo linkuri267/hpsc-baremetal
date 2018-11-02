@@ -10,7 +10,7 @@ int snprintf(char* buffer, size_t count, const char* format, ...);
 int vsnprintf(char* buffer, size_t count, const char* format, va_list va);
 int fctprintf(void (*out)(char character, void* arg), void* arg, const char* format, ...);
 
-// Workaround for GCC bug with variadic arguments for ARMv8 Aarch32
+// Workaround for GCC bug with variadic arguments for ARMv8 Aarch32 and ARMv7
 // Define PRINTF_NO_DOUBLE_WORKAROUND to enable the workaround
 // Wrap float arguments to printf with this macro like so:
 //    float f = 4.2;

@@ -580,8 +580,8 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
       case 'F' : {
 #if defined(PRINTF_NO_DOUBLE_WORKAROUND)
         // Passing double arg (also float, because float gets upcasted to
-        // double by vararg semantics) is broken on Aarch32, so we work around
-        // it by passing a float args as unsigned (see FLOAT_ARG() in printf.h).
+        // double by vararg semantics) is broken on Aarch32,armv7. Work around
+        // by passing a float args as unsigned (see FLOAT_ARG() in printf.h).
         unsigned vu = va_arg(va, unsigned);
         float v = *(float *)&vu; 
 #else // !PRINTF_NO_DOUBLE_WORKAROUND
