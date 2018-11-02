@@ -18,8 +18,8 @@
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 
-// #define TEST_FLOAT
-// #define TEST_SORT
+#define TEST_FLOAT
+#define TEST_SORT
 #define TEST_RTPS_TRCH_MAILBOX
 #define TEST_HPPS_RTPS_MAILBOX
 // #define TEST_SOFT_RESET

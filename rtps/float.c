@@ -23,9 +23,10 @@ bool float_test()
     printf("Floating point calculation using the software floating point library (no FPU)...\r\n");
 #endif
     float ref = 0.937500;
-    printf("Float result should be: %f <--- should be 0.937500 if printf works\r\n", FLOAT_ARG(ref));
+    printf("Float result should be:  %f\r\n", FLOAT_ARG(ref));
+    printf(" (printf check)        ^=0.937500\r\n");
     float r = calculate(1.5f, 2.5f);
-    printf("Float result is        %f\r\n", FLOAT_ARG(r));
+    printf("Float result is          %f\r\n", FLOAT_ARG(r));
     if (r == ref) printf("Equal\r\n");
     else printf("Not Equal\r\n");
 }
