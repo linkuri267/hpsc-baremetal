@@ -3,16 +3,22 @@
 import argparse
 import re
 import sys
+import os
 
-def parse_defs(fname):
+def parse_defs(fname, incpaths):
     defs = {}
-    for line in open(fname):
-        line = line.strip()
-        m = re.match(r'^#define\s+(\w+)\s+(\w+)', line)
-        if m:
-            key = m.group(1)
-            val = m.group(2)
-            defs[key] = val
+    for incpath in ['.'] + incpaths:
+        try:
+            for line in open(os.path.join(incpath, fname)):
+                line = line.strip()
+                m = re.match(r'^#define\s+(\w+)\s+(\w+)', line)
+                if m:
+                    key = m.group(1)
+                    val = m.group(2)
+                    defs[key] = val
+            break # first found file only
+        except FileNotFoundError:
+                pass
     return defs
 
 def expand_macros(defs, s):
@@ -20,7 +26,7 @@ def expand_macros(defs, s):
         s = s.replace(v, defs[v])
     return s
 
-def parse_irqmap(fname):
+def parse_irqmap(fname, incpaths):
     d = {}
     defs = {}
     for line in open(fname):
@@ -30,7 +36,7 @@ def parse_irqmap(fname):
         m = re.match(r'^#include ["<]([^">]+)[>"]', line)
         if m:
                 incfile = m.group(1)
-                defs.update(parse_defs(incfile))
+                defs.update(parse_defs(incfile, incpaths))
                 continue
 
         line = expand_macros(defs, line)
@@ -57,6 +63,8 @@ parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
 parser.add_argument('--irqmap',
     help='IRQ to ISR handler map file')
+parser.add_argument('--include-dir', '-I', nargs='*', default=['.'],
+    help='Add path where to look for included files')
 parser.add_argument('--verbose', '-v', action='store_true',
     help='Print IRQ map')
 parser.add_argument('out_asm',
@@ -65,7 +73,7 @@ parser.add_argument('out_c',
     help='Output file with generated assembly source')
 args = parser.parse_args()
 
-irqmap = parse_irqmap(args.irqmap)
+irqmap = parse_irqmap(args.irqmap, args.include_dir)
 if args.verbose:
     for irq in irqmap:
         print("%4u: %s" % (irq, irqmap[irq]))
