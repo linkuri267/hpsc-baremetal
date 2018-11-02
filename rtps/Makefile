@@ -70,7 +70,7 @@ $(BLDDIR)/%.o : %.s | dirs
 $(BLDDIR)/%.o : %.c | dirs
 	$(ARM_NONE_EABI)-gcc -MMD -c $(CCOPT) -o $@ $<
 
-$(BLDDIR)/$(TARGET) : startup.ld $(addprefix $(BLDDIR)/,$(OBJS))
+$(BLDDIR)/$(TARGET) : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
 	$(ARM_NONE_EABI)-gcc -T $^ -o $@ $(LDFLAGS)
 
 %.dis.s: %.o
