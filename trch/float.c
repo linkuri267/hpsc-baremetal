@@ -81,6 +81,8 @@ bool float_test()
         rc = false;
     }
 
-    printf("%f = (%f + %f) / %f\r\n", c, a, b, b);
+    printf("%f = (%f + %f) / %f\r\n",
+           FLOAT_ARG(c), FLOAT_ARG(a),
+           FLOAT_ARG(b), FLOAT_ARG(b));
     return rc;
 }
