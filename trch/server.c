@@ -8,9 +8,6 @@
 #include "mailbox-map.h"
 #include "hwinfo.h"
 
-#define CMD_ECHO                        0x1
-#define CMD_NOP                         0x2
-#define CMD_RESET_HPPS                  0x3
 #define CMD_MBOX_LINK_CONNECT           0x4
 #define CMD_MBOX_LINK_DISCONNECT        0x5
 #define CMD_MBOX_LINK_ECHO              0x6
@@ -41,8 +38,11 @@ static void linkp_free(int index)
 static const char *cmd_to_str(unsigned cmd)
 {
     switch (cmd) {
-        case CMD_ECHO:                  return "ECHO";
         case CMD_NOP:                   return "NOP";
+        case CMD_PING:                  return "PING";
+        case CMD_PONG:                  return "PONG";
+        case CMD_WATCHDOG_TIMEOUT:      return "WATCHDOG_TIMEOUT";
+        case CMD_LIFECYCLE:             return "LIFECYCLE";
         case CMD_RESET_HPPS:            return "RESET_HPPS";
         case CMD_MBOX_LINK_CONNECT:     return "MBOX_LINK_CONNECT";
         case CMD_MBOX_LINK_DISCONNECT:  return "MBOX_LINK_DISCONNECT";
@@ -56,13 +56,25 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
     unsigned i;
     printf("Processing CMD: %s\r\n", cmd_to_str(cmd->cmd));
     switch (cmd->cmd) {
-        case CMD_ECHO:
-            printf("ECHO %x...\r\n", cmd->arg[0]);
+        case CMD_NOP:
+            // do nothing and reply nothing command
+            return 0;
+        case CMD_PING:
+            printf("PING %x...\r\n", cmd->arg[0]);
             for (i = 0; i < MAX_CMD_ARG_LEN && i < reply_size; ++i)
                 reply[i] = cmd->arg[i];
             return i;
-        case CMD_NOP:
-            // do nothing and reply nothing command
+        case CMD_PONG:
+            printf("PONG %x...\r\n", cmd->arg[0]);
+            return 0;
+        case CMD_WATCHDOG_TIMEOUT:
+            printf("WATCHDOG_TIMEOUT %x...\r\n", cmd->arg[0]);
+            printf("\tCPU = %u\r\n", (unsigned int) cmd->arg[0]);
+            return 0;
+        case CMD_LIFECYCLE:
+            printf("LIFECYCLE %x...\r\n", cmd->arg[0]);
+            printf("\tstatus = %s\r\n", cmd->arg[0] ? "DOWN" : "UP");
+            printf("\tinfo = '%s'\r\n", (char*) &cmd->arg[1]);
             return 0;
         case CMD_RESET_HPPS:
             reset_component(COMPONENT_HPPS);
@@ -127,7 +139,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             struct mbox_link *link = links[index];
             uint32_t arg[] = { 43 };
             uint32_t reply[1];
-            int rc = mbox_link_request(link, CMD_ECHO, arg, 1, reply, 1 + 1 /* cmd + arg */);
+            int rc = mbox_link_request(link, CMD_PING, arg, 1, reply, 1 + 1 /* cmd + arg */);
             if (rc) {
                 reply[0] = -2;
                 return 1;

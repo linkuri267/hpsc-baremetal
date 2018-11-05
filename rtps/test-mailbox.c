@@ -18,7 +18,7 @@ int test_rtps_trch_mailbox()
     if (!rtps_link)
         return 1;
 
-    unsigned cmd = CMD_ECHO;
+    unsigned cmd = CMD_PING;
     uint32_t arg[] = { 42 };
     uint32_t reply[sizeof(arg) / sizeof(arg[0])] = {0};
     printf("arg len: %u\r\n", sizeof(arg) / sizeof(arg[0]));

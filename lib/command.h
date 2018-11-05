@@ -6,8 +6,12 @@
 
 #define MAX_CMD_ARG_LEN 16
 
-#define CMD_ECHO       0x1
-#define CMD_RESET_HPPS 0x3
+#define CMD_NOP			0
+#define CMD_PING		1
+#define CMD_PONG		2
+#define CMD_WATCHDOG_TIMEOUT	11
+#define CMD_LIFECYCLE		13
+#define CMD_RESET_HPPS		100
 
 struct cmd {
     uint32_t cmd;
@@ -20,8 +24,5 @@ void cmd_handle(struct cmd *cmd);
 
 int cmd_enqueue(struct cmd *cmd);
 int cmd_dequeue(struct cmd *cmd);
-
-// Implementation defined in a consumer's source
-int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_len);
 
 #endif // COMMAND_H
