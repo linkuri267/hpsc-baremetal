@@ -7,6 +7,7 @@
 #include "panic.h"
 #include "mailbox-link.h"
 #include "mailbox-map.h"
+#include "dma.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -73,6 +74,11 @@ int main(void)
         panic("TRCH/RTPS->HPPS MMU test");
 #endif // TEST_RT_MMU
 
+#if TEST_RTPS_DMA
+    if (test_rtps_dma())
+        panic("RTPS DMA test");
+#endif // TEST_RTPS_DMA
+
 #if TEST_RTPS_TRCH_MAILBOX
     if (test_rtps_trch_mailbox())
         panic("RTPS->TRCH mailbox");
@@ -133,6 +139,14 @@ void irq_handler(unsigned irq) {
                 mbox_ack_isr(MBOX_LSIO_RTPS_ACK_INT);
                 break;
 #endif // TEST_RTPS_TRCH_MAILBOX
+#if TEST_RTPS_DMA
+        case RTPS_DMA_ABORT_IRQ:
+                dma_abort_isr(rtps_dma);
+                break;
+        case RTPS_DMA_EV0_IRQ:
+                dma_event_isr(rtps_dma, 0);
+                break;
+#endif
         default:
                 printf("WARN: no ISR for IRQ #%u\r\n", irq);
     }

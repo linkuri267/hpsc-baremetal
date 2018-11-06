@@ -19,6 +19,8 @@ TEST_FLAGS = \
 	TEST_HPPS_RTPS_MAILBOX \
 	TEST_SOFT_RESET \
 	TEST_RT_MMU \
+	TEST_RTPS_DMA \
+	TEST_RTPS_DMA_CB \
 
 # Enable disable tests here:
 TEST_FLOAT = 1
@@ -27,6 +29,8 @@ TEST_RTPS_TRCH_MAILBOX = 1
 TEST_HPPS_RTPS_MAILBOX = 1
 TEST_SOFT_RESET = 0
 TEST_RT_MMU = 1
+TEST_RTPS_DMA = 1
+TEST_RTPS_DMA_CB = 1
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -43,6 +47,7 @@ OBJS = \
 	drivers/uart.o \
 	drivers/gic.o \
 	drivers/mailbox.o \
+	drivers/dma.o \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
@@ -63,6 +68,9 @@ OBJS += test-mmu.o
 endif
 ifeq ($(strip $(TEST_RTPS_TRCH_MAILBOX)),1)
 OBJS += test-mailbox.o
+endif
+ifeq ($(strip $(TEST_RTPS_DMA)),1)
+OBJS += test-dma.o
 endif
 
 TARGET=rtps.elf
