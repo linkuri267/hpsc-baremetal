@@ -63,7 +63,7 @@ parser.add_argument('--external-irqs', type=int, default=240,
    help='Number external IRQs')
 parser.add_argument('--irqmap',
     help='IRQ to ISR handler map file')
-parser.add_argument('--include-dir', '-I', nargs='*', default=['.'],
+parser.add_argument('--include-dir', '-I', action='append', default=['.'],
     help='Add path where to look for included files')
 parser.add_argument('--verbose', '-v', action='store_true',
     help='Print IRQ map')
