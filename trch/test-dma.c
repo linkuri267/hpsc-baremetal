@@ -26,7 +26,8 @@ int test_trch_dma()
     intc_int_enable(TRCH_DMA_ABORT_IRQ, IRQ_TYPE_EDGE);
     intc_int_enable(TRCH_DMA_EV0_IRQ, IRQ_TYPE_EDGE);
 
-    trch_dma = dma_create("TRCH", TRCH_DMA_BASE, trch_dma_mcode);
+    trch_dma = dma_create("TRCH", TRCH_DMA_BASE,
+                          trch_dma_mcode, sizeof(trch_dma_mcode));
     if (!trch_dma)
 	return 1;
 

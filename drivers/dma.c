@@ -1264,7 +1264,8 @@ static inline void _reset_thread(struct pl330_thread *thrd)
 	thrd->req_running = -1;
 }
 
-struct dma *dma_create(const char *name, volatile uint32_t *base, uint8_t *mcode)
+struct dma *dma_create(const char *name, volatile uint32_t *base,
+                       uint8_t *mcode_addr, unsigned mcode_sz)
 {
     struct pl330_dmac *d = OBJECT_ALLOC(dmas);
     if (!d)
@@ -1273,12 +1274,19 @@ struct dma *dma_create(const char *name, volatile uint32_t *base, uint8_t *mcode
     d->base = base;
 
     // Microcode buffer reachable from DMA and CPU via same addr
-    d->mcode_bus = mcode;
-    d->mcode_cpu = mcode;
+    d->mcode_bus = mcode_addr;
+    d->mcode_cpu = mcode_addr;
     d->mcbufsz = MCBUFSZ;
     d->manager = &d->manager_chan;
 
     read_dmac_config(d);
+
+    if (mcode_sz < MCBUFSZ * d->pcfg.num_chan) {
+        printf("DMA: microcode space too small: %x <= %\r\n",
+               mcode_sz, MCBUFSZ * d->pcfg.num_chan);
+        OBJECT_FREE(d);
+        return NULL;
+    }
 
     /* Init Channel threads */
     for (unsigned i = 0; i < d->pcfg.num_chan; i++) {
