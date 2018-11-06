@@ -2,7 +2,7 @@
 
 #include "printf.h"
 
-#include "float.h"
+#include "test.h"
 void _out_char(char character, void* buffer, size_t idx, size_t maxlen);
 
 static float calculate( float a, float b )
@@ -14,7 +14,7 @@ static float calculate( float a, float b )
     return temp2 / temp1;
 }
 
-bool float_test()
+int test_float()
 {
     /* Perform a float calculation to demonstrate floating point (using the FPU, if compiled appropriately) */
 #ifdef __ARM_FP
@@ -29,4 +29,5 @@ bool float_test()
     printf("Float result is          %f\r\n", FLOAT_ARG(r));
     if (r == ref) printf("Equal\r\n");
     else printf("Not Equal\r\n");
+    return r == ref ? 0 : 1;
 }

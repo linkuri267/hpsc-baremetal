@@ -7,13 +7,7 @@
 #include "panic.h"
 #include "mailbox-link.h"
 #include "mailbox-map.h"
-
-#define TEST_FLOAT
-#define TEST_SORT
-#define TEST_RTPS_TRCH_MAILBOX
-#define TEST_HPPS_RTPS_MAILBOX
-// #define TEST_SOFT_RESET
-#define TEST_RTPS_HPPS_MMU
+#include "test.h"
 
 extern unsigned char _text_start;
 extern unsigned char _text_end;
@@ -64,63 +58,27 @@ int main(void)
     enable_interrupts();
 
 
-#ifdef TEST_FLOAT
-    float_test();
+#if TEST_FLOAT
+    if (test_float())
+        panic("float test");
 #endif // TEST_FLOAT
 
-#ifdef TEST_SORT
-    /* Run the main application (sorts) */
-    compare_sorts();
+#if TEST_SORT
+    if (test_sort())
+        panic("sort test");
 #endif // TEST_SORT
 
-#ifdef TEST_RTPS_HPPS_MMU
-    printf("Testing MMU...\r\n");
+#if TEST_RT_MMU
+    if (test_rt_mmu())
+        panic("TRCH/RTPS->HPPS MMU test");
+#endif // TEST_RT_MMU
 
-    // Translated by MMU via identity map (in HPPS LOW DRAM)
-    volatile uint32_t *addr = (volatile uint32_t *)0x8e100000;
-    uint32_t val = 0xf00dcafe;
-    printf("%p <- %08x\r\n", addr, val);
-    *addr = val;
-    val = *addr;
-    printf("%p -> %08x\r\n", addr, val);
-
-    // Translated by MMU (test configured to HPPS HIGH DRAM, 0x100000000)
-    addr = (volatile uint32_t *)0xc0000000;
-
-    val = *addr;
-    printf("%p -> %08x\r\n", addr, val);
-
-    val = 0xdeadbeef;
-    printf("%p <- %08x\r\n", addr, val);
-    *addr = val;
-    val = *addr;
-    printf("%p -> %08x\r\n", addr, val);
-#endif // TEST_RTPS_HPPS_MMU
-
-#ifdef TEST_RTPS_TRCH_MAILBOX
-    struct mbox_link *rtps_link = mbox_link_connect(
-                    LSIO_MBOX_BASE, LSIO_MBOX_IRQ_START,
-                    MBOX_LSIO_TRCH_RTPS, MBOX_LSIO_RTPS_TRCH, 
-                    MBOX_LSIO_RTPS_RCV_INT, MBOX_LSIO_RTPS_ACK_INT,
-                    /* server */ 0,
-                    /* client */ MASTER_ID_RTPS_CPU0);
-    if (!rtps_link)
-        panic("RTPS link");
-
-    unsigned cmd = CMD_ECHO;
-    uint32_t arg[] = { 42 };
-    uint32_t reply[sizeof(arg) / sizeof(arg[0])] = {0};
-    printf("arg len: %u\r\n", sizeof(arg) / sizeof(arg[0]));
-    int rc = mbox_link_request(rtps_link, cmd, arg, sizeof(arg) / sizeof(arg[0]),
-                               reply, sizeof(reply) / sizeof(reply[0]));
-    if (rc)
-        panic("request to RTPS link");
-
-    if (mbox_link_disconnect(rtps_link))
-        panic("RTPS link release");
+#if TEST_RTPS_TRCH_MAILBOX
+    if (test_rtps_trch_mailbox())
+        panic("RTPS->TRCH mailbox");
 #endif // TEST_RTPS_TRCH_MAILBOX
 
-#ifdef TEST_HPPS_RTPS_MAILBOX
+#if TEST_HPPS_RTPS_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect(
                     HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
                     MBOX_HPPS_HPPS_RTPS, MBOX_HPPS_RTPS_HPPS, 
@@ -132,9 +90,7 @@ int main(void)
     // Never release the link, because we listen on it in main loop
 #endif // TEST_HPPS_RTPS_MAILBOX
 
-    printf("Done.\r\n");
-
-#ifdef TEST_SOFT_RESET
+#if TEST_SOFT_RESET
     printf("Resetting...\r\n");
     /* this will generate "Undefined Instruction exception because HRMR is accessible only at EL2 */
     soft_reset();
@@ -143,7 +99,7 @@ int main(void)
 
     while (1) {
 
-#ifdef TEST_HPPS_RTPS_MAILBOX
+#if TEST_HPPS_RTPS_MAILBOX
         struct cmd cmd;
         while (!cmd_dequeue(&cmd))
             cmd_handle(&cmd);
@@ -161,18 +117,22 @@ void irq_handler(unsigned irq) {
     switch (irq) {
         // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
         // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
+#if TEST_HPPS_RTPS_MAILBOX
         case HPPS_MBOX_IRQ_START + MBOX_HPPS_RTPS_RCV_INT:
                 mbox_rcv_isr(MBOX_HPPS_RTPS_RCV_INT);
                 break;
         case HPPS_MBOX_IRQ_START  + MBOX_HPPS_RTPS_ACK_INT:
                 mbox_ack_isr(MBOX_HPPS_RTPS_ACK_INT);
                 break;
+#endif // TEST_HPPS_RTPS_MAILBOX
+#if TEST_RTPS_TRCH_MAILBOX
         case LSIO_MBOX_IRQ_START + MBOX_LSIO_RTPS_RCV_INT:
                 mbox_rcv_isr(MBOX_LSIO_RTPS_RCV_INT);
                 break;
         case LSIO_MBOX_IRQ_START + MBOX_LSIO_RTPS_ACK_INT:
                 mbox_ack_isr(MBOX_LSIO_RTPS_ACK_INT);
                 break;
+#endif // TEST_RTPS_TRCH_MAILBOX
         default:
                 printf("WARN: no ISR for IRQ #%u\r\n", irq);
     }

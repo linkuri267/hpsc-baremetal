@@ -11,6 +11,25 @@
 
 include ../Makefile.common
 
+# List all possible test flags here
+TEST_FLAGS = \
+	TEST_FLOAT \
+	TEST_SORT \
+	TEST_RTPS_TRCH_MAILBOX \
+	TEST_HPPS_RTPS_MAILBOX \
+	TEST_SOFT_RESET \
+	TEST_RT_MMU \
+
+# Enable disable tests here:
+TEST_FLOAT = 1
+TEST_SORT = 1
+TEST_RTPS_TRCH_MAILBOX = 1
+TEST_HPPS_RTPS_MAILBOX = 1
+TEST_SOFT_RESET = 0
+TEST_RT_MMU = 1
+
+TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
+
 VPATH = ..
 
 BLDDIR = bld
@@ -31,9 +50,20 @@ OBJS = \
 	lib/mailbox-link.o \
 	lib/command.o \
 	server.o \
-	float.o \
-	sorts.o \
 	main.o \
+
+ifeq ($(strip $(TEST_FLOAT)),1)
+OBJS += test-float.o
+endif
+ifeq ($(strip $(TEST_SORT)),1)
+OBJS += test-sort.o
+endif
+ifeq ($(strip $(TEST_RT_MMU)),1)
+OBJS += test-mmu.o
+endif
+ifeq ($(strip $(TEST_RTPS_TRCH_MAILBOX)),1)
+OBJS += test-mailbox.o
+endif
 
 TARGET=rtps.elf
 
@@ -51,6 +81,7 @@ CCOPT = \
 	-DPRINTF_SUPPORT_LONG_LONG \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
+	$(TEST_ARGS) \
 	$(foreach d,$(SUBDIRS),-I../$(d)) \
 
 # Enable use of TCM in assembler code with -DTCM

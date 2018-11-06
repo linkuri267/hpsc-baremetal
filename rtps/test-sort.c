@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "test.h"
+
 #define N               1000
 
 #if N > 1000000
@@ -86,24 +88,25 @@ static void randomise(char *strings[], int n)
     }
 }
 
-static void check_order(char *sort_type, char *strings[], int n)
+static int check_order(char *sort_type, char *strings[], int n)
 {
     int i;
 
     for (i = 0; i < n; i++) {
         if (atoi(strings[i]) != i) {
             printf("%s sort failed - exiting (expected " N_FORMAT ", got %s),\r\n", sort_type, i, strings[i]);
-            exit(1);
+            return 1;
         }
     }
+    return 0;
 }
 
-int qs_string_compare(const void *a, const void *b)
+static int qs_string_compare(const void *a, const void *b)
 {
     return strcmp(*(char **)a, *(char **)b);
 }
 
-void compare_sorts(void)
+int test_sort(void)
 {
     char *strings[N], *strings_copy[N];
     char *p;
@@ -124,7 +127,8 @@ void compare_sorts(void)
     starttime = clock();
     insert_sort(strings_copy, N);
     endtime = clock();
-    check_order("Insertion", strings_copy, N);
+    if (check_order("Insertion", strings_copy, N))
+        return 1;
     printf("Insertion sort took %d clock ticks\r\n", endtime - starttime);
 #else
     printf("Value of N too big to use insertion sort, must be <= 10000\r\n");
@@ -135,7 +139,8 @@ void compare_sorts(void)
     starttime = clock();
     shell_sort(strings_copy, N);
     endtime = clock();
-    check_order("Shell", strings_copy, N);
+    if (check_order("Shell", strings_copy, N))
+        return 1;
     printf("Shell sort took %d clock ticks\r\n", endtime - starttime);
 
     /* Do quick sort - use built-in C library sort */
@@ -143,6 +148,9 @@ void compare_sorts(void)
     starttime = clock();
     qsort(strings_copy, N, sizeof(char *), qs_string_compare);
     endtime = clock();
-    check_order("Quick", strings_copy, N);
+    if (check_order("Quick", strings_copy, N))
+        return 1;
     printf("Quick sort took %d clock ticks\r\n", endtime - starttime);
+
+    return 0;
 }
