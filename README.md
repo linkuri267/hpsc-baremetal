@@ -9,6 +9,7 @@ Common code includes:
 
 * Driver for ARM MMU-500
 * Driver for HPSC Mailbox
+* Driver for ARM DMA-330 (credit: based on Linux driver)
 * printf library (credit: Marco Paland, PALANDesign)
 * Assert and panic
 * Generic interface for interrupt controllers
