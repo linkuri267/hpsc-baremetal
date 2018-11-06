@@ -1,5 +1,13 @@
 include ../Makefile.common
 
+# List all possible test flags here
+TEST_FLAGS = \
+
+# Enable disable tests here:
+# TEST_xyz = 1|0
+
+TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
+
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
 AOPS = --warn --fatal-warnings $(CPU_FLAGS) $(FLOAT_FLAG)
@@ -13,6 +21,7 @@ COPS = \
 	-DUART_BASE=LSIO_UART0_BASE \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
+	$(TEST_ARGS) \
 	$(INC_FLAGS) \
 
 VPATH = ..
@@ -44,7 +53,7 @@ clean:
 	rm -rf $(BLDDIR) vectors.s isr.c
 
 isrs: irqmap genisr.py
-	./genisr.py -v $(INC_FLAGS) --irqmap $< vectors.s isr.c
+	./genisr.py -v $(INC_FLAGS) $(TEST_ARGS) --irqmap $< vectors.s isr.c
 .INTERMEDIATE: isrs
 vectors.s: isrs
 isr.c: isrs
