@@ -23,7 +23,7 @@ def parse_defs(fname, incpaths):
 
 def expand_macros(defs, s):
     for v in defs:
-        s = s.replace(v, defs[v])
+        s = re.sub(r'\b%s\b' % v, defs[v], s)
     return s
 
 def parse_irqmap(fname, defs, incpaths):
