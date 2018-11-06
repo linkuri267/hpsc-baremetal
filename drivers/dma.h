@@ -8,7 +8,7 @@ struct dma_tx;
 
 typedef void (*dma_cb_t)(void *arg, int rc);
 
-struct dma *dma_create(const char *name, volatile uint32_t *base, uint32_t *mcode);
+struct dma *dma_create(const char *name, volatile uint32_t *base, uint8_t *mcode);
 int dma_destroy(struct dma *dma);
 
 // If callback is NULL, then must reap with dma_wait
