@@ -1,13 +1,3 @@
-/*
-** Copyright (c) 2016-2017 Arm Limited (or its affiliates). All rights reserved.
-** Use, modification and redistribution of this file is subject to your possession of a
-** valid End User License Agreement for the Arm Product of which these examples are part of 
-** and your compliance with all applicable terms and conditions of such licence agreement.
-*/
-
-/* This file contains the main() program that displays a welcome message, enables the caches,
-   performs a float calculation to demonstrate floating point, then runs the main application (sorts) */
-
 #include "printf.h"
 #include "uart.h"
 #include "float.h"
