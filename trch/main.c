@@ -23,16 +23,6 @@
 #define TEST_HPPS_TRCH_MAILBOX
 #define TEST_RTPS_TRCH_MAILBOX
 // #define TEST_IPI
-#define TEST_RTPS_TRCH_MMU
-#define TEST_RTPS_TRCH_MMU_ACCESS // if not defined, then just init and deinit
-
-// Page table should be in memory that is on a bus
-// accessible from the MMUs master port ('dma' prop
-// in MMU node in Qemu DT).  We put it in HPPS DRAM,
-// because that seems to be the only option, judging
-// from high-level Chiplet diagram.
-#define RTPS_HPPS_PT_ADDR 0x8e000000
-#define RTPS_HPPS_PT_SIZE   0x200000
 
 int notmain ( void )
 {
@@ -52,108 +42,10 @@ int notmain ( void )
         panic("TRCH DMA test");
 #endif // TEST_TRCH_DMA
 
-#ifdef TEST_RTPS_TRCH_MMU
-
-// A macro for testing convenience. Regions don't have to be the same.
-#define MMU_TEST_REGION_SIZE 0x10000
-
-    struct mmu *rt_mmu = mmu_create("RTPS/TRCH->HPPS",
-		RTPS_TRCH_TO_HPPS_SMMU_BASE);
-    if (!rt_mmu)
-	panic("MMU init");
-
-    // In this test, we share one allocator for all contexts
-    struct balloc *ba = balloc_create("RT",
-		(uint64_t *)RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE);
-
-    struct mmu_context *rtps_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
-    if (!rtps_ctx)
-	panic("MMU RTPS ctx");
-
-    if (mmu_map(rtps_ctx, 0x8e100000,  0x8e100000, MMU_TEST_REGION_SIZE))
-	panic("MMU RTPS identity mapping");
-    if (mmu_map(rtps_ctx, 0xc0000000, 0x100000000, MMU_TEST_REGION_SIZE))
-	panic("MMU RTPS window mapping");
-    if (mmu_map(rtps_ctx, (uint32_t)HPPS_MBOX_BASE,
-			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
-	panic("MMU RTPS mbox mapping");
-
-    struct mmu_stream *rtps_stream =
-		mmu_stream_create(MASTER_ID_RTPS_CPU0, rtps_ctx);
-    if (!rtps_stream)
-	panic("MMU RTPS stream");
-
-    struct mmu_context *trch_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
-    if (!trch_ctx)
-	panic("MMU TRCH ctx");
-
-    if (mmu_map(trch_ctx, 0xc0000000, 0x100010000, MMU_TEST_REGION_SIZE))
-	panic("MMU TRCH window mapping");
-    if (mmu_map(trch_ctx, 0xc1000000, 0x100000000, MMU_TEST_REGION_SIZE))
-	panic("MMU TRCH window mapping");
-    if (mmu_map(trch_ctx, (uint32_t)HPPS_MBOX_BASE,
-			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
-	panic("MMU TRCH mbox mapping");
-
-    struct mmu_stream *trch_stream =
-		mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
-    if (!trch_stream)
-	panic("MMU TRCH stream");
-
-    // In an alternative test, both streams could point to the same context
-
-    mmu_enable(rt_mmu);
-
-#ifdef TEST_RTPS_TRCH_MMU_ACCESS
-    // In this test, TRCH accesses same location as RTPS but via a different virtual addr.
-    // RTPS should read 0xc0000000 and find 0xbeeff00d, not 0xf00dbeef.
-
-    volatile uint32_t *addr = (volatile uint32_t *)0xc1000000;
-    uint32_t val = 0xbeeff00d;
-    printf("%p <- %08x\r\n", addr, val);
-    *addr = val;
-
-    addr = (volatile uint32_t *)0xc0000000;
-    val = 0xf00dbeef;
-    printf("%p <- %08x\r\n", addr, val);
-    *addr = val;
-#else // !TEST_RTPS_TRCH_MMU_ACCESS
-
-   // We can't always tear down, because we need to leave the MMU
-   // configured for the other subsystems to do their test accesses
-
-    mmu_disable(rt_mmu);
-
-    if (mmu_stream_destroy(rtps_stream))
-	panic("MMU RTPS stream destroy");
-
-    if (mmu_unmap(rtps_ctx, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
-	panic("MMU RTPS mbox unmapping");
-    if (mmu_unmap(rtps_ctx, 0xc0000000, MMU_TEST_REGION_SIZE))
-	panic("MMU RTPS window unmapping");
-    if (mmu_unmap(rtps_ctx, 0x8e100000,  MMU_TEST_REGION_SIZE))
-	panic("MMU RTPS identity unmapping");
-
-    if (mmu_context_destroy(rtps_ctx))
-	panic("MMU RTPS ctx destroy");
-
-    if (mmu_stream_destroy(trch_stream))
-	panic("MMU TRCH stream destrtoy");
-
-    if (mmu_unmap(trch_ctx, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
-	panic("MMU TRCH mbox unmapping");
-    if (mmu_unmap(trch_ctx, 0xc1000000, MMU_TEST_REGION_SIZE))
-	panic("MMU TRCH window unmapping");
-    if (mmu_unmap(trch_ctx, 0xc0000000, MMU_TEST_REGION_SIZE))
-	panic("MMU TRCH window unmapping");
-
-    if (mmu_context_destroy(trch_ctx))
-	panic("MMU TRCH ctx destroy");
-
-    if (mmu_destroy(rt_mmu))
-    balloc_destroy(ba);
-#endif // !TEST_RTPS_TRCH_MMU_ACCESS
-#endif // TEST_RTPS_TRCH_MMU
+#if TEST_RT_MMU
+    if (test_rt_mmu())
+        panic("RTPS/TRCH-HPPS MMU test");
+#endif // TEST_RT_MMU
 
 #ifdef TEST_HPPS_TRCH_MAILBOX_SSW
     struct mbox_link *hpps_link_ssw = mbox_link_connect(
