@@ -2,18 +2,11 @@
 
 #include "printf.h"
 #include "hwinfo.h"
+#include "dram-map.h"
 #include "mailbox.h"
 #include "mmu.h"
 
 #include "test.h"
-
-// Page table should be in memory that is on a bus
-// accessible from the MMUs master port ('dma' prop
-// in MMU node in Qemu DT).  We put it in HPPS DRAM,
-// because that seems to be the only option, judging
-// from high-level Chiplet diagram.
-#define RTPS_HPPS_PT_ADDR 0x8e000000
-#define RTPS_HPPS_PT_SIZE   0x200000
 
 // A macro for testing convenience. Regions don't have to be the same.
 #define MMU_TEST_REGION_SIZE 0x10000

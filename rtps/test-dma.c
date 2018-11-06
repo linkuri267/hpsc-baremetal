@@ -3,18 +3,12 @@
 #include "printf.h"
 #include "dma.h"
 #include "hwinfo.h"
+#include "dram-map.h"
 #include "intc.h"
 #include "test.h"
 
 struct dma *rtps_dma; // must be exposed for the ISR
 
-// RTPS DRAM (cannot be in TCM)
-#define RTPS_DMA_MCODE_ADDR 0x40000000
-#define RTPS_DMA_MCODE_SIZE 0x00001000
-
-#define RTPS_DMA_SRC_ADDR 0x40001000
-#define RTPS_DMA_SIZE     0x00000020
-#define RTPS_DMA_DST_ADDR (RTPS_DMA_SRC_ADDR+RTPS_DMA_SIZE)
 
 #ifdef TEST_RTPS_DMA_CB
 static void dma_tx_completed(void *arg, int rc)
