@@ -26,18 +26,63 @@ def expand_macros(defs, s):
         s = s.replace(v, defs[v])
     return s
 
-def parse_irqmap(fname, incpaths):
+def parse_irqmap(fname, defs, incpaths):
     d = {}
-    defs = {}
+    ifdef = [True] # stack, each bool element indicates if enabled
+    linenum = 0
     for line in open(fname):
+        linenum += 1
+
         line = line.strip()
         if len(line) == 0 or line.startswith('//'):
                 continue
+
+        m = re.match(r'^#else(\s+//.*)?', line)
+        if m:
+                ifdef[-1] = not ifdef[-1]
+                continue
+        m = re.match(r'^#endif(\s+//.*)?', line)
+        if m:
+                ifdef = ifdef[:-1]
+                continue
+
+        if not ifdef[-1]:
+                continue
+
+        m = re.match(r'^#if (.+)', line)
+        if m:
+                expr = m.group(1)
+                cond = bool(eval(expand_macros(defs, expr)))
+                ifdef += [cond]
+                continue
+        m = re.match(r'^#ifdef ([A-Za-z0-9_]+)', line)
+        if m:
+                macro = m.group(1)
+                ifdef += [macro in defs]
+                continue
+
+        m = re.match(r'^#error (.*)', line)
+        if m:
+                msg = m.group(1)
+                raise Exception("error on line %u: %s" % (linenum, msg))
+                continue
+        m = re.match(r'^#info (.*)', line)
+        if m:
+                msg = m.group(1)
+                print(msg)
+                continue
+
+
         m = re.match(r'^#include ["<]([^">]+)[>"]', line)
         if m:
                 incfile = m.group(1)
                 defs.update(parse_defs(incfile, incpaths))
                 continue
+
+        m = re.match(r'^#.*', line)
+        if m:
+                raise Exception(("parse error on line %u: "
+                                "invalid preprocessor directive") % linenum)
 
         line = expand_macros(defs, line)
         p = line
@@ -55,6 +100,15 @@ def parse_irqmap(fname, incpaths):
                 d[n] = None
     return d
 
+def dict_entry(s):
+    m = re.match(r'([^=]*)(=(.*))?', s)
+    if m:
+        name = m.group(1).strip()
+        value = m.group(3).strip()
+    if not m or len(name) == 0 or len(value) == 0:
+        raise Exception("Invalid dict entry string: '%s'" % s)
+    return { name: value }
+
 parser = argparse.ArgumentParser(
     description="Generate assembly source for vector table")
 parser.add_argument('--internal-irqs', type=int, default=16,
@@ -65,6 +119,9 @@ parser.add_argument('--irqmap',
     help='IRQ to ISR handler map file')
 parser.add_argument('--include-dir', '-I', action='append', default=['.'],
     help='Add path where to look for included files')
+parser.add_argument('--define', '-D', action='append',
+    type=dict_entry, default=[],
+    help='Define a macro, format: NAME[=VALUE]')
 parser.add_argument('--verbose', '-v', action='store_true',
     help='Print IRQ map')
 parser.add_argument('out_asm',
@@ -73,7 +130,11 @@ parser.add_argument('out_c',
     help='Output file with generated assembly source')
 args = parser.parse_args()
 
-irqmap = parse_irqmap(args.irqmap, args.include_dir)
+defs = {}
+for d in args.define:
+        defs.update(d)
+irqmap = parse_irqmap(args.irqmap, defs, args.include_dir)
+
 if args.verbose:
     for irq in irqmap:
         print("%4u: %s" % (irq, irqmap[irq]))
