@@ -13,6 +13,7 @@
 #include "mailbox.h"
 #include "hwinfo.h"
 #include "intc.h"
+#include "test.h"
 
 #define TEST_RTPS
 #define TEST_HPPS
@@ -45,6 +46,11 @@ int notmain ( void )
     printf("Testing float...\r\n");
     float_test();
 #endif // TEST_FLOAT
+
+#if TEST_TRCH_DMA
+    if (test_trch_dma())
+        panic("TRCH DMA test");
+#endif // TEST_TRCH_DMA
 
 #ifdef TEST_RTPS_TRCH_MMU
 

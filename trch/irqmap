@@ -10,3 +10,8 @@ LSIO_MBOX_IRQ_START+MBOX_HPPS_TRCH_ACK_INT : mbox_hpps_ack_isr
 
 HPPS_MBOX_IRQ_START+MBOX_HPPS_TRCH_RCV_INT : mbox_lsio_rcv_isr
 HPPS_MBOX_IRQ_START+MBOX_HPPS_TRCH_ACK_INT : mbox_lsio_ack_isr
+
+#if TEST_TRCH_DMA
+TRCH_DMA_EV0_IRQ : dma_trch_dma_event_0_isr
+TRCH_DMA_ABORT_IRQ : dma_trch_dma_abort_isr
+#endif

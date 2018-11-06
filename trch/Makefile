@@ -2,9 +2,12 @@ include ../Makefile.common
 
 # List all possible test flags here
 TEST_FLAGS = \
+	TEST_TRCH_DMA \
+	TEST_TRCH_DMA_CB \
 
 # Enable disable tests here:
-# TEST_xyz = 1|0
+TEST_TRCH_DMA = 1
+TEST_TRCH_DMA_CB = 1 # if set, use callback, otherwise call dma_wait
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -39,11 +42,16 @@ OBJS = \
        drivers/nvic.o \
        drivers/uart.o \
        drivers/mmu.o \
+       drivers/dma.o \
        reset.o \
        mailbox-isr.o \
        float.o \
        server.o \
        main.o \
+
+ifeq ($(strip $(TEST_TRCH_DMA)),1)
+OBJS += test-dma.o
+endif
 
 TARGET=trch.elf
 
