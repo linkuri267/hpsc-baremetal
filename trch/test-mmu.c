@@ -28,6 +28,8 @@ int test_rt_mmu()
     // In this test, we share one allocator for all contexts
     struct balloc *ba = balloc_create("RT",
 		(uint64_t *)RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE);
+    if (!ba)
+        return 1;
 
     struct mmu_context *rtps_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
     if (!rtps_ctx)
