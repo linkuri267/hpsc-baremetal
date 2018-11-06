@@ -10,8 +10,8 @@
 #define REG_SET32(reg, val) reg_set32(#reg, reg, val)
 #define REG_CLEAR32(reg, val) reg_clear32(#reg, reg, val)
 
-#define REG_READ32(reg, val) reg_read32(#reg, reg)
-#define REG_READ64(reg, val) reg_read64(#reg, reg)
+#define REG_READ32(reg) reg_read32(#reg, reg)
+#define REG_READ64(reg) reg_read64(#reg, reg)
 
 static inline void reg_write32(const char *name, volatile uint32_t *addr, uint32_t val)
 {
