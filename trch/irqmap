@@ -5,11 +5,15 @@
 #include "hwinfo.h"
 #include "mailbox-map.h"
 
+#if TEST_RTPS_TRCH_MAILBOX
 LSIO_MBOX_IRQ_START+MBOX_HPPS_TRCH_RCV_INT : mbox_hpps_rcv_isr
 LSIO_MBOX_IRQ_START+MBOX_HPPS_TRCH_ACK_INT : mbox_hpps_ack_isr
+#endif
 
+#if TEST_HPPS_TRCH_MAILBOX | TEST_HPPS_TRCH_MAILBOX_SSW
 HPPS_MBOX_IRQ_START+MBOX_HPPS_TRCH_RCV_INT : mbox_lsio_rcv_isr
 HPPS_MBOX_IRQ_START+MBOX_HPPS_TRCH_ACK_INT : mbox_lsio_ack_isr
+#endif
 
 #if TEST_TRCH_DMA
 TRCH_DMA_EV0_IRQ : dma_trch_dma_event_0_isr

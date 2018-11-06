@@ -3,7 +3,6 @@
 
 #include "printf.h"
 #include "uart.h"
-#include "float.h"
 #include "reset.h"
 #include "command.h"
 #include "mmu.h"
@@ -15,15 +14,6 @@
 #include "intc.h"
 #include "test.h"
 
-#define TEST_RTPS
-#define TEST_HPPS
-
-#define TEST_FLOAT
-#define TEST_HPPS_TRCH_MAILBOX_SSW
-#define TEST_HPPS_TRCH_MAILBOX
-#define TEST_RTPS_TRCH_MAILBOX
-// #define TEST_IPI
-
 int notmain ( void )
 {
     cdns_uart_startup(); // init UART peripheral
@@ -32,9 +22,9 @@ int notmain ( void )
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");
 
-#ifdef TEST_FLOAT
-    printf("Testing float...\r\n");
-    float_test();
+#if TEST_FLOAT
+    if (test_float())
+        panic("float test");
 #endif // TEST_FLOAT
 
 #if TEST_TRCH_DMA
@@ -47,7 +37,7 @@ int notmain ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
-#ifdef TEST_HPPS_TRCH_MAILBOX_SSW
+#if TEST_HPPS_TRCH_MAILBOX_SSW
     struct mbox_link *hpps_link_ssw = mbox_link_connect(
                     HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
                     MBOX_HPPS_HPPS_TRCH_SSW, MBOX_HPPS_TRCH_HPPS_SSW,
@@ -60,7 +50,7 @@ int notmain ( void )
     // Never release the link, because we listen on it in main loop
 #endif
 
-#ifdef TEST_HPPS_TRCH_MAILBOX
+#if TEST_HPPS_TRCH_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect(
                     HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
                     MBOX_HPPS_HPPS_TRCH, MBOX_HPPS_TRCH_HPPS,
@@ -73,7 +63,7 @@ int notmain ( void )
     // Never release the link, because we listen on it in main loop
 #endif
 
-#ifdef TEST_RTPS_TRCH_MAILBOX
+#if TEST_RTPS_TRCH_MAILBOX
     struct mbox_link *rtps_link = mbox_link_connect(
                     LSIO_MBOX_BASE, LSIO_MBOX_IRQ_START,
                     MBOX_LSIO_RTPS_TRCH, MBOX_LSIO_TRCH_RTPS,
@@ -86,15 +76,15 @@ int notmain ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
 
-#ifdef TEST_RTPS
+#if TEST_RTPS
     reset_component(COMPONENT_RTPS);
 #endif // TEST_RTPS
 
-#ifdef TEST_HPPS
+#if TEST_HPPS
     reset_component(COMPONENT_HPPS);
 #endif // TEST_HPPS
 
-#ifdef TEST_IPI
+#if TEST_IPI
     printf("Testing IPI...\r\n");
     // uint32_t * addr = (unsigned int *) 0xff310000; /* IPI_TRIG */
     uint32_t val = (1 << 8); 	/* RPU0 */

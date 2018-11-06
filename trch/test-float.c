@@ -2,11 +2,11 @@
 
 #include "printf.h"
 
-#include "float.h"
+#include "test.h"
 
-float gc;
+static float gc;
 
-void enable_fpu()
+static void enable_fpu()
 {
     asm("LDR R0, =0xE000ED88");
     // Read CPACR
@@ -21,7 +21,7 @@ void enable_fpu()
     asm("ISB");
 }
 
-void disable_fpu()
+static void disable_fpu()
 {
     /* Disable FPU: Code from M4 TRM */
     // CPACR is located at address 0xE000ED88 LDR.W R0, =0xE000ED88
@@ -56,9 +56,9 @@ static float calculate(float a, float b) {
     return (a + b)/ b;
 }
 
-bool float_test()
+int test_float()
 {
-    bool rc = true;
+    int rc = 0;
     float a, b, c;
 
     enable_fpu();
@@ -71,18 +71,20 @@ bool float_test()
         printf("return value is OK\r\n");
     } else {
         printf("NO: return value is NOT OK\r\n");
-        rc = false;
+        rc = 1;
     }
 
     if (c == (a+b)/b) {
         printf("Equal\r\n");
     } else {
         printf("Not Equal\r\n");
-        rc = false;
+        rc = 1;
     }
 
     printf("%f = (%f + %f) / %f\r\n",
            FLOAT_ARG(c), FLOAT_ARG(a),
            FLOAT_ARG(b), FLOAT_ARG(b));
+
+    disable_fpu();
     return rc;
 }
