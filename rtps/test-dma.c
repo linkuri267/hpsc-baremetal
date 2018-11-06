@@ -1,14 +1,16 @@
 #include <stdbool.h>
 
 #include "printf.h"
+#include "mem.h"
 #include "dma.h"
 #include "hwinfo.h"
 #include "dram-map.h"
 #include "intc.h"
 #include "test.h"
 
-struct dma *rtps_dma; // must be exposed for the ISR
+#define RTPS_DMA_WORDS (RTPS_DMA_SIZE / sizeof(uint32_t))
 
+struct dma *rtps_dma; // must be exposed for the ISR
 
 #ifdef TEST_RTPS_DMA_CB
 static void dma_tx_completed(void *arg, int rc)
@@ -19,34 +21,32 @@ static void dma_tx_completed(void *arg, int rc)
 }
 #endif // TEST_RTPS_DMA_CB
 
-int test_rtps_dma()
+static void dump_buf(const char *name, uint32_t *buf)
 {
-    intc_int_enable(RTPS_DMA_ABORT_IRQ, IRQ_TYPE_EDGE);
-    intc_int_enable(RTPS_DMA_EV0_IRQ, IRQ_TYPE_EDGE);
-
-    rtps_dma = dma_create("RTPS", RTPS_DMA_BASE,
-                          (uint8_t *)RTPS_DMA_MCODE_ADDR, RTPS_DMA_MCODE_SIZE);
-    if (!rtps_dma)
-	return 1;
-
-    uint32_t *dma_src_buf = (uint32_t *)RTPS_DMA_SRC_ADDR;
-    uint32_t *dma_dst_buf = (uint32_t *)RTPS_DMA_DST_ADDR;
-    unsigned words = RTPS_DMA_SIZE / sizeof(uint32_t);
-
-    printf("DMA src: ");
-    for (unsigned i = 0; i < words; ++i) {
-        dma_src_buf[i] = 0xf00d0000 | i;
-        printf("%x ", dma_src_buf[i]);
+    printf("DMA %s: %p: ", name, buf);
+    for (unsigned i = 0; i < RTPS_DMA_WORDS; ++i) {
+        printf("%x ", buf[i]);
     }
     printf("\r\n");
+}
 
+static bool cmp_buf(uint32_t *src, uint32_t *dst)
+{
+    for (unsigned i = 0; i < RTPS_DMA_WORDS; ++i)
+        if (dst[i] != src[i])
+            return false;
+    return true;
+}
+
+static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
+{
 #ifdef TEST_RTPS_DMA_CB
     bool dma_done = false;
 #endif
 
     struct dma_tx *dma_tx =
         dma_transfer(rtps_dma, /* chan */ 0,
-                     dma_src_buf, dma_dst_buf, RTPS_DMA_SIZE,
+                     src, dst, RTPS_DMA_SIZE,
 #ifdef TEST_RTPS_DMA_CB
                      dma_tx_completed, &dma_done);
 #else
@@ -65,13 +65,54 @@ int test_rtps_dma()
 #endif
     printf("DMA tx completed\r\n");
 
-    printf("DMA dst: ");
-    for (unsigned i = 0; i < words; ++i) {
-        printf("%x ", dma_dst_buf[i]);
-        if (dma_dst_buf[i] != dma_src_buf[i])
-            return 1;
+    return 0;
+}
+
+int test_rtps_dma()
+{
+    intc_int_enable(RTPS_DMA_ABORT_IRQ, IRQ_TYPE_EDGE);
+    intc_int_enable(RTPS_DMA_EV0_IRQ, IRQ_TYPE_EDGE);
+
+    rtps_dma = dma_create("RTPS", RTPS_DMA_BASE,
+                          (uint8_t *)RTPS_DMA_MCODE_ADDR, RTPS_DMA_MCODE_SIZE);
+    if (!rtps_dma)
+	return 1;
+
+    uint32_t *src_buf = (uint32_t *)RTPS_DMA_SRC_ADDR;
+    uint32_t *dst_buf = (uint32_t *)RTPS_DMA_DST_ADDR;
+
+    for (unsigned i = 0; i < RTPS_DMA_WORDS; ++i)
+        src_buf[i] = 0xf00d0000 | i;
+    dump_buf("src", src_buf);
+
+    int rc = do_copy(src_buf, dst_buf, RTPS_DMA_SIZE);
+    if (rc)
+        return rc;
+    dump_buf("dst", dst_buf);
+    if (!cmp_buf(src_buf, dst_buf)) {
+        printf("DMA test: dst data mismatches src\r\n");
+        return 1;
     }
-    printf("\r\n");
+
+#if TEST_RTPS_MMU // Additional test of MMU remapping:
+    printf("DMA test: via MMU\r\n");
+
+    bzero(dst_buf, RTPS_DMA_SIZE);
+    if (cmp_buf(src_buf, dst_buf)) {
+        printf("DMA test: erase of dst buf failed\r\n");
+        return 1;
+    }
+
+    // MMU maps RTPS_DMA_DST_REMAP_ADDR to RTPS_DMA_DST_ADDR
+    rc = do_copy(src_buf, (uint32_t *)RTPS_DMA_DST_REMAP_ADDR, RTPS_DMA_SIZE);
+    if (rc)
+        return rc;
+    dump_buf("dst", dst_buf);
+    if (!cmp_buf(src_buf, dst_buf)) {
+        printf("DMA test (remap): dst data mismatches src\r\n");
+        return 1;
+    }
+#endif // TEST_RTPS_MMU
 
     if (dma_destroy(rtps_dma))
 	return 1;

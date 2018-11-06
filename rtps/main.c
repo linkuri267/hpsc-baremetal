@@ -74,6 +74,11 @@ int main(void)
         panic("TRCH/RTPS->HPPS MMU test");
 #endif // TEST_RT_MMU
 
+#if TEST_RTPS_MMU
+    if (test_rtps_mmu())
+        panic("RTPS MMU test");
+#endif // TEST_RT_MMU
+
 #if TEST_RTPS_DMA
     if (test_rtps_dma())
         panic("RTPS DMA test");

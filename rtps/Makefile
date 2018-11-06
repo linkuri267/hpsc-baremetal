@@ -19,6 +19,7 @@ TEST_FLAGS = \
 	TEST_HPPS_RTPS_MAILBOX \
 	TEST_SOFT_RESET \
 	TEST_RT_MMU \
+	TEST_RTPS_MMU \
 	TEST_RTPS_DMA \
 	TEST_RTPS_DMA_CB \
 
@@ -29,6 +30,7 @@ TEST_RTPS_TRCH_MAILBOX = 1
 TEST_HPPS_RTPS_MAILBOX = 1
 TEST_SOFT_RESET = 0
 TEST_RT_MMU = 1
+TEST_RTPS_MMU = 1
 TEST_RTPS_DMA = 1
 TEST_RTPS_DMA_CB = 1
 
@@ -48,11 +50,13 @@ OBJS = \
 	drivers/gic.o \
 	drivers/mailbox.o \
 	drivers/dma.o \
+	drivers/mmu.o \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
 	lib/object.o \
 	lib/mailbox-link.o \
+	lib/balloc.o \
 	lib/command.o \
 	server.o \
 	main.o \
@@ -64,7 +68,10 @@ ifeq ($(strip $(TEST_SORT)),1)
 OBJS += test-sort.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
-OBJS += test-mmu.o
+OBJS += test-rt-mmu.o
+endif
+ifeq ($(strip $(TEST_RTPS_MMU)),1)
+OBJS += test-rtps-mmu.o
 endif
 ifeq ($(strip $(TEST_RTPS_TRCH_MAILBOX)),1)
 OBJS += test-mailbox.o
