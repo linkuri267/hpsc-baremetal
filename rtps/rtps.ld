@@ -8,6 +8,7 @@ MEMORY
 }
 
 /* For now we put everything in TCM A */
+/* All the start/end symbols need to be 64-byte aligned for MPU */
 SECTIONS
 {
     .text : { 
@@ -32,10 +33,10 @@ SECTIONS
     end = .;
     __stack_start__ = __data_end__;
     /* __stack_end__ = __sys_stack_end__ - 0x2000; */ /* 0x200 * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
-    __stack_end__ = LENGTH(TCM_A) - 4;
+    __stack_end__ = LENGTH(TCM_A) - 64;
 
    __tcm_a_start__ = ORIGIN(TCM_A);
-   __tcm_a_end__ = ORIGIN(TCM_A) + LENGTH(TCM_A);
+   __tcm_a_end__ = ORIGIN(TCM_A) + LENGTH(TCM_A) - 64;
    __tcm_b_start__ = ORIGIN(TCM_B);
-   __tcm_b_end__ = ORIGIN(TCM_B) + LENGTH(TCM_B);
+   __tcm_b_end__ = ORIGIN(TCM_B) + LENGTH(TCM_B) - 64;
 }
