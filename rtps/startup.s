@@ -266,17 +266,65 @@ EL2_Reset_Handler:
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c9, 1                   // write HPRLAR2
 
+        // Region 3 - HPPS DDR LOW
+        LDR     r1, =__hpps_ddr_low_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c9, 4                   // write HPRBAR3
+        LDR     r1, =__hpps_ddr_low_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c9, 5                   // write HPRLAR3
+
+        // Region 4 - WINDOW
+        LDR     r1, =__window_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c10, 0                   // write HPRBAR4
+        LDR     r1, =__window_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c10, 1                   // write HPRLAR4
+
         // Region 7 - Peripherals
-        LDR     r1, =0x30000000
+        LDR     r1, =__periph_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c11, 4                   // write HPRBAR7
-        LDR     r1, =0xFFFFFF00
+        LDR     r1, =__periph_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c11, 5                   // write HPRLAR7
+
+        // Region 8 - RTPS DDR LOW 0 (first of two halves)
+        LDR     r1, =__rtps_ddr_low_0_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c12, 0                   // write HPRBAR8
+        LDR     r1, =__rtps_ddr_low_0_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c12, 1                   // write HPRLAR8
+
+        // Region 9 - HPPS Mailbox
+        LDR     r1, =__hpps_mbox_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c12, 4                   // write HPRBAR9
+        LDR     r1, =__hpps_mbox_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c12, 5                   // write HPRLAR9
 
         LDR r0, =0x30C5180d             // DK's test. Enable EL2 MPU. 
         MCR p15, 4, r0, c1, c0, 0       // Write to HSCTLR
@@ -566,12 +614,12 @@ Finished:
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c9, 1                   // write PRLAR2
 
-        // Region 3 - Peripherals
-        LDR     r1, =0x9A000000
+        // Region 3 - WINDOW from 32-bit address space to 40-bit (HPPS)
+        LDR     r1, =__window_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c9, 4                   // write PRBAR3
-        LDR     r1, =0xAFFFFFC0
+        LDR     r1, =__window_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
@@ -579,7 +627,6 @@ Finished:
         MCR     p15, 0, r1, c6, c9, 5                   // write PRLAR3
 
 #ifdef TCM
-#if 0 // Disabling this definition of ATCM, because the above .text, .data, and stack are in TCM A
         // Region 4 - ATCM
 	LDR	r1, =__tcm_a_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
@@ -591,7 +638,6 @@ Finished:
         LDR     r2, =((AttrIndx1<<1) | (ENable))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c10, 1                  // write PRLAR4
-#endif // ATCM
 
         // Region 5 - BTCM
 	LDR	r1, =__tcm_b_start__
@@ -606,31 +652,67 @@ Finished:
         MCR     p15, 0, r1, c6, c10, 5                  // write PRLAR5
 
 #if 0 // Disabling CTCM because not in device tree
-        // Region 6 - CTCM
+        // Region ? - CTCM
 	LDR	r1, =__tcm_c_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 0                  // write PRBAR6
+        MCR     p15, 0, r1, c6, ?, ?                  // write PRBAR?
 	LDR	r1, =__tcm_c_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
         ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 1                  // write PRLAR6
+        MCR     p15, 0, r1, c6, ?, ?                  // write PRLAR?
 #endif // CTCM
 #endif // TCM
 
+        // Region 6 - HPPS DDR LOW
+	LDR	r1, =__hpps_ddr_low_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c11, 0                  // write PRBAR6
+	LDR	r1, =__hpps_ddr_low_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c11, 1                  // write PRLAR6
+
         // Region 7 - Peripherals
-        LDR     r1, =0x30000000
+        LDR     r1, =__periph_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c11, 4                   // write PRBAR7
-        LDR     r1, =0xFFFFFF00
+        LDR     r1, =__periph_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c11, 5                   // write PRLAR7
+
+        // Region 8 - RTPS DDR LOW (first of 2 halves)
+        LDR     r1, =__rtps_ddr_low_0_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c12, 0                   // write PRBAR8
+        LDR     r1, =__rtps_ddr_low_0_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c12, 1                   // write PRLAR8
+
+        // Region 9 - HPPS Mailbox
+        LDR     r1, =__hpps_mbox_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c12, 4                   // write PRBAR9
+        LDR     r1, =__hpps_mbox_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c12, 5                   // write PRLAR9
 
     // MAIR0 configuration
         MRC p15, 0, r0, c10, c2, 0      // Read MAIR0 into r0
