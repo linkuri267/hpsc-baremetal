@@ -232,7 +232,6 @@ EL2_Reset_Handler:
 
         // Region 0 - Code
         LDR     r1, =__text_start__
-	mov     r1, #0x0
         LDR     r2, =((Non_Shareable<<3) | (RO_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c8, 0                   // write HPRBAR0
