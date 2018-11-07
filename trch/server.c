@@ -75,16 +75,16 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             unsigned rcv_int_idx, ack_int_idx;
             switch (cmd->arg[0]) {
                 case ENDPOINT_RTPS:
-                    base = LSIO_MBOX_BASE;
-                    irq_base = LSIO_MBOX_IRQ_START;
-                    rcv_int_idx = MBOX_LSIO_TRCH_RCV_INT;
-                    ack_int_idx = MBOX_LSIO_TRCH_ACK_INT;
+                    base = MBOX_LSIO__BASE;
+                    irq_base = MBOX_LSIO__IRQ_START;
+                    rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
+                    ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
                     break;
                 case ENDPOINT_HPPS:
-                    base = HPPS_MBOX_BASE;
-                    irq_base = HPPS_MBOX_IRQ_START;
-                    rcv_int_idx = MBOX_HPPS_TRCH_RCV_INT;
-                    ack_int_idx = MBOX_HPPS_TRCH_ACK_INT;
+                    base = MBOX_HPPS_TRCH__BASE;
+                    irq_base = MBOX_HPPS_TRCH__IRQ_START;
+                    rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
+                    ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
                     break;
                 default:
                     reply[0] = -1;

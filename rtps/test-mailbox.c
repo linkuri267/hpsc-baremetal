@@ -10,9 +10,9 @@
 int test_rtps_trch_mailbox()
 {
     struct mbox_link *rtps_link = mbox_link_connect(
-                    LSIO_MBOX_BASE, LSIO_MBOX_IRQ_START,
-                    MBOX_LSIO_TRCH_RTPS, MBOX_LSIO_RTPS_TRCH, 
-                    MBOX_LSIO_RTPS_RCV_INT, MBOX_LSIO_RTPS_ACK_INT,
+                    MBOX_LSIO__BASE, MBOX_LSIO__IRQ_START,
+                    MBOX_LSIO__TRCH_RTPS, MBOX_LSIO__RTPS_TRCH, 
+                    MBOX_LSIO__RTPS_RCV_INT, MBOX_LSIO__RTPS_ACK_INT,
                     /* server */ 0,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)

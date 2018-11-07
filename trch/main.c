@@ -41,9 +41,9 @@ int notmain ( void )
 
 #if TEST_HPPS_TRCH_MAILBOX_SSW
     struct mbox_link *hpps_link_ssw = mbox_link_connect(
-                    HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
-                    MBOX_HPPS_HPPS_TRCH_SSW, MBOX_HPPS_TRCH_HPPS_SSW,
-                    MBOX_HPPS_TRCH_RCV_INT, MBOX_HPPS_TRCH_ACK_INT,
+                    MBOX_HPPS_TRCH__BASE, MBOX_HPPS_TRCH__IRQ_START,
+                    MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
+                    MBOX_HPPS_TRCH__TRCH_RCV_INT, MBOX_HPPS_TRCH__TRCH_ACK_INT,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
@@ -54,9 +54,9 @@ int notmain ( void )
 
 #if TEST_HPPS_TRCH_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect(
-                    HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
-                    MBOX_HPPS_HPPS_TRCH, MBOX_HPPS_TRCH_HPPS,
-                    MBOX_HPPS_TRCH_RCV_INT, MBOX_HPPS_TRCH_ACK_INT,
+                    MBOX_HPPS_TRCH__BASE, MBOX_HPPS_TRCH__IRQ_START,
+                    MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
+                    MBOX_HPPS_TRCH__TRCH_RCV_INT, MBOX_HPPS_TRCH__TRCH_ACK_INT,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -67,9 +67,9 @@ int notmain ( void )
 
 #if TEST_RTPS_TRCH_MAILBOX
     struct mbox_link *rtps_link = mbox_link_connect(
-                    LSIO_MBOX_BASE, LSIO_MBOX_IRQ_START,
-                    MBOX_LSIO_RTPS_TRCH, MBOX_LSIO_TRCH_RTPS,
-                    MBOX_LSIO_TRCH_RCV_INT, MBOX_LSIO_TRCH_ACK_INT,
+                    MBOX_LSIO__BASE, MBOX_LSIO__IRQ_START,
+                    MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
+                    MBOX_LSIO__TRCH_RCV_INT, MBOX_LSIO__TRCH_ACK_INT,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)

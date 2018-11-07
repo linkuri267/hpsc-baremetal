@@ -32,8 +32,8 @@ int test_rt_mmu()
 	return 1;
     if (mmu_map(rtps_ctx, 0xc0000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	return 1;
-    if (mmu_map(rtps_ctx, (uint32_t)HPPS_MBOX_BASE,
-			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
+    if (mmu_map(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE,
+			  (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
 	return 1;
 
     struct mmu_stream *rtps_stream =
@@ -49,8 +49,8 @@ int test_rt_mmu()
 	return 1;
     if (mmu_map(trch_ctx, 0xc1000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	return 1;
-    if (mmu_map(trch_ctx, (uint32_t)HPPS_MBOX_BASE,
-			  (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
+    if (mmu_map(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE,
+			  (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE))
 	return 1;
 
     struct mmu_stream *trch_stream =
@@ -85,7 +85,7 @@ int test_rt_mmu()
     if (mmu_stream_destroy(rtps_stream))
 	return 1;
 
-    if (mmu_unmap(rtps_ctx, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
+    if (mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
 	return 1;
     if (mmu_unmap(rtps_ctx, 0xc0000000, MMU_TEST_REGION_SIZE))
 	return 1;

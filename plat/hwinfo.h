@@ -21,13 +21,15 @@
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
 
-#define HPSC_MBOX_NUM_BLOCKS 2
+#define HPSC_MBOX_NUM_BLOCKS 3
 
-#define LSIO_MBOX_BASE ((volatile uint32_t *)0x3000a000)
-#define HPPS_MBOX_BASE ((volatile uint32_t *)0xfff50000)
+#define MBOX_LSIO__BASE           ((volatile uint32_t *)0x3000a000)
+#define MBOX_HPPS_TRCH__BASE      ((volatile uint32_t *)0xfff50000)
+#define MBOX_HPPS_RTPS__BASE      ((volatile uint32_t *)0xfff60000)
 
-#define LSIO_MBOX_IRQ_START         72
-#define HPPS_MBOX_IRQ_START         136
+#define MBOX_LSIO__IRQ_START              72
+#define MBOX_HPPS_TRCH__IRQ_START         136
+#define MBOX_HPPS_RTPS__IRQ_START         203
 
 // From QEMU device tree / HW spec
 #define MASTER_ID_TRCH_CPU  0x2d

@@ -93,9 +93,9 @@ int main(void)
 
 #if TEST_HPPS_RTPS_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect(
-                    HPPS_MBOX_BASE, HPPS_MBOX_IRQ_START,
-                    MBOX_HPPS_HPPS_RTPS, MBOX_HPPS_RTPS_HPPS, 
-                    MBOX_HPPS_RTPS_RCV_INT, MBOX_HPPS_RTPS_ACK_INT,
+                    MBOX_HPPS_RTPS__BASE, MBOX_HPPS_RTPS__IRQ_START,
+                    MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
+                    MBOX_HPPS_RTPS__RTPS_RCV_INT, MBOX_HPPS_RTPS__RTPS_ACK_INT,
                     /* server */ MASTER_ID_RTPS_CPU0,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -131,19 +131,19 @@ void irq_handler(unsigned irq) {
         // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
         // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
 #if TEST_HPPS_RTPS_MAILBOX
-        case HPPS_MBOX_IRQ_START + MBOX_HPPS_RTPS_RCV_INT:
-                mbox_rcv_isr(MBOX_HPPS_RTPS_RCV_INT);
+        case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_RCV_INT:
+                mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
                 break;
-        case HPPS_MBOX_IRQ_START  + MBOX_HPPS_RTPS_ACK_INT:
-                mbox_ack_isr(MBOX_HPPS_RTPS_ACK_INT);
+        case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_ACK_INT:
+                mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
                 break;
 #endif // TEST_HPPS_RTPS_MAILBOX
 #if TEST_RTPS_TRCH_MAILBOX
-        case LSIO_MBOX_IRQ_START + MBOX_LSIO_RTPS_RCV_INT:
-                mbox_rcv_isr(MBOX_LSIO_RTPS_RCV_INT);
+        case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_RCV_INT:
+                mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
                 break;
-        case LSIO_MBOX_IRQ_START + MBOX_LSIO_RTPS_ACK_INT:
-                mbox_ack_isr(MBOX_LSIO_RTPS_ACK_INT);
+        case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_ACK_INT:
+                mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
                 break;
 #endif // TEST_RTPS_TRCH_MAILBOX
 #if TEST_RTPS_DMA
