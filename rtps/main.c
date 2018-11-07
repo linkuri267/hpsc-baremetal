@@ -8,6 +8,7 @@
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 #include "dma.h"
+#include "intc.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -58,6 +59,7 @@ int main(void)
 */
     enable_interrupts();
 
+    intc_init((volatile uint32_t *)RTPS_GIC_BASE);
 
 #if TEST_FLOAT
     if (test_float())

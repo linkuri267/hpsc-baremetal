@@ -3,6 +3,9 @@
 
 // This file fulfills the role of a device tree
 
+#define RTPS_GIC_BASE   0x30e00000
+#define TRCH_NVIC_BASE  0xe000e000
+
 #define RTPS_TRCH_TO_HPPS_SMMU_BASE   ((volatile uint32_t *)0x31100000)
 #define RTPS_SMMU_BASE                ((volatile uint32_t *)0x31000000)
 #define HPPS_SMMU_BASE                ((volatile uint32_t *)0xf9300000)

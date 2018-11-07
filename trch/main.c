@@ -22,6 +22,8 @@ int notmain ( void )
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");
 
+    intc_init((volatile uint32_t *)TRCH_NVIC_BASE);
+
 #if TEST_FLOAT
     if (test_float())
         panic("float test");

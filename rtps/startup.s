@@ -9,8 +9,10 @@
 
 #define DK_GIC
 #ifdef DK_GIC
-#define GICD_BASE 0xF9A00000
-#define GICR_BASE 0xF9B00000
+#include "hwinfo.h"
+
+#define GICD_BASE (RTPS_GIC_BASE + 0x00000000)
+#define GICR_BASE (RTPS_GIC_BASE + 0x00100000)
 
 /* Distributor Registers */
 #define GICD_CTLR		0x0000
