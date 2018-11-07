@@ -14,7 +14,7 @@ MEMORY
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
     WINDOW (RW):          ORIGIN = 0xc0000000, LENGTH = 0x20000000
-    HPPS_MBOX (RW):       ORIGIN = 0xf9220000, LENGTH = 0x00080000
+    HPPS_MBOX (RW):       ORIGIN = 0xfff50000, LENGTH = 0x00080000
 }
 
 /* All the start/end symbols need to be 64-byte aligned for MPU */
