@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "mailbox.h"
 
-#define MAX_CMD_ARG_LEN 16
+#define CMD_MSG_LEN 16
 
 #define CMD_NOP                         0
 #define CMD_PING                        1
@@ -17,8 +17,7 @@
 #define CMD_MBOX_LINK_PING              1002
 
 struct cmd {
-    uint32_t cmd;
-    uint32_t arg[MAX_CMD_ARG_LEN];
+    uint32_t msg[CMD_MSG_LEN];
     struct mbox *reply_mbox;
     volatile bool *reply_acked;
 };

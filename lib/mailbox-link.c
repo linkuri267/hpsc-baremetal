@@ -27,7 +27,6 @@ struct mbox_link {
 };
 
 static struct mbox_link links[MAX_LINKS] = {0};
-static uint32_t req_msg[HPSC_MBOX_DATA_REGS];
 
 static void handle_ack(void *arg)
 {
@@ -39,16 +38,15 @@ static void handle_ack(void *arg)
 static void handle_cmd(void *arg, uint32_t *msg, size_t size)
 {
     struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
-    unsigned i;
+    size_t i;
 
-    struct cmd cmd; // can't use initializer, because GCC inserts a memset for initing .arg
+    struct cmd cmd; // can't use initializer, because GCC inserts a memset for initing .msg
     cmd.reply_mbox = ctx->reply_mbox;
     cmd.reply_acked = &ctx->tx_acked;
-    cmd.cmd = msg[0];
-    for (i = 0; i < HPSC_MBOX_DATA_REGS - 1 && i < size - 1; ++i)
-        cmd.arg[i] = msg[1 + i];
+    for (i = 0; i < HPSC_MBOX_DATA_REGS && i < size; ++i)
+        cmd.msg[i] = msg[i];
 
-    printf("rcved CMD (%u, %u ...)\r\n", cmd.cmd, cmd.arg[0]);
+    printf("rcved CMD (%u, %u ...)\r\n", cmd.msg[0], cmd.msg[1]);
 
     if (cmd_enqueue(&cmd))
         panic("failed to enqueue command");
@@ -75,7 +73,7 @@ static void link_clear(struct mbox_link *link)
 
 static struct mbox_link *link_alloc()
 {
-    unsigned i = 0;
+    size_t i = 0;
     struct mbox_link *link;
     while (links[i].valid && i < MAX_LINKS)
         ++i;
@@ -142,7 +140,7 @@ int mbox_link_disconnect(struct mbox_link *link) {
     return rc;
 }
 
-int mbox_link_request(struct mbox_link *link, unsigned cmd,
+int mbox_link_request(struct mbox_link *link,
                       uint32_t *arg, size_t arg_len,
                       uint32_t *reply, size_t reply_sz)
 {
@@ -154,13 +152,8 @@ int mbox_link_request(struct mbox_link *link, unsigned cmd,
     link->cmd_ctx.reply = reply;
     link->cmd_ctx.reply_sz = reply_sz;
 
-    // TODO: remove this copy by removing cmd/arg from the iface
-    req_msg[0] = cmd;
-    for (i = 0; i < arg_len; ++i)
-        req_msg[i + 1] = arg[i];
-
-    printf("sending message: cmd %x arg %x..\r\n", req_msg[0], req_msg[1]);
-    rc = mbox_send(link->mbox_to, req_msg, 1 + arg_len);
+    printf("sending message: cmd %x arg %x..\r\n", arg[0], arg[1]);
+    rc = mbox_send(link->mbox_to, arg, arg_len);
     if (rc) {
         printf("message send to TRCH failed: rc %u\r\n", rc);
         return 1;

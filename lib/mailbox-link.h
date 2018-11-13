@@ -21,7 +21,7 @@ struct mbox_link *mbox_link_connect(
         unsigned rcv_int_idx, unsigned ack_int_idx, /* interrupt index within IP block */
         unsigned server, unsigned client);
 int mbox_link_disconnect(struct mbox_link *link);
-int mbox_link_request(struct mbox_link *link, unsigned cmd,
+int mbox_link_request(struct mbox_link *link,
                       uint32_t *arg, size_t arg_len,
                       uint32_t *reply, size_t reply_sz);
 

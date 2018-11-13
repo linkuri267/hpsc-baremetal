@@ -7,15 +7,15 @@
 #include "command.h"
 
 #define CMD_QUEUE_LEN 4
-#define REPLY_SIZE MAX_CMD_ARG_LEN
+#define REPLY_SIZE CMD_MSG_LEN
 
-static unsigned cmdq_head = 0;
-static unsigned cmdq_tail = 0;
+static size_t cmdq_head = 0;
+static size_t cmdq_tail = 0;
 static struct cmd cmdq[CMD_QUEUE_LEN];
 
 int cmd_enqueue(struct cmd *cmd)
 {
-    unsigned i;
+    size_t i;
 
     if (cmdq_head + 1 % CMD_QUEUE_LEN == cmdq_tail) {
         printf("cannot enqueue command: queue full\r\n");
@@ -24,20 +24,19 @@ int cmd_enqueue(struct cmd *cmd)
     cmdq_head = (cmdq_head + 1) % CMD_QUEUE_LEN;
 
     // cmdq[cmdq_head] = *cmd; // can't because GCC inserts a memcpy
-    cmdq[cmdq_head].cmd = cmd->cmd;
     cmdq[cmdq_head].reply_mbox = cmd->reply_mbox;
     cmdq[cmdq_head].reply_acked = cmd->reply_acked;
-    for (i = 0; i < MAX_CMD_ARG_LEN; ++i)
-        cmdq[cmdq_head].arg[i] = cmd->arg[i];
+    for (i = 0; i < CMD_MSG_LEN; ++i)
+        cmdq[cmdq_head].msg[i] = cmd->msg[i];
 
     printf("enqueue command (tail %u head %u): cmd %u arg %u...\r\n",
-           cmdq_tail, cmdq_head, cmdq[cmdq_head].cmd, cmdq[cmdq_head].arg[0]);
+           cmdq_tail, cmdq_head, cmdq[cmdq_head].msg[0], cmdq[cmdq_head].msg[1]);
     return 0;
 }
 
 int cmd_dequeue(struct cmd *cmd)
 {
-    unsigned i;
+    size_t i;
 
     if (cmdq_head == cmdq_tail)
         return 1;
@@ -45,13 +44,12 @@ int cmd_dequeue(struct cmd *cmd)
     cmdq_tail = (cmdq_tail + 1) % CMD_QUEUE_LEN;
 
     // *cmd = cmdq[cmdq_tail].cmd; // can't because GCC inserts a memcpy
-    cmd->cmd = cmdq[cmdq_tail].cmd;
     cmd->reply_mbox = cmdq[cmdq_tail].reply_mbox;
     cmd->reply_acked = cmdq[cmdq_tail].reply_acked;
-    for (i = 0; i < MAX_CMD_ARG_LEN; ++i)
-        cmd->arg[i] = cmdq[cmdq_tail].arg[i];
+    for (i = 0; i < CMD_MSG_LEN; ++i)
+        cmd->msg[i] = cmdq[cmdq_tail].msg[i];
     printf("dequeue command (tail %u head %u): cmd %u arg %u...\r\n",
-           cmdq_tail, cmdq_head, cmdq[cmdq_tail].cmd, cmdq[cmdq_tail].arg[0]);
+           cmdq_tail, cmdq_head, cmdq[cmdq_tail].msg[0], cmdq[cmdq_tail].msg[1]);
     return 0;
 }
 
@@ -60,7 +58,7 @@ void cmd_handle(struct cmd *cmd)
     uint32_t reply[REPLY_SIZE];
     int reply_len;
 
-    printf("CMD handle cmd %x arg %x...\r\n", cmd->cmd, cmd->arg[0]);
+    printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[1]);
 
     reply_len = server_process(cmd, &reply[0], REPLY_SIZE - 1); // 1 word for header
 

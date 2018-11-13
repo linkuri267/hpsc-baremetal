@@ -18,11 +18,10 @@ int test_rtps_trch_mailbox()
     if (!rtps_link)
         return 1;
 
-    unsigned cmd = CMD_PING;
-    uint32_t arg[] = { 42 };
+    uint32_t arg[] = { CMD_PING, 42 };
     uint32_t reply[sizeof(arg) / sizeof(arg[0])] = {0};
     printf("arg len: %u\r\n", sizeof(arg) / sizeof(arg[0]));
-    int rc = mbox_link_request(rtps_link, cmd, arg, sizeof(arg) / sizeof(arg[0]),
+    int rc = mbox_link_request(rtps_link, arg, sizeof(arg) / sizeof(arg[0]),
                                reply, sizeof(reply) / sizeof(reply[0]));
     if (rc)
         return rc;
