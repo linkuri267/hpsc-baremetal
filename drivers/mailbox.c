@@ -98,10 +98,11 @@ static void block_put(struct mbox_ip_block *b)
 {
     ASSERT(b);
     ASSERT(b->refcnt);
-    for (unsigned e = 0; e < HPSC_MBOX_EVENTS; ++e)
-        ASSERT(!b->irq_refcnt[e]);
-    if (!--b->refcnt)
+    if (!--b->refcnt) {
+        for (unsigned e = 0; e < HPSC_MBOX_EVENTS; ++e)
+            ASSERT(!b->irq_refcnt[e]);
         OBJECT_FREE(b);
+    }
 }
 
 struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
