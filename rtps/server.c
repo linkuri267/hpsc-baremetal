@@ -13,7 +13,8 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_PING:
             printf("PING %x...\r\n", cmd->arg[0]);
-            for (i = 0; i < MAX_CMD_ARG_LEN && i < reply_size; ++i)
+            reply[0] = CMD_PONG;
+            for (i = 1; i < MAX_CMD_ARG_LEN && i < reply_size; ++i)
                 reply[i] = cmd->arg[i];
             return i;
         case CMD_PONG:

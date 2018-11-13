@@ -8,10 +8,6 @@
 #include "mailbox-map.h"
 #include "hwinfo.h"
 
-#define CMD_MBOX_LINK_CONNECT           0x4
-#define CMD_MBOX_LINK_DISCONNECT        0x5
-#define CMD_MBOX_LINK_ECHO              0x6
-
 #define ENDPOINT_HPPS 0
 #define ENDPOINT_RTPS 1
 
@@ -46,7 +42,7 @@ static const char *cmd_to_str(unsigned cmd)
         case CMD_RESET_HPPS:            return "RESET_HPPS";
         case CMD_MBOX_LINK_CONNECT:     return "MBOX_LINK_CONNECT";
         case CMD_MBOX_LINK_DISCONNECT:  return "MBOX_LINK_DISCONNECT";
-        case CMD_MBOX_LINK_ECHO:        return "MBOX_LINK_ECHO";
+        case CMD_MBOX_LINK_PING:        return "MBOX_LINK_PING";
         default:                        return "?";
     }
 }
@@ -61,7 +57,8 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_PING:
             printf("PING %x...\r\n", cmd->arg[0]);
-            for (i = 0; i < MAX_CMD_ARG_LEN && i < reply_size; ++i)
+            reply[0] = CMD_PONG;
+            for (i = 1; i < MAX_CMD_ARG_LEN && i < reply_size; ++i)
                 reply[i] = cmd->arg[i];
             return i;
         case CMD_PONG:
@@ -129,7 +126,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             reply[0] = rc;
             return 1;
         }
-        case CMD_MBOX_LINK_ECHO: {
+        case CMD_MBOX_LINK_PING: {
             unsigned index = cmd->arg[0];
             if (index >= MAX_MBOX_LINKS) {
                 reply[0] = -1;
