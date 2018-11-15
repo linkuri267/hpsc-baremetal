@@ -36,6 +36,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
     size_t i;
     switch (cmd->msg[0]) {
         case CMD_NOP:
+            printf("NOP ...\r\n");
             // do nothing and reply nothing command
             return 0;
         case CMD_PING:
