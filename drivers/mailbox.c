@@ -299,7 +299,7 @@ static void mbox_isr(unsigned event, unsigned interrupt)
         // Two criteria: (1) Cause is set, and (2) Mapped to our IRQ
         addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CAUSE);
         val = *addr;
-        printf("mbox_receive: cause: %p -> %08lx\r\n", addr, val);
+        // printf("mbox_receive: cause: %p -> %08lx\r\n", addr, val);
         if (!(val & event))
             continue; // this mailbox didn't raise the interrupt
         addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_ENABLE);
