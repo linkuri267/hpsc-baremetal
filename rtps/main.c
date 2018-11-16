@@ -42,17 +42,10 @@ void soft_reset (void)
 
 int main(void)
 {
-//    asm(".global __use_hlt_semihosting");
-    cdns_uart_startup(); 	// init UART
-    printf("R52 is alive\r\n");
+    cdns_uart_startup();
+    printf("RTPS\r\n");
 
-
-    /* Display a welcome message via semihosting */
-    printf("Cortex-R52 bare-metal startup example\r\n");
-
-    /* Enable the caches */
     enable_caches();
-
     enable_interrupts();
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
