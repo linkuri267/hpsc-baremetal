@@ -11,8 +11,9 @@
 #ifdef DK_GIC
 #include "hwinfo.h"
 
+/* See GIC-500 TRM Section 3.2 */
 #define GICD_BASE (RTPS_GIC_BASE + 0x00000000)
-#define GICR_BASE (RTPS_GIC_BASE + 0x00100000)
+#define GICR_BASE (RTPS_GIC_BASE + 0x00040000)
 
 /* Distributor Registers */
 #define GICD_CTLR		0x0000
