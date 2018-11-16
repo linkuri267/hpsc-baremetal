@@ -36,11 +36,6 @@
 #define MAX_BLOCKS 2
 #define MAX_MBOXES (MAX_BLOCKS * HPSC_MBOX_INSTANCES)
 
-struct irq {
-        unsigned irq;
-        unsigned refcount;
-};
-
 struct mbox_ip_block {
         struct object obj;
         volatile uint32_t *base;
@@ -54,7 +49,7 @@ struct mbox {
         volatile uint32_t *base;
         unsigned instance;
         int int_idx;
-        int irq;
+        struct irq *irq;
         bool owner; // whether this mailbox was claimed as owner
         union mbox_cb cb;
         void *cb_arg;
@@ -68,7 +63,7 @@ static struct mbox_ip_block blocks[MAX_BLOCKS] = {0};
 static void mbox_irq_subscribe(struct mbox *mbox)
 {
     if (mbox->block->irq_refcnt[mbox->int_idx]++ == 0)
-        intc_int_enable(mbox->irq, IRQ_TYPE_EDGE);
+        intc_int_enable(mbox->irq);
 }
 static void mbox_irq_unsubscribe(struct mbox *mbox)
 {
@@ -105,13 +100,14 @@ static void block_put(struct mbox_ip_block *b)
     }
 }
 
-struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
-                        unsigned instance, unsigned int_idx,
+struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
+                        struct irq *irq, unsigned int_idx,
                         uint32_t owner, uint32_t src, uint32_t dest,
                         enum mbox_dir dir, union mbox_cb cb, void *cb_arg)
 {
-    printf("mbox claim: ip %x irq base %u instance %u int %u owner %x src %x dest %x dir %u\r\n",
-           ip_base, irq_base, instance, int_idx, owner, src, dest, dir);
+    printf("mbox claim: ip %x instance %u irq (type %u) %u int %u owner %x src %x dest %x dir %u\r\n",
+           ip_base, instance, intc_int_type(irq), intc_int_num(irq),
+           int_idx, owner, src, dest, dir);
 
     struct mbox *m = OBJECT_ALLOC(mboxes);
     if (!m)
@@ -124,7 +120,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
     m->instance = instance;
     m->base = (volatile uint32_t *)((uint8_t *)ip_base + instance * HPSC_MBOX_INSTANCE_REGION);
     m->int_idx = int_idx;
-    m->irq = irq_base + int_idx;
+    m->irq = irq;
     m->owner = (owner != 0);
 
     if (m->owner) {

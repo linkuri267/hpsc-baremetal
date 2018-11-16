@@ -197,7 +197,6 @@ EL1_IRQ_Handler:
         PUSH {r0} // save, because we are going to use
         MRC p15, 0, r0, c12, c12, 0 // r1 <- IRCC_IAR1 (INTID)	// coproc, #opcode1, Rt, CRn, CRm{, #opcode2}
         PUSH {r0} // save INTID before we modify it and before irq_handler clobbers it
-        SUB r0, #32 /* convert INTID to IRQ # (as in Qemu device tree) TODO: does this offset have a name? */
         BL irq_handler // arg passed in r0 (IRQ #)
         POP {r0} // restore INTID
         MCR p15, 0, r0, c12, c12, 1 // ICC_EOIR1 <- r0 (INTID)	// coproc, #opcode1, Rt, CRn, CRm{, #opcode2}

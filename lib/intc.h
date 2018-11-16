@@ -3,13 +3,29 @@
 
 #include <stdint.h>
 
-typedef enum {
-    IRQ_TYPE_LEVEL = 0,
-    IRQ_TYPE_EDGE  = 1
-} irq_type_t;
+// This interface lets consumers reach the system's interrupt controller
+// driver, without knowing which driver is in use.  This is useful for drivers,
+// whereas from system-specific code, it is simpler to just use the direct API
+// of the respective interrupt controller.
 
-void intc_init(volatile uint32_t *base);
-void intc_int_enable(unsigned irq, irq_type_t type);
-void intc_int_disable(unsigned irq);
+struct irq;
+
+struct intc_ops {
+    void (*int_enable)(struct irq *irq);
+    void (*int_disable)(struct irq *irq);
+
+    // For debugging info purpose
+    unsigned (*int_num)(struct irq *irq);
+    unsigned (*int_type)(struct irq *irq);
+};
+
+void intc_register(const struct intc_ops *ops);
+
+void intc_int_enable(struct irq *irq);
+void intc_int_disable(struct irq *irq);
+
+// For debugging info purposes, since the object is opaque
+unsigned intc_int_num(struct irq *irq);
+unsigned intc_int_type(struct irq *irq);
 
 #endif // INTC_H

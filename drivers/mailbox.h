@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "intc.h"
+
 #define HPSC_MBOX_AS_SIZE 0x10000 // address allocation in mem map/Qemu DT/Qemu model
 
 #define HPSC_MBOX_DATA_REGS 16
@@ -24,8 +26,8 @@ union mbox_cb {
 
 struct mbox;
 
-struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned irq_base,
-                        unsigned instance, unsigned int_idx,
+struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
+                        struct irq *irq, unsigned int_idx,
                         uint32_t owner, uint32_t src, uint32_t dest,
                         enum mbox_dir dir, union mbox_cb cb, void *cb_arg);
 int mbox_release(struct mbox *m);

@@ -55,6 +55,7 @@ OBJS = \
 	lib/panic.o \
 	lib/mem.o \
 	lib/object.o \
+	lib/intc.o \
 	lib/mailbox-link.o \
 	lib/balloc.o \
 	lib/command.o \

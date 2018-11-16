@@ -92,9 +92,10 @@ static void link_free(struct mbox_link *link)
 }
 
 struct mbox_link *mbox_link_connect(
-        volatile uint32_t *base, unsigned irq_base,
+        volatile uint32_t *base,
         unsigned idx_from, unsigned idx_to,
-        unsigned rcv_int_idx, unsigned ack_int_idx, /* interrupt index within IP block */
+        struct irq *rcv_irq, unsigned rcv_int_idx, /* int index within IP block */
+        struct irq *ack_irq, unsigned ack_int_idx,
         unsigned server, unsigned client)
 {
     struct mbox_link *link = link_alloc();
@@ -107,14 +108,14 @@ struct mbox_link *mbox_link_connect(
     link->idx_to = idx_to;
 
     union mbox_cb rcv_cb = { .rcv_cb = server ? handle_cmd : handle_reply };
-    link->mbox_from = mbox_claim(base, irq_base, idx_from, rcv_int_idx,
+    link->mbox_from = mbox_claim(base, idx_from, rcv_irq, rcv_int_idx,
                                  server, client, server, MBOX_INCOMING,
                                  rcv_cb, &link->cmd_ctx);
     if (!link->mbox_from)
         return NULL;
 
     union mbox_cb ack_cb = { .ack_cb = handle_ack };
-    link->mbox_to = mbox_claim(base, irq_base, idx_to, ack_int_idx,
+    link->mbox_to = mbox_claim(base, idx_to, ack_irq, ack_int_idx,
                                server, server, client, MBOX_OUTGOING,
                                ack_cb, &link->cmd_ctx);
     if (!link->mbox_to) {

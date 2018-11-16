@@ -5,7 +5,7 @@
 #include "dma.h"
 #include "hwinfo.h"
 #include "dram-map.h"
-#include "intc.h"
+#include "gic.h"
 #include "test.h"
 
 #define RTPS_DMA_WORDS (RTPS_DMA_SIZE / sizeof(uint32_t))
@@ -70,8 +70,8 @@ static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
 
 int test_rtps_dma()
 {
-    intc_int_enable(RTPS_DMA_ABORT_IRQ, IRQ_TYPE_EDGE);
-    intc_int_enable(RTPS_DMA_EV0_IRQ, IRQ_TYPE_EDGE);
+    gic_int_enable(RTPS_DMA_ABORT_IRQ, GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_EDGE);
+    gic_int_enable(RTPS_DMA_EV0_IRQ, GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_EDGE);
 
     rtps_dma = dma_create("RTPS", RTPS_DMA_BASE,
                           (uint8_t *)RTPS_DMA_MCODE_ADDR, RTPS_DMA_MCODE_SIZE);
@@ -117,8 +117,8 @@ int test_rtps_dma()
     if (dma_destroy(rtps_dma))
 	return 1;
 
-    intc_int_disable(RTPS_DMA_ABORT_IRQ);
-    intc_int_disable(RTPS_DMA_EV0_IRQ);
+    gic_int_disable(RTPS_DMA_ABORT_IRQ, GIC_IRQ_TYPE_SPI);
+    gic_int_disable(RTPS_DMA_EV0_IRQ, GIC_IRQ_TYPE_SPI);
 
     return 0;
 }

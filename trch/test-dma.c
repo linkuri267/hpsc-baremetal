@@ -3,7 +3,7 @@
 #include "printf.h"
 #include "dma.h"
 #include "hwinfo.h"
-#include "intc.h"
+#include "nvic.h"
 #include "test.h"
 
 static struct dma *trch_dma;
@@ -23,8 +23,8 @@ static void dma_tx_completed(void *arg, int rc)
 
 int test_trch_dma()
 {
-    intc_int_enable(TRCH_DMA_ABORT_IRQ, IRQ_TYPE_EDGE);
-    intc_int_enable(TRCH_DMA_EV0_IRQ, IRQ_TYPE_EDGE);
+    nvic_int_enable(TRCH_DMA_ABORT_IRQ);
+    nvic_int_enable(TRCH_DMA_EV0_IRQ);
 
     trch_dma = dma_create("TRCH", TRCH_DMA_BASE,
                           trch_dma_mcode, sizeof(trch_dma_mcode));
@@ -74,8 +74,8 @@ int test_trch_dma()
     if (dma_destroy(trch_dma))
 	return 1;
 
-    intc_int_disable(TRCH_DMA_ABORT_IRQ);
-    intc_int_disable(TRCH_DMA_EV0_IRQ);
+    nvic_int_disable(TRCH_DMA_ABORT_IRQ);
+    nvic_int_disable(TRCH_DMA_EV0_IRQ);
 
     return 0;
 }

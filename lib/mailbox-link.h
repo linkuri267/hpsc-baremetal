@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "intc.h"
 #include "mailbox.h"
 
 struct mbox_link;
@@ -16,9 +17,10 @@ struct mbox_link;
 // To claim as server: set both server and client to non-zero ID
 // To claim as client: set server to 0 and set client to non-zero ID
 struct mbox_link *mbox_link_connect(
-        volatile uint32_t *base, unsigned irq_base,
+        volatile uint32_t *base,
         unsigned idx_from, unsigned idx_to,
-        unsigned rcv_int_idx, unsigned ack_int_idx, /* interrupt index within IP block */
+        struct irq *rcv_irq, unsigned rcv_int_idx, /* interrupt index within IP block */
+        struct irq *ack_irq, unsigned ack_int_idx,
         unsigned server, unsigned client);
 int mbox_link_disconnect(struct mbox_link *link);
 int mbox_link_request(struct mbox_link *link,

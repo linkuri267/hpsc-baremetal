@@ -4,15 +4,25 @@
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 #include "hwinfo.h"
+#include "gic.h"
 #include "command.h"
 #include "test.h"
 
 int test_rtps_trch_mailbox()
 {
-    struct mbox_link *rtps_link = mbox_link_connect(
-                    MBOX_LSIO__BASE, MBOX_LSIO__IRQ_START,
+#define LSIO_RCV_IRQ_IDX  MBOX_LSIO__RTPS_RCV_INT
+#define LSIO_ACK_IRQ_IDX  MBOX_LSIO__RTPS_ACK_INT
+    struct irq *lsio_rcv_irq =
+        gic_request(MBOX_LSIO__IRQ_START + LSIO_RCV_IRQ_IDX,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    struct irq *lsio_ack_irq =
+        gic_request(MBOX_LSIO__IRQ_START + LSIO_ACK_IRQ_IDX,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+
+    struct mbox_link *rtps_link = mbox_link_connect(MBOX_LSIO__BASE,
                     MBOX_LSIO__TRCH_RTPS, MBOX_LSIO__RTPS_TRCH, 
-                    MBOX_LSIO__RTPS_RCV_INT, MBOX_LSIO__RTPS_ACK_INT,
+                    lsio_rcv_irq, LSIO_RCV_IRQ_IDX,
+                    lsio_ack_irq, LSIO_ACK_IRQ_IDX,
                     /* server */ 0,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)

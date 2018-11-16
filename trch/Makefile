@@ -54,6 +54,7 @@ OBJS = \
        lib/balloc.o \
        lib/printf.o \
        lib/panic.o \
+       lib/intc.o \
        lib/mailbox-link.o \
        lib/command.o \
        drivers/mailbox.o \

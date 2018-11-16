@@ -9,6 +9,7 @@
 #include "mailbox-map.h"
 #include "dma.h"
 #include "intc.h"
+#include "gic.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -52,14 +53,9 @@ int main(void)
     /* Enable the caches */
     enable_caches();
 
-    /* Enable GIC */
-/*    printf("start of arm_gic_setup()\n");
-    arm_gic_setup();
-    printf("end of arm_gic_setup()\n");
-*/
     enable_interrupts();
 
-    intc_init((volatile uint32_t *)RTPS_GIC_BASE);
+    gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
 #if TEST_FLOAT
     if (test_float())
@@ -92,10 +88,19 @@ int main(void)
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #if TEST_HPPS_RTPS_MAILBOX
-    struct mbox_link *hpps_link = mbox_link_connect(
-                    MBOX_HPPS_RTPS__BASE, MBOX_HPPS_RTPS__IRQ_START,
+#define HPPS_RCV_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_RCV_INT
+#define HPPS_ACK_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_ACK_INT
+    struct irq *hpps_rcv_irq =
+        gic_request(MBOX_HPPS_RTPS__IRQ_START + HPPS_RCV_IRQ_IDX,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    struct irq *hpps_ack_irq =
+        gic_request(MBOX_HPPS_RTPS__IRQ_START + HPPS_ACK_IRQ_IDX,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+
+    struct mbox_link *hpps_link = mbox_link_connect(MBOX_HPPS_RTPS__BASE,
                     MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
-                    MBOX_HPPS_RTPS__RTPS_RCV_INT, MBOX_HPPS_RTPS__RTPS_ACK_INT,
+                    hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
+                    hpps_ack_irq, HPPS_ACK_IRQ_IDX,
                     /* server */ MASTER_ID_RTPS_CPU0,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -125,36 +130,52 @@ int main(void)
     return 0;
 }
 
-void irq_handler(unsigned irq) {
-    printf("IRQ #%u\r\n", irq);
-    switch (irq) {
-        // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
-        // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
-#if TEST_HPPS_RTPS_MAILBOX
-        case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_RCV_INT:
-                mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
-                break;
-        case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_ACK_INT:
-                mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
-                break;
-#endif // TEST_HPPS_RTPS_MAILBOX
-#if TEST_RTPS_TRCH_MAILBOX
-        case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_RCV_INT:
-                mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
-                break;
-        case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_ACK_INT:
-                mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
-                break;
-#endif // TEST_RTPS_TRCH_MAILBOX
-#if TEST_RTPS_DMA
-        case RTPS_DMA_ABORT_IRQ:
-                dma_abort_isr(rtps_dma);
-                break;
-        case RTPS_DMA_EV0_IRQ:
-                dma_event_isr(rtps_dma, 0);
-                break;
-#endif
-        default:
-                printf("WARN: no ISR for IRQ #%u\r\n", irq);
+void irq_handler(unsigned intid) {
+    printf("INTID #%u\r\n", intid);
+    if (intid < GIC_NR_SGIS) { // SGI
+        unsigned sgi = intid;
+        switch (sgi) {
+            default:
+                printf("WARN: no ISR for SGI IRQ #%u\r\n", sgi);
+        }
+    } else if (intid < GIC_INTERNAL) { // PPI
+        unsigned ppi = intid - GIC_NR_SGIS;
+        switch (ppi) {
+            default:
+                printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
+        }
+    } else { // SPI
+        unsigned irq = intid - GIC_INTERNAL;
+        printf("IRQ #%u\r\n", irq);
+        switch (irq) {
+            // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
+            // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
+    #if TEST_HPPS_RTPS_MAILBOX
+            case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_RCV_INT:
+                    mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
+                    break;
+            case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_ACK_INT:
+                    mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
+                    break;
+    #endif // TEST_HPPS_RTPS_MAILBOX
+    #if TEST_RTPS_TRCH_MAILBOX
+            case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_RCV_INT:
+                    mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
+                    break;
+            case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_ACK_INT:
+                    mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
+                    break;
+    #endif // TEST_RTPS_TRCH_MAILBOX
+    #if TEST_RTPS_DMA
+            case RTPS_DMA_ABORT_IRQ:
+                    dma_abort_isr(rtps_dma);
+                    break;
+            case RTPS_DMA_EV0_IRQ:
+                    dma_event_isr(rtps_dma, 0);
+                    break;
+    #endif
+            default:
+                    printf("WARN: no ISR for IRQ #%u\r\n", irq);
+        }
     }
 }

@@ -5,8 +5,8 @@
 #include "reset.h"
 #include "command.h"
 #include "mailbox-link.h"
-#include "mailbox-map.h"
 #include "hwinfo.h"
+#include "server.h"
 
 #define ENDPOINT_HPPS 0
 #define ENDPOINT_RTPS 1
@@ -14,6 +14,8 @@
 #define MAX_MBOX_LINKS          8
 
 static struct mbox_link *links[MAX_MBOX_LINKS] = {0};
+static struct endpoint *endpoints = NULL;
+static size_t num_endpoints = 0;
 
 static int linkp_alloc(struct mbox_link *link)
 {
@@ -29,6 +31,13 @@ static int linkp_alloc(struct mbox_link *link)
 static void linkp_free(int index)
 {
      links[index] = NULL;
+}
+
+int server_init(struct endpoint *endpts, size_t num_endpts)
+{
+    endpoints = endpts;
+    num_endpoints = num_endpts;
+    return 0;
 }
 
 int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
@@ -65,30 +74,18 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
         case CMD_MBOX_LINK_CONNECT: {
             printf("MBOX_LINK_CONNECT ...\r\n");
             int rc;
-            volatile uint32_t *base;
-            unsigned irq_base;
-            unsigned rcv_int_idx, ack_int_idx;
-            switch (cmd->msg[1]) {
-                case ENDPOINT_RTPS:
-                    base = MBOX_LSIO__BASE;
-                    irq_base = MBOX_LSIO__IRQ_START;
-                    rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
-                    ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
-                    break;
-                case ENDPOINT_HPPS:
-                    base = MBOX_HPPS_TRCH__BASE;
-                    irq_base = MBOX_HPPS_TRCH__IRQ_START;
-                    rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
-                    ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
-                    break;
-                default:
-                    reply[0] = -1;
-                    return 1;
-            }
+            unsigned endpoint_idx = cmd->msg[1];
 
-            struct mbox_link *link = mbox_link_connect(base, irq_base,
+            if (endpoint_idx >= num_endpoints) {
+                reply[0] = -1;
+                return 1;
+            }
+            struct endpoint *endpt = &endpoints[endpoint_idx];
+
+            struct mbox_link *link = mbox_link_connect(endpt->base,
                             /* from mbox */ cmd->msg[2], /* to mbox */ cmd->msg[3],
-                            rcv_int_idx, ack_int_idx,
+                            endpt->rcv_irq, endpt->rcv_int_idx,
+                            endpt->ack_irq, endpt->ack_int_idx,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
             if (!link) {
                 rc = -2;
