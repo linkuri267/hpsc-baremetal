@@ -15,6 +15,7 @@ include ../Makefile.common
 TEST_FLAGS = \
 	TEST_FLOAT \
 	TEST_SORT \
+	TEST_GTIMER \
 	TEST_RTPS_TRCH_MAILBOX \
 	TEST_HPPS_RTPS_MAILBOX \
 	TEST_SOFT_RESET \
@@ -26,6 +27,7 @@ TEST_FLAGS = \
 # Enable disable tests here:
 TEST_FLOAT = 1
 TEST_SORT = 1
+TEST_GTIMER = 1
 TEST_RTPS_TRCH_MAILBOX = 1
 TEST_HPPS_RTPS_MAILBOX = 1
 TEST_SOFT_RESET = 0
@@ -68,6 +70,9 @@ OBJS += test-float.o
 endif
 ifeq ($(strip $(TEST_SORT)),1)
 OBJS += test-sort.o
+endif
+ifeq ($(strip $(TEST_GTIMER)),1)
+OBJS += test-gtimer.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
 OBJS += test-rt-mmu.o

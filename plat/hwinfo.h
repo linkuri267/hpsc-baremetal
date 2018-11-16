@@ -31,6 +31,11 @@
 #define MBOX_HPPS_TRCH__IRQ_START         136
 #define MBOX_HPPS_RTPS__IRQ_START         203
 
+#define TIMER_PHYS_PPI_IRQ              14
+#define TIMER_SEC_PPI_IRQ               13
+#define TIMER_VIRT_PPI_IRQ              11
+#define TIMER_HYP_PPI_IRQ               10
+
 // From QEMU device tree / HW spec
 #define MASTER_ID_TRCH_CPU  0x2d
 

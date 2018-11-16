@@ -10,6 +10,7 @@
 #include "dma.h"
 #include "intc.h"
 #include "gic.h"
+#include "gtimer.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -59,6 +60,11 @@ int main(void)
     if (test_sort())
         panic("sort test");
 #endif // TEST_SORT
+
+#if TEST_GTIMER
+    if (test_gtimer())
+        panic("gtimer test");
+#endif // TEST_GTIMER
 
 #if TEST_RT_MMU
     if (test_rt_mmu())
@@ -134,6 +140,17 @@ void irq_handler(unsigned intid) {
     } else if (intid < GIC_INTERNAL) { // PPI
         unsigned ppi = intid - GIC_NR_SGIS;
         switch (ppi) {
+#if TEST_GTIMER
+            case TIMER_HYP_PPI_IRQ:
+                    gtimer_isr(GTIMER_HYP);
+                    break;
+            case TIMER_PHYS_PPI_IRQ:
+                    gtimer_isr(GTIMER_PHYS);
+                    break;
+            case TIMER_VIRT_PPI_IRQ:
+                    gtimer_isr(GTIMER_VIRT);
+                    break;
+#endif // TEST_GTIMER
             default:
                 printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
         }
