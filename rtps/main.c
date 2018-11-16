@@ -118,8 +118,10 @@ int main(void)
             cmd_handle(&cmd);
 #endif // TEST_HPPS_RTPS_MAILBOX
 
-        printf("Waiting for interrupt...\r\n");
-        asm("wfi");
+        // If interrupt happens after the cmd queueu check above, then ISR will
+        // run and event register will be automatically set, so won't sleep here.
+        printf("Waiting for event...\r\n");
+        asm("wfe");
     }
     
     return 0;
