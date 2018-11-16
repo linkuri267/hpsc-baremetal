@@ -51,6 +51,7 @@ OBJS = \
 	drivers/mailbox.o \
 	drivers/dma.o \
 	drivers/mmu.o \
+	drivers/gtimer.o \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
