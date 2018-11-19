@@ -139,7 +139,7 @@ int notmain ( void )
     * ((uint32_t *) 0xff310000)= val;
     * ((uint32_t *) 0xff320000)= val;
     * ((uint32_t *) 0xff380000)= val;
-    printf("M4: after trigger interrupt to R52\n");
+    printf("M4: after trigger interrupt to R52\r\n");
 #endif // TEST_IPI
 
 #if SERVER

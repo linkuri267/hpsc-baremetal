@@ -1387,7 +1387,7 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
     }
 
     if (ret > pl330->mcbufsz / 2) {
-        printf("DMA: try increasing mcbufsz (%i/%i)\n", pl330->mcbufsz / 2);
+        printf("DMA: try increasing mcbufsz (%i/%i)\r\n", pl330->mcbufsz / 2);
         return NULL;
     }
 
