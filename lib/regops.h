@@ -7,7 +7,8 @@
 #define REG_WRITE32(reg, val) reg_write32(#reg, (volatile uint32_t *)(reg), val)
 #define REG_WRITE64(reg, val) reg_write64(#reg, (volatile uint64_t *)(reg), val)
 
-#define REGB_WRITE32(base, reg, val) reg_write32(#reg, (volatile uint8_t *)(base) + (reg), val)
+#define REGB_WRITE32(base, reg, val) \
+        reg_write32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
 #define REGB_WRITE64(base, reg, val) \
         reg_write64(#reg, (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)), val)
 
@@ -25,7 +26,7 @@
 #define REGB_READ32(base, reg) \
         reg_read32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)))
 #define REGB_READ64(base, reg) \
-        reg_read64(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)))
+        reg_read64(#reg, (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)))
 
 static inline void reg_write32(const char *name, volatile uint32_t *addr, uint32_t val)
 {
