@@ -3,12 +3,13 @@
 #include "printf.h"
 #include "hwinfo.h"
 #include "gic.h"
+#include "delay.h"
 #include "gtimer.h"
 
 #define FREQ_HZ 20000 // this value has no meaning, HW just stores it
 
 #define TICKS_TO_TEST 3
-#define INTERVAL 50000000 // cycles (about a second wall-clock in Qemu)
+#define INTERVAL 80000000 // cycles (about a second wall-clock in Qemu)
 
 struct context {
     enum gtimer timer;
@@ -28,13 +29,6 @@ static void timer_tick(void *arg)
         gtimer_set_tval(ctx->timer, INTERVAL); // schedule the next tick
     else
         gtimer_stop(ctx->timer);
-}
-
-static void wait(unsigned iters)
-{
-    volatile unsigned work = 0;
-    for (int i = 0; i < iters; ++i)
-        work++;
 }
 
 int test_gtimer()

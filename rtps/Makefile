@@ -57,6 +57,7 @@ OBJS = \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
+	lib/delay.o \
 	lib/object.o \
 	lib/intc.o \
 	lib/mailbox-link.o \
