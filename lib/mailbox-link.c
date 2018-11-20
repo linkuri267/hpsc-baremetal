@@ -164,14 +164,16 @@ int mbox_link_request(struct mbox_link *link,
     while (!link->cmd_ctx.tx_acked);
     printf("req: ACK received\r\n");
 
-    printf("req: waiting for reply...\r\n");
-    while (!link->cmd_ctx.reply_len);
-    printf("req: reply received\r\n");
+    if (reply && reply_sz) {
+        printf("req: waiting for reply...\r\n");
+        while (!link->cmd_ctx.reply_len);
+        printf("req: reply received\r\n");
 
-    printf("rcved REPLY: ");
-    for (i = 0; i < link->cmd_ctx.reply_len; ++i)
-        printf("%u ", reply[i]);
-    printf("\r\n");
+        printf("rcved REPLY: ");
+        for (i = 0; i < link->cmd_ctx.reply_len; ++i)
+            printf("%u ", reply[i]);
+        printf("\r\n");
+    }
 
     return 0;
 }
