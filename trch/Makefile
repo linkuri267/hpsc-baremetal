@@ -13,6 +13,7 @@ TEST_FLAGS = \
 	TEST_HPPS_TRCH_MAILBOX \
 	TEST_HPPS_TRCH_MAILBOX_SSW \
 	TEST_RTPS_TRCH_MAILBOX \
+	TEST_WDT \
 
 # Enable disable tests here:
 TEST_FLOAT = 1
@@ -20,6 +21,7 @@ TEST_IPI = 0
 TEST_HPPS_TRCH_MAILBOX = 1
 TEST_HPPS_TRCH_MAILBOX_SSW = 1
 TEST_RTPS_TRCH_MAILBOX = 1
+TEST_WDT = 1
 TEST_TRCH_DMA = 1
 TEST_TRCH_DMA_CB = 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU = 1 # RTPS/TRCH->HPPS MMU
@@ -50,6 +52,7 @@ OBJS = \
        vectors.o \
        isr.o \
        lib/mem.o \
+       lib/delay.o \
        lib/object.o \
        lib/balloc.o \
        lib/printf.o \
@@ -62,6 +65,7 @@ OBJS = \
        drivers/uart.o \
        drivers/mmu.o \
        drivers/dma.o \
+       drivers/wdt.o \
        reset.o \
        server.o \
        main.o \
@@ -81,6 +85,9 @@ ifeq ($(if $(filter-out 0,$(strip \
 	$(TEST_HPPS_TRCH_MAILBOX_SSW) \
 	$(TEST_RTPS_TRCH_MAILBOX))),1,0),1)
 OBJS += mailbox-isr.o
+endif
+ifeq ($(strip $(TEST_WDT)),1)
+OBJS += test-wdt.o
 endif
 
 TARGET=trch.elf

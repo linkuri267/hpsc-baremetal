@@ -36,6 +36,10 @@
 #define TIMER_VIRT_PPI_IRQ              11
 #define TIMER_HYP_PPI_IRQ               10
 
+#define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
+#define WDT_TRCH_ST1_IRQ         15
+#define WDT_TRCH_ST2_IRQ         16 // TODO: should not exist, since hard reset (but keep for testing)
+
 // From QEMU device tree / HW spec
 #define MASTER_ID_TRCH_CPU  0x2d
 

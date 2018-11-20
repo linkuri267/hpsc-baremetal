@@ -19,3 +19,8 @@ MBOX_HPPS_TRCH__IRQ_START+MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_lsio_ack_isr
 TRCH_DMA_EV0_IRQ : dma_trch_dma_event_0_isr
 TRCH_DMA_ABORT_IRQ : dma_trch_dma_abort_isr
 #endif
+
+#if TEST_WDT
+WDT_TRCH_ST1_IRQ : wdt_trch_st1_isr
+WDT_TRCH_ST2_IRQ : wdt_trch_st2_isr
+#endif

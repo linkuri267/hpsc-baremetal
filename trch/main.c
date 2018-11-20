@@ -54,6 +54,11 @@ int notmain ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
+#if TEST_WDT
+    if (test_trch_wdt())
+        panic("WDT test");
+#endif // TEST_WDT
+
 #if SERVER
     struct endpoint *endpoint;
 #endif // SERVER
