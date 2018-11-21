@@ -107,9 +107,9 @@ int test_trch_wdt()
 
     rc = 0;
 cleanup:
-    wdt_destroy(trch_wdt);
-cleanup_irq:
     wdt_disable(trch_wdt);
+cleanup_irq:
+    wdt_destroy(trch_wdt);
     nvic_int_disable(WDT_TRCH_ST1_IRQ);
     nvic_int_disable(WDT_TRCH_ST2_IRQ);
     return rc;
