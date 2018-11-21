@@ -113,28 +113,32 @@ static void exec_stage_cmd(struct wdt *wdt, enum stage_cmd scmd, unsigned stage)
 }
 
 struct wdt *wdt_create(const char *name, volatile uint32_t *base,
-                       unsigned num_stages, uint64_t *timeouts,
                        wdt_cb_t cb, void *cb_arg)
 {
-    if (num_stages > MAX_STAGES) {
-        printf("ERROR: WDT: more stages than supported: %u >= %u\r\n",
-               num_stages, MAX_STAGES);
-        return NULL;
-    }
 
     struct wdt *wdt = OBJECT_ALLOC(wdts);
     wdt->base = base;
     wdt->name = name;
     wdt->cb = cb;
     wdt->cb_arg = cb_arg;
+
+    return wdt;
+}
+
+int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
+{
+    if (num_stages > MAX_STAGES) {
+        printf("ERROR: WDT: more stages than supported: %u >= %u\r\n",
+               num_stages, MAX_STAGES);
+        return 1;
+    }
     wdt->num_stages = num_stages;
 
     for (unsigned stage = 0; stage < num_stages; ++stage) {
         REGB_WRITE64(wdt->base, STAGE_REG(REG__TERMINAL, stage), timeouts[stage]);
         exec_stage_cmd(wdt, SCMD_LOAD, stage);
     }
-
-    return wdt;
+    return 0;
 }
 
 void wdt_destroy(struct wdt *wdt)

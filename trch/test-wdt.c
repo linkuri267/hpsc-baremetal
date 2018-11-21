@@ -44,12 +44,16 @@ int test_trch_wdt()
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
 
     trch_wdt = wdt_create("TRCH", WDT_TRCH_BASE,
-                          NUM_STAGES, timeouts,
                           wdt_tick, (void *)&expired_stage);
+
     if (!trch_wdt)
         goto cleanup_irq;
+
+    int rc = wdt_configure(trch_wdt, NUM_STAGES, timeouts);
+    if (rc)
+        goto cleanup_config;
     
-    int rc = 1;
+    rc = 1;
     
     // Without kicking -- expect expiration of each stage in sequence
     printf("wdt test: (1) without kicking...\r\n");
@@ -108,8 +112,9 @@ int test_trch_wdt()
     rc = 0;
 cleanup:
     wdt_disable(trch_wdt);
-cleanup_irq:
+cleanup_config:
     wdt_destroy(trch_wdt);
+cleanup_irq:
     nvic_int_disable(WDT_TRCH_ST1_IRQ);
     nvic_int_disable(WDT_TRCH_ST2_IRQ);
     return rc;

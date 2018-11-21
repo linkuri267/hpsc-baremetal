@@ -12,9 +12,9 @@ typedef void (*wdt_cb_t)(struct wdt *wdt, unsigned stage, void *arg);
 // then the interrupts of latter stages are ignored (but they
 // still happen, since all stages are always active in HW).
 struct wdt *wdt_create(const char *name, volatile uint32_t *base,
-                       unsigned num_stages, uint64_t *timeouts,
                        wdt_cb_t cb, void *cb_arg);
 void wdt_destroy(struct wdt *wdt);
+int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts);
 uint64_t wdt_count(struct wdt *wdt, unsigned stage);
 bool wdt_is_enabled(struct wdt *wdt);
 void wdt_enable(struct wdt *wdt);
