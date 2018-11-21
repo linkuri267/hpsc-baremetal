@@ -16,6 +16,7 @@ struct wdt *wdt_create(const char *name, volatile uint32_t *base,
 void wdt_destroy(struct wdt *wdt);
 int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts);
 uint64_t wdt_count(struct wdt *wdt, unsigned stage);
+uint64_t wdt_timeout(struct wdt *wdt, unsigned stage);
 bool wdt_is_enabled(struct wdt *wdt);
 void wdt_enable(struct wdt *wdt);
 void wdt_disable(struct wdt *wdt);

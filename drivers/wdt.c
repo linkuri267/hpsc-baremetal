@@ -157,6 +157,15 @@ uint64_t wdt_count(struct wdt *wdt, unsigned stage)
     return count;
 }
 
+uint64_t wdt_timeout(struct wdt *wdt, unsigned stage)
+{
+    // NOTE: not going to be the right value if it wasn't not loaded via cmd
+    uint64_t terminal = REGB_READ64(wdt->base, STAGE_REG(REG__TERMINAL, stage));
+    printf("WDT %s: terminal -> 0x%08x%08x\r\n", wdt->name,
+           (uint32_t)(terminal >> 32), (uint32_t)(terminal & 0xffffffff));
+    return terminal;
+}
+
 bool wdt_is_enabled(struct wdt *wdt)
 {
     bool enabled = REGB_READ32(wdt->base, REG__CONFIG) & REG__CONFIG__EN;
