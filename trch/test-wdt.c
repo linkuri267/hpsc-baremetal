@@ -8,7 +8,16 @@
 
 #include "test.h"
 
-static struct wdt *trch_wdt; // needs to be accessible from ISR
+#define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
+#define NUM_STAGES 2
+
+// Need to be at this scope to access from ISRs
+#if TEST_TRCH_WDT
+static struct wdt *trch_wdt;
+#endif // TEST_TRCH_WDT
+#if TEST_RTPS_WDT
+static struct wdt *rtps_wdt;
+#endif // TEST_RTPS_WDT
 
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 {
@@ -32,23 +41,20 @@ static bool check_expiration(unsigned expired_stage, unsigned expected)
     return true;
 }
 
+#if TEST_TRCH_WDT
 int test_trch_wdt()
 {
-#define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
-#define NUM_STAGES 2
-
     nvic_int_enable(WDT_TRCH_ST1_IRQ);
     nvic_int_enable(WDT_TRCH_ST2_IRQ);
 
     volatile unsigned expired_stage;
-    uint64_t timeouts[] = { INTERVAL, INTERVAL };
-
     trch_wdt = wdt_create("TRCH", WDT_TRCH_BASE,
                           wdt_tick, (void *)&expired_stage);
 
     if (!trch_wdt)
         goto cleanup_irq;
 
+    uint64_t timeouts[] = { INTERVAL, INTERVAL };
     int rc = wdt_configure(trch_wdt, NUM_STAGES, timeouts);
     if (rc)
         goto cleanup_config;
@@ -119,7 +125,51 @@ cleanup_irq:
     nvic_int_disable(WDT_TRCH_ST2_IRQ);
     return rc;
 }
+#endif // TEST_TRCH_WDT
 
+#if TEST_RTPS_WDT
+int test_rtps_wdt()
+{
+    // TODO: test RTPS1 too once we have the second core booting (in SPLIT mode?)
+    int rc = 1;
+
+    nvic_int_enable(WDT_RTPS0_ST2_IRQ);
+
+    volatile unsigned expired_stage;
+    uint64_t timeouts[] = { INTERVAL, INTERVAL };
+    rtps_wdt = wdt_create("RTPS0", WDT_RTPS0_TRCH_BASE,
+                                      wdt_tick, (void *)&expired_stage);
+    if (!rtps_wdt)
+        goto cleanup_irq;
+
+    rc = wdt_configure(rtps_wdt, NUM_STAGES, timeouts);
+    if (rc)
+        goto cleanup_config;
+
+    rc = 1;
+
+    // Do not reset RTPS, expect timer expiration
+    expired_stage = 0;
+    wdt_enable(rtps_wdt);
+    delay(INTERVAL * 2);
+    if (!check_expiration(expired_stage, 2)) goto cleanup;
+    if (wdt_is_enabled(rtps_wdt)) goto cleanup;
+
+    // The test where RTPS does kick is done as part of the WDT test
+    // in the main loop, that represents a representative setup of WDT.
+
+    rc = 0;
+cleanup:
+    wdt_disable(rtps_wdt);
+cleanup_config:
+    wdt_destroy(rtps_wdt);
+cleanup_irq:
+    nvic_int_disable(WDT_RTPS0_ST2_IRQ);
+    return rc;
+}
+#endif // TEST_RTPS_WDT
+
+#if TEST_TRCH_WDT
 void wdt_trch_st1_isr()
 {
     wdt_isr(trch_wdt, /* stage */ 0);
@@ -128,3 +178,11 @@ void wdt_trch_st2_isr()
 {
     wdt_isr(trch_wdt, /* stage */ 1);
 }
+#endif // TEST_TRCH_WDT
+
+#if TEST_RTPS_WDT
+void wdt_rtps0_st2_isr()
+{
+    wdt_isr(rtps_wdt, /* stage (zero-based) */ 1);
+}
+#endif // TEST_RTPS_WDT

@@ -39,6 +39,16 @@ int notmain ( void )
 
     nvic_init((volatile uint32_t *)TRCH_NVIC_BASE);
 
+#if TEST_TRCH_WDT
+    if (test_trch_wdt())
+        panic("TRCH WDT test");
+#endif // TEST_TRCH_WDT
+
+#if TEST_RTPS_WDT
+    if (test_rtps_wdt())
+        panic("RTPS WDT test");
+#endif // TEST_RTPS_WDT
+
 #if TEST_FLOAT
     if (test_float())
         panic("float test");
@@ -53,11 +63,6 @@ int notmain ( void )
     if (test_rt_mmu())
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
-
-#if TEST_WDT
-    if (test_trch_wdt())
-        panic("WDT test");
-#endif // TEST_WDT
 
 #if SERVER
     struct endpoint *endpoint;

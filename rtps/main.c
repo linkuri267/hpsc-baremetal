@@ -51,6 +51,11 @@ int main(void)
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
+#if TEST_WDT
+    if (test_wdt())
+        panic("wdt test");
+#endif // TEST_WDT
+
 #if TEST_FLOAT
     if (test_float())
         panic("float test");
@@ -151,6 +156,11 @@ void irq_handler(unsigned intid) {
                     gtimer_isr(GTIMER_VIRT);
                     break;
 #endif // TEST_GTIMER
+#if TEST_WDT
+            case WDT_PPI_IRQ:
+                wdt_isr(wdt, /* stage */ 0);
+                break;
+#endif // TEST_WDT
             default:
                 printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
         }

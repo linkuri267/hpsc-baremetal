@@ -36,9 +36,21 @@
 #define TIMER_VIRT_PPI_IRQ              11
 #define TIMER_HYP_PPI_IRQ               10
 
+#define WDT_PPI_IRQ                      8
+
 #define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
 #define WDT_TRCH_ST1_IRQ         15
 #define WDT_TRCH_ST2_IRQ         16 // TODO: should not exist, since hard reset (but keep for testing)
+
+#define WDT_RTPS0_TRCH_BASE      ((volatile uint32_t *)0x21003000)
+#define WDT_RTPS0_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)
+#define WDT_RTPS1_TRCH_BASE      ((volatile uint32_t *)0x21004000)
+#define WDT_RTPS1_RTPS_BASE      ((volatile uint32_t *)0x30a0b000)
+
+// Stage 1 is hooked up to a PPI IRQ on respective core: WDT_PPI_IRQ
+// Stage 2 is hooked up to a normal interrupt input on TRCH NVIC
+#define WDT_RTPS0_ST2_IRQ         17
+#define WDT_RTPS1_ST2_IRQ         18
 
 // From QEMU device tree / HW spec
 #define MASTER_ID_TRCH_CPU  0x2d
