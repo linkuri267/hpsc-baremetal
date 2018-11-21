@@ -24,6 +24,7 @@
 
 #define HPSC_MBOX_EVENT_A 0x1
 #define HPSC_MBOX_EVENT_B 0x2
+#define HPSC_MBOX_EVENT_C 0x4
 
 #define HPSC_MBOX_INT_A(idx) (1 << (2 * (idx)))      // rcv (map event A to int 'idx')
 #define HPSC_MBOX_INT_B(idx) (1 << (2 * (idx) + 1))  // ack (map event B to int 'idx')
@@ -233,8 +234,6 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
 
     printf("mbox_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    // We don't have to copy, but let's copy for simplicity and to go over the
-    // bus to the IP block only once
     printf("mbox_receive: rcved: ", msg);
     volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)mbox->base + REG_DATA);
 
@@ -245,6 +244,12 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
     }
     printf("\r\n");
 
+    // Clear the event now that we have the message
+    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
+    val = HPSC_MBOX_EVENT_A;
+    printf("mbox_receive: clear int A: %p <- %08lx\r\n", addr, val);
+    *addr = val;
+
     // ACK before the callback, because if callback wants to block,
     // we might have a deadlock.
     addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_SET);
@@ -254,11 +259,6 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
 
     if (mbox->cb.rcv_cb)
         mbox->cb.rcv_cb(mbox->cb_arg, &msg[0], HPSC_MBOX_DATA_REGS);
-
-    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
-    val = HPSC_MBOX_EVENT_A;
-    printf("mbox_receive: clear int A: %p <- %08lx\r\n", addr, val);
-    *addr = val;
 }
 
 static void mbox_instance_ack_isr(struct mbox *mbox)
@@ -268,13 +268,14 @@ static void mbox_instance_ack_isr(struct mbox *mbox)
 
     printf("mbox_ack_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    if (mbox->cb.ack_cb)
-        mbox->cb.ack_cb(mbox->cb_arg);
-
+    // Clear the event first
     addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
     val = HPSC_MBOX_EVENT_B;
     printf("mbox_receive: clear int B: %p <- %08lx\r\n", addr, val);
     *addr = val;
+
+    if (mbox->cb.ack_cb)
+        mbox->cb.ack_cb(mbox->cb_arg);
 }
 
 static void mbox_isr(unsigned event, unsigned interrupt)
