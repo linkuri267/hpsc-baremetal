@@ -156,6 +156,7 @@ int notmain ( void )
     server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
 #endif // SERVER
 
+    unsigned iter = 0; // just to make output that changes to see it
     while (1) {
 
         //printf("main\r\n");
@@ -166,7 +167,7 @@ int notmain ( void )
             cmd_handle(&cmd);
 #endif // SERVER
 
-        printf("Waiting for interrupt...\r\n");
+        printf("[%u] Waiting for interrupt...\r\n", ++iter);
         asm("wfi");
     }
 }

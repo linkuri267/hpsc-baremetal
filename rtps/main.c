@@ -119,6 +119,7 @@ int main(void)
     printf("ERROR: reached unrechable code: soft reset failed\r\n");
 #endif // TEST_SOFT_RESET
 
+    unsigned iter = 0; // just to make output that changes to see it
     while (1) {
 
 #if TEST_HPPS_RTPS_MAILBOX
@@ -127,7 +128,7 @@ int main(void)
             cmd_handle(&cmd);
 #endif // TEST_HPPS_RTPS_MAILBOX
 
-        printf("Waiting for interrupt...\r\n");
+        printf("[%u] Waiting for interrupt...\r\n", iter++);
         asm("wfi");
     }
     
