@@ -188,10 +188,11 @@ void wdt_disable(struct wdt *wdt)
 void wdt_kick(struct wdt *wdt)
 {
     printf("WDT %s: kick\r\n", wdt->name);
-    // In Concept B variant, we have to clear all stages.
-    // In Concept A variant, there is only a clear for stage 0.
-    for (int stage = wdt->num_stages - 1; stage >= 0; --stage)
-        exec_stage_cmd(wdt, SCMD_CLEAR, stage);
+    // In Concept A variant, there is only a clear for stage 0.  In Concept B
+    // variant, there's a clear for each stage, but it is suffient to clear the
+    // first stage, because that action has to stop the timers for downstream
+    // stages in HW, according to the current interpretation of the HW spec.
+    exec_stage_cmd(wdt, SCMD_CLEAR, /* stage */ 0);
 }
 
 void wdt_isr(struct wdt *wdt, unsigned stage)
