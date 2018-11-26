@@ -2,10 +2,12 @@
 #include "gic.h"
 #include "hwinfo.h"
 #include "delay.h"
+#include "watchdog.h"
 
 #include "wdt.h"
 
-struct wdt *wdt; // must be in global scope since needed by global ISR
+#define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
+#define NUM_STAGES 2
 
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 {
@@ -33,17 +35,19 @@ int test_wdt()
 {
     int rc = 1;
 
-    gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
     volatile unsigned expired_stage = 0;
     wdt = wdt_create_target("RTPS0", WDT_RTPS0_RTPS_BASE,
                             wdt_tick, (void *)&expired_stage);
     if (!wdt)
-        goto cleanup_irq;
+        return 1;
 
     if (!wdt_is_enabled(wdt)) {
         printf("ERROR: wdt test: TRCH did not setup the WDT\r\n");
-        goto cleanup;
+        wdt_destroy(wdt);
+        return 1;
     }
+
+    gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
 
     unsigned total_timeout = 0;
     unsigned timeouts[] = { wdt_timeout(wdt, 0), wdt_timeout(wdt, 1) };
@@ -66,9 +70,9 @@ int test_wdt()
     rc = 0;
 
 cleanup:
+    // NOTE: order is important, since ISR may be called during destroy
+    gic_int_disable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
     wdt = NULL;
-cleanup_irq:
-    gic_int_disable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI);
     return rc;
 }

@@ -2,12 +2,10 @@
 #define TEST_H
 
 #include "dma.h"
-#include "wdt.h"
 
 // Needs to be exposed since referenced from the GIC ISR
 // TODO: add cb registration to irq framework to avoid this
 extern struct dma *rtps_dma;
-extern struct wdt *wdt;
 
 int test_float();
 int test_sort();

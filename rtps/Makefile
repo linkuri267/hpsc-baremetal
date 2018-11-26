@@ -17,6 +17,7 @@ TEST_FLAGS = \
 	TEST_SORT \
 	TEST_GTIMER \
 	TEST_WDT \
+	TEST_WDT_STANDALONE \
 	TEST_RTPS_TRCH_MAILBOX \
 	TEST_HPPS_RTPS_MAILBOX \
 	TEST_SOFT_RESET \
@@ -30,6 +31,7 @@ TEST_FLOAT 			= 1
 TEST_SORT 			= 1
 TEST_GTIMER 			= 1
 TEST_WDT 			= 1
+TEST_WDT_STANDALONE		= 1
 TEST_RTPS_TRCH_MAILBOX  	= 1
 TEST_HPPS_RTPS_MAILBOX  	= 1
 TEST_SOFT_RESET 		= 0
@@ -66,6 +68,7 @@ OBJS = \
 	lib/mailbox-link.o \
 	lib/balloc.o \
 	lib/command.o \
+	watchdog.o \
 	server.o \
 	main.o \
 

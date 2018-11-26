@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include "wdt.h"
+#include "watchdog.h"
 #include "printf.h"
 #include "nvic.h"
 #include "hwinfo.h"
@@ -10,14 +11,6 @@
 
 #define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
 #define NUM_STAGES 2
-
-// Need to be at this scope to access from ISRs
-#if TEST_TRCH_WDT
-static struct wdt *trch_wdt;
-#endif // TEST_TRCH_WDT
-#if TEST_RTPS_WDT
-static struct wdt *rtps_wdt;
-#endif // TEST_RTPS_WDT
 
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 {
@@ -41,26 +34,28 @@ static bool check_expiration(unsigned expired_stage, unsigned expected)
     return true;
 }
 
-#if TEST_TRCH_WDT
+#if TEST_TRCH_WDT_STANDALONE
 int test_trch_wdt()
 {
-    nvic_int_enable(WDT_TRCH_ST1_IRQ);
-    nvic_int_enable(WDT_TRCH_ST2_IRQ);
-
     volatile unsigned expired_stage;
     trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
                                   wdt_tick, (void *)&expired_stage);
 
     if (!trch_wdt)
-        goto cleanup_irq;
+        return 1;
 
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
     int rc = wdt_configure(trch_wdt, NUM_STAGES, timeouts);
-    if (rc)
-        goto cleanup_config;
+    if (rc) {
+	wdt_destroy(trch_wdt);
+        return rc;
+    }
     
+    nvic_int_enable(WDT_TRCH_ST1_IRQ);
+    nvic_int_enable(WDT_TRCH_ST2_IRQ);
+
     rc = 1;
-    
+
     // Without kicking -- expect expiration of each stage in sequence
     printf("wdt test: (1) without kicking...\r\n");
     expired_stage = 0;
@@ -118,33 +113,34 @@ int test_trch_wdt()
     rc = 0;
 cleanup:
     wdt_disable(trch_wdt);
-cleanup_config:
-    wdt_destroy(trch_wdt);
-cleanup_irq:
+    // TODO: order is important since ISR might run while destroying
     nvic_int_disable(WDT_TRCH_ST1_IRQ);
     nvic_int_disable(WDT_TRCH_ST2_IRQ);
+    wdt_destroy(trch_wdt);
     return rc;
 }
-#endif // TEST_TRCH_WDT
+#endif // TEST_TRCH_WDT_STANDALONE
 
-#if TEST_RTPS_WDT
+#if TEST_RTPS_WDT_STANDALONE
 int test_rtps_wdt()
 {
     // TODO: test RTPS1 too once we have the second core booting (in SPLIT mode?)
     int rc = 1;
-
-    nvic_int_enable(WDT_RTPS0_ST2_IRQ);
 
     volatile unsigned expired_stage;
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
     rtps_wdt = wdt_create_monitor("RTPS0", WDT_RTPS0_TRCH_BASE,
                                   wdt_tick, (void *)&expired_stage);
     if (!rtps_wdt)
-        goto cleanup_irq;
+        return 1;
 
     rc = wdt_configure(rtps_wdt, NUM_STAGES, timeouts);
-    if (rc)
-        goto cleanup_config;
+    if (rc) {
+	wdt_destroy(rtps_wdt);
+	return rc;
+    }
+
+    nvic_int_enable(WDT_RTPS0_ST2_IRQ);
 
     rc = 1;
 
@@ -161,28 +157,9 @@ int test_rtps_wdt()
     rc = 0;
 cleanup:
     wdt_disable(rtps_wdt);
-cleanup_config:
-    wdt_destroy(rtps_wdt);
-cleanup_irq:
+    // TODO: order is important since ISR might run while destroying
     nvic_int_disable(WDT_RTPS0_ST2_IRQ);
+    wdt_destroy(rtps_wdt);
     return rc;
 }
-#endif // TEST_RTPS_WDT
-
-#if TEST_TRCH_WDT
-void wdt_trch_st1_isr()
-{
-    wdt_isr(trch_wdt, /* stage */ 0);
-}
-void wdt_trch_st2_isr()
-{
-    wdt_isr(trch_wdt, /* stage */ 1);
-}
-#endif // TEST_TRCH_WDT
-
-#if TEST_RTPS_WDT
-void wdt_rtps0_st2_isr()
-{
-    wdt_isr(rtps_wdt, /* stage (zero-based) */ 1);
-}
-#endif // TEST_RTPS_WDT
+#endif // TEST_RTPS_WDT_STANDALONE

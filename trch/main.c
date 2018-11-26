@@ -13,6 +13,7 @@
 #include "hwinfo.h"
 #include "nvic.h"
 #include "server.h"
+#include "watchdog.h"
 #include "test.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
@@ -39,15 +40,15 @@ int notmain ( void )
 
     nvic_init((volatile uint32_t *)TRCH_NVIC_BASE);
 
-#if TEST_TRCH_WDT
+#if TEST_TRCH_WDT_STANDALONE
     if (test_trch_wdt())
         panic("TRCH WDT test");
-#endif // TEST_TRCH_WDT
+#endif // TEST_TRCH_WDT_STANDALONE
 
-#if TEST_RTPS_WDT
+#if TEST_RTPS_WDT_STANDALONE
     if (test_rtps_wdt())
         panic("RTPS WDT test");
-#endif // TEST_RTPS_WDT
+#endif // TEST_RTPS_WDT_STANDALONE
 
 #if TEST_FLOAT
     if (test_float())
@@ -133,6 +134,10 @@ int notmain ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
 
+#if TEST_RTPS_WDT
+    watchdog_rtps_start();
+#endif // TEST_RTPS_WDT
+
 #if TEST_RTPS
     reset_component(COMPONENT_RTPS);
 #endif // TEST_RTPS
@@ -156,8 +161,21 @@ int notmain ( void )
     server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
 #endif // SERVER
 
+#if TEST_TRCH_WDT
+    watchdog_trch_start();
+#endif // TEST_RTPS_WDT
+
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
+#if TEST_TRCH_WDT
+        // Kicking from here is insufficient, because we sleep. There are two
+        // ways to complete: (A) have TRCH disable the watchdog in response to
+        // the WFI output signal from the core, and/or (B) have a scheduler
+        // (with a tick interval shorter than the watchdog timeout interval)
+        // and kick from the scheuduler tick. As a temporary stop-gap, we go
+        // with (C): kick from first stage timeout (see watchdog.c)
+        watchdog_trch_kick();
+#endif // TEST_TRCH_WDT
 
         //printf("main\r\n");
 

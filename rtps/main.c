@@ -11,6 +11,7 @@
 #include "intc.h"
 #include "gic.h"
 #include "gtimer.h"
+#include "watchdog.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -51,10 +52,10 @@ int main(void)
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
-#if TEST_WDT
+#if TEST_WDT_STANDALONE
     if (test_wdt())
         panic("wdt test");
-#endif // TEST_WDT
+#endif // TEST_WDT_STANDALONE
 
 #if TEST_FLOAT
     if (test_float())
@@ -119,8 +120,22 @@ int main(void)
     printf("ERROR: reached unrechable code: soft reset failed\r\n");
 #endif // TEST_SOFT_RESET
 
+#if TEST_WDT
+    watchdog_init();
+#endif // TEST_WDT
+
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
+
+#if TEST_WDT
+        // Kicking from here is insufficient, because we sleep. There are two
+        // ways to complete: (A) have TRCH disable the watchdog in response to
+        // the WFI output signal from the core, and/or (B) have a scheduler
+        // (with a tick interval shorter than the watchdog timeout interval)
+        // and kick from the scheuduler tick. As a temporary stop-gap, we go
+        // with (C): kick from first stage timeout (see watchdog.c)
+        watchdog_kick();
+#endif // TEST_WDT
 
 #if TEST_HPPS_RTPS_MAILBOX
         struct cmd cmd;
