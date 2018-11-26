@@ -85,6 +85,7 @@ struct wdt {
     wdt_cb_t cb;
     void *cb_arg;
     unsigned num_stages;
+    bool monitor; // only the monitor can configure the timer
 };
 
 #define MAX_WDTS 16
@@ -112,21 +113,40 @@ static void exec_stage_cmd(struct wdt *wdt, enum stage_cmd scmd, unsigned stage)
     exec_cmd(wdt, &stage_cmd_codes[stage][scmd]);
 }
 
-struct wdt *wdt_create(const char *name, volatile uint32_t *base,
+static struct wdt *wdt_create(const char *name, volatile uint32_t *base,
                        wdt_cb_t cb, void *cb_arg)
 {
+
+    printf("WDT %s: create base %p\r\n", name, base);
 
     struct wdt *wdt = OBJECT_ALLOC(wdts);
     wdt->base = base;
     wdt->name = name;
+    wdt->monitor = false;
     wdt->cb = cb;
     wdt->cb_arg = cb_arg;
 
     return wdt;
 }
+struct wdt *wdt_create_monitor(const char *name, volatile uint32_t *base,
+                       wdt_cb_t cb, void *cb_arg)
+{
+    struct wdt *wdt = wdt_create(name, base, cb, cb_arg);
+    wdt->monitor = true;
+    return wdt;
+}
+struct wdt *wdt_create_target(const char *name, volatile uint32_t *base,
+                       wdt_cb_t cb, void *cb_arg)
+{
+    struct wdt *wdt = wdt_create(name, base, cb, cb_arg);
+    wdt->monitor = false;
+    return wdt;
+}
 
 int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
 {
+    ASSERT(wdt);
+    ASSERT(wdt->monitor);
     if (num_stages > MAX_STAGES) {
         printf("ERROR: WDT: more stages than supported: %u >= %u\r\n",
                num_stages, MAX_STAGES);
@@ -144,12 +164,15 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
 void wdt_destroy(struct wdt *wdt)
 {
     ASSERT(wdt);
-    ASSERT(!wdt_is_enabled(wdt));
+    printf("WDT %s: destroy\r\n", wdt->name);
+    if (wdt->monitor)
+        ASSERT(!wdt_is_enabled(wdt));
     OBJECT_FREE(wdt);
 }
 
 uint64_t wdt_count(struct wdt *wdt, unsigned stage)
 {
+    ASSERT(wdt);
     exec_stage_cmd(wdt, SCMD_CAPTURE, stage); 
     uint64_t count = REGB_READ64(wdt->base, STAGE_REG(REG__COUNT, stage));
     printf("WDT %s: count -> 0x%08x%08x\r\n", wdt->name,
@@ -159,6 +182,7 @@ uint64_t wdt_count(struct wdt *wdt, unsigned stage)
 
 uint64_t wdt_timeout(struct wdt *wdt, unsigned stage)
 {
+    ASSERT(wdt);
     // NOTE: not going to be the right value if it wasn't not loaded via cmd
     uint64_t terminal = REGB_READ64(wdt->base, STAGE_REG(REG__TERMINAL, stage));
     printf("WDT %s: terminal -> 0x%08x%08x\r\n", wdt->name,
@@ -175,18 +199,23 @@ bool wdt_is_enabled(struct wdt *wdt)
 
 void wdt_enable(struct wdt *wdt)
 {
+    ASSERT(wdt);
+    ASSERT(wdt->monitor);
     printf("WDT %s: enable\r\n", wdt->name);
     REGB_SET32(wdt->base, REG__CONFIG, REG__CONFIG__EN);
 }
 
 void wdt_disable(struct wdt *wdt)
 {
+    ASSERT(wdt);
+    ASSERT(wdt->monitor);
     printf("WDT %s: disable\r\n", wdt->name);
     exec_global_cmd(wdt, CMD_DISABLE);
 }
 
 void wdt_kick(struct wdt *wdt)
 {
+    ASSERT(wdt);
     printf("WDT %s: kick\r\n", wdt->name);
     // In Concept A variant, there is only a clear for stage 0.  In Concept B
     // variant, there's a clear for each stage, but it is suffient to clear the
@@ -197,6 +226,7 @@ void wdt_kick(struct wdt *wdt)
 
 void wdt_isr(struct wdt *wdt, unsigned stage)
 {
+    ASSERT(wdt);
     printf("WDT %s: ISR\r\n", wdt->name);
     // TODO: spec unclear: if we are not allowed to clear the int source, then
     // we have to disable the interrupt via the interrupt controller, and

@@ -33,8 +33,8 @@ int test_wdt()
 {
     gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
     volatile unsigned expired_stage;
-    wdt = wdt_create("RTPS0", WDT_RTPS0_RTPS_BASE,
-                                 wdt_tick, (void *)&expired_stage);
+    wdt = wdt_create_target("RTPS0", WDT_RTPS0_RTPS_BASE,
+                            wdt_tick, (void *)&expired_stage);
 
     unsigned total_timeout = 0;
     unsigned timeouts[] = { wdt_timeout(wdt, 0), wdt_timeout(wdt, 1) };

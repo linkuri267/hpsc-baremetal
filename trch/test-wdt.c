@@ -48,8 +48,8 @@ int test_trch_wdt()
     nvic_int_enable(WDT_TRCH_ST2_IRQ);
 
     volatile unsigned expired_stage;
-    trch_wdt = wdt_create("TRCH", WDT_TRCH_BASE,
-                          wdt_tick, (void *)&expired_stage);
+    trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
+                                  wdt_tick, (void *)&expired_stage);
 
     if (!trch_wdt)
         goto cleanup_irq;
@@ -137,8 +137,8 @@ int test_rtps_wdt()
 
     volatile unsigned expired_stage;
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
-    rtps_wdt = wdt_create("RTPS0", WDT_RTPS0_TRCH_BASE,
-                                      wdt_tick, (void *)&expired_stage);
+    rtps_wdt = wdt_create_monitor("RTPS0", WDT_RTPS0_TRCH_BASE,
+                                  wdt_tick, (void *)&expired_stage);
     if (!rtps_wdt)
         goto cleanup_irq;
 
