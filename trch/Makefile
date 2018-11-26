@@ -17,19 +17,19 @@ TEST_FLAGS = \
 	TEST_RTPS_WDT \
 
 # Enable disable tests here:
-TEST_FLOAT = 1
-TEST_IPI = 0
-TEST_HPPS_TRCH_MAILBOX = 1
-TEST_HPPS_TRCH_MAILBOX_SSW = 1
-TEST_RTPS_TRCH_MAILBOX = 1
+TEST_FLOAT 			= 1
+TEST_IPI 			= 0
+TEST_HPPS_TRCH_MAILBOX 		= 1
+TEST_HPPS_TRCH_MAILBOX_SSW 	= 1
+TEST_RTPS_TRCH_MAILBOX 		= 1
 TEST_TRCH_WDT 			= 1
 TEST_RTPS_WDT 			= 1
-TEST_TRCH_DMA = 1
-TEST_TRCH_DMA_CB = 1 # if set, use callback, otherwise call dma_wait
-TEST_RT_MMU = 1 # RTPS/TRCH->HPPS MMU
-TEST_RT_MMU_ACCESS = 1 # if not defined, then just init and deinit
-TEST_RTPS = 1
-TEST_HPPS = 1
+TEST_TRCH_DMA 			= 1
+TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
+TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
+TEST_RT_MMU_ACCESS 		= 1 # if not defined, then just init and deinit
+TEST_RTPS 			= 1
+TEST_HPPS 			= 1
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
