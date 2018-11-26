@@ -32,7 +32,7 @@ static bool check_expiration(unsigned expired_stage, unsigned expected)
 int test_wdt()
 {
     gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
-    volatile unsigned expired_stage;
+    volatile unsigned expired_stage = 0;
     wdt = wdt_create_target("RTPS0", WDT_RTPS0_RTPS_BASE,
                             wdt_tick, (void *)&expired_stage);
 
@@ -42,6 +42,8 @@ int test_wdt()
 
     delay(timeouts[0]);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
+
+    expired_stage = 0;
 
     unsigned kick_interval = timeouts[0] / 2;
     unsigned runtime = 0;
