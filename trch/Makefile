@@ -6,8 +6,6 @@ TEST_FLAGS = \
 	TEST_TRCH_DMA_CB \
 	TEST_RT_MMU \
 	TEST_RT_MMU_ACCESS \
-	TEST_RTPS \
-	TEST_HPPS \
 	TEST_FLOAT \
 	TEST_IPI \
 	TEST_HPPS_TRCH_MAILBOX \
@@ -17,6 +15,8 @@ TEST_FLAGS = \
 	TEST_TRCH_WDT_STANDALONE \
 	TEST_RTPS_WDT \
 	TEST_RTPS_WDT_STANDALONE \
+	TEST_BOOT_RTPS \
+	TEST_BOOT_HPPS \
 
 # Enable disable tests here:
 TEST_FLOAT 			= 1
@@ -32,8 +32,8 @@ TEST_TRCH_DMA 			= 1
 TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 TEST_RT_MMU_ACCESS 		= 1 # if not defined, then just init and deinit
-TEST_RTPS 			= 1
-TEST_HPPS 			= 1
+TEST_BOOT_RTPS 			= 1
+TEST_BOOT_HPPS 			= 1
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 

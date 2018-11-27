@@ -138,13 +138,13 @@ int notmain ( void )
     watchdog_rtps_start();
 #endif // TEST_RTPS_WDT
 
-#if TEST_RTPS
+#if TEST_BOOT_RTPS
     reset_component(COMPONENT_RTPS);
-#endif // TEST_RTPS
+#endif // TEST_BOOT_RTPS
 
-#if TEST_HPPS
+#if TEST_BOOT_HPPS
     reset_component(COMPONENT_HPPS);
-#endif // TEST_HPPS
+#endif // TEST_BOOT_HPPS
 
 #if TEST_IPI
     printf("Testing IPI...\r\n");
