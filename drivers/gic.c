@@ -86,7 +86,8 @@ static unsigned irq_to_intid(unsigned irq, gic_irq_type_t type)
 }
 
 static void get_int_regs(unsigned intid, gic_irq_type_t type,
-                         unsigned *reg_enable, unsigned *reg_cfg)
+                         uint32_t *reg_enable, unsigned *shift_enable,
+                         uint32_t *reg_cfg, unsigned *shift_cfg)
 {
     if ((type == GIC_IRQ_TYPE_SGI || type == GIC_IRQ_TYPE_PPI) &&
         // when affinity routing is enabled, use GICR registers
@@ -97,9 +98,14 @@ static void get_int_regs(unsigned intid, gic_irq_type_t type,
             case GIC_IRQ_TYPE_PPI: *reg_cfg = GICR_PPI_SGI(GICR_ICFGR1); break;
             default: ASSERT("unreachable");
         }
+        *shift_enable = intid % 32;
+        *shift_cfg    = intid % 16;
     } else {
-        *reg_enable = GICD(GICD_ISENABLERn);
-        *reg_cfg = GICD(GICD_ICFGRn);
+        *reg_enable = GICD(GICD_ISENABLERn) + (intid / 32) * 4;
+        *shift_enable = intid % 32;
+
+        *reg_cfg = GICD(GICD_ICFGRn) + (intid / 16) * 4;
+        *shift_cfg = intid % 16;
     }
 }
 
@@ -113,30 +119,32 @@ static void check_irq(unsigned irq, gic_irq_type_t type)
 void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg) {
     // Assumes that startup code enabled EnableGrp{0,1NS,1S} in GIC_CTLR
 
-    unsigned reg_enable, reg_cfg;
+    uint32_t reg_enable, reg_cfg;
+    unsigned shift_enable, shift_cfg;
     check_irq(irq, type);
 
     unsigned intid = irq_to_intid(irq, type);
-    get_int_regs(intid, type, &reg_enable, &reg_cfg);
+    get_int_regs(intid, type, &reg_enable, &shift_enable, &reg_cfg, &shift_cfg);
 
     printf("GIC: enable IRQ #%u (INTID %u) type %u cfg %s\r\n",
            irq, intid, type, irq_cfg_name(type));
-    REGB_SET32(gic.base, reg_enable + (intid / 32) * 4, 1 << (intid % 32));
+    REGB_SET32(gic.base, reg_enable, 1 << shift_enable);
 
     printf("GIC: configure IRQ #%u (INTID %u)\r\n", irq, intid);
-    REGB_SET32(gic.base, reg_cfg + (intid / 16) * 4,
-               (cfg == GIC_IRQ_CFG_EDGE ? 1 : 0) << (intid % 16 + 1));
+    REGB_SET32(gic.base, reg_cfg,
+               (cfg == GIC_IRQ_CFG_EDGE ? 1 : 0) << shift_cfg);
 }
 
 void gic_int_disable(unsigned irq, gic_irq_type_t type) {
-    unsigned reg_enable, reg_cfg;
+    uint32_t reg_enable, reg_cfg;
+    unsigned shift_enable, shift_cfg;
     check_irq(irq, type);
 
     unsigned intid = irq_to_intid(irq, type);
-    get_int_regs(intid, type, &reg_enable, &reg_cfg);
+    get_int_regs(intid, type, &reg_enable, &shift_enable, &reg_cfg, &shift_cfg);
 
     printf("GIC: disable IRQ #%u (INTID %u)\r\n", irq, intid);
-    REGB_CLEAR32(gic.base, reg_enable + (intid / 32) * 4, 1 << (intid % 32));
+    REGB_CLEAR32(gic.base, reg_enable, 1 << shift_enable);
 }
 
 struct irq *gic_request(unsigned irqn, gic_irq_type_t type, gic_irq_cfg_t cfg)
