@@ -2,13 +2,15 @@
 
 #include "printf.h"
 #include "object.h"
+#include "regops.h"
 #include "intc.h"
 
 #include "nvic.h"
 
-#define NVIC_ISER0_OFFSET 0x100
+#define NVIC_ISER0 0x100
+#define NVIC_ICER0 0x180
 
-#define MAX_IRQS 128
+#define MAX_IRQS 240
 
 struct irq {
     struct object obj;
@@ -24,25 +26,14 @@ static struct nvic nvic = {0}; // support only one to make the interface simpler
 
 void nvic_int_enable(unsigned irq)
 {
-    volatile uint32_t *intc_reg_ie =
-        (volatile uint32_t *)((volatile uint8_t *)nvic.base +
-                NVIC_ISER0_OFFSET + (irq/32)*4);
-    uint32_t intc_reg_ie_val = 1 << (irq % 32);
-
-    printf("NVIC IE IRQ #%u: %p <- 0x%08lx\r\n", irq, intc_reg_ie, intc_reg_ie_val);
-    *intc_reg_ie |= intc_reg_ie_val;
+    printf("NVIC IRQ #%u: enable\r\n", irq);
+    REGB_WRITE32(nvic.base, NVIC_ISER0 + (irq / 32) * 4, 1 << (irq % 32));
 }
 
 void nvic_int_disable(unsigned irq)
 {
-    // Enable interrupt from mailbox
-    volatile uint32_t *intc_reg_ie =
-        (volatile uint32_t *)((volatile uint8_t *)nvic.base +
-                NVIC_ISER0_OFFSET + (irq/32)*4);
-    uint32_t intc_reg_ie_val = 1 << (irq % 32);
-
-    printf("NVIC IE IRQ #%u: %p <&- ~0x%08lx\r\n", irq, intc_reg_ie, intc_reg_ie_val);
-    *intc_reg_ie &= ~intc_reg_ie_val;
+    printf("NVIC IRQ #%u: disable\r\n", irq);
+    REGB_WRITE32(nvic.base, NVIC_ICER0 + (irq / 32) * 4, 1 << (irq % 32));
 }
 
 struct irq *nvic_request(unsigned irqn)
