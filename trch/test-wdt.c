@@ -25,12 +25,32 @@ static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 static bool check_expiration(unsigned expired_stage, unsigned expected)
 {
     if (expired_stage != expected) {
-        printf("wdt test: unexpected expired stage: %u != %u\r\n",
+        printf("ERROR: wdt test: unexpected expired stage: %u != %u\r\n",
                 expired_stage, expected);
         return false;
     }
-    printf("wdt test: expected expired stage: %u == %u\r\n",
+    printf("wdt test: correct expired stage: %u == %u\r\n",
            expired_stage, expected);
+    return true;
+}
+
+static bool check_enabled(struct wdt *wdt)
+{
+    if (!wdt_is_enabled(wdt)) {
+        printf("ERROR: wdt test: unexpected timer state: disabled\r\n");
+        return false;
+    }
+    printf("wdt test: correct timer state: enabled\r\n");
+    return true;
+}
+
+static bool check_disabled(struct wdt *wdt)
+{
+    if (wdt_is_enabled(wdt)) {
+        printf("ERROR: wdt test: unexpected timer state: enabled\r\n");
+        return false;
+    }
+    printf("wdt test: correct timer state: disabled\r\n");
     return true;
 }
 
@@ -62,10 +82,10 @@ int test_trch_wdt()
     wdt_enable(trch_wdt);
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
-    if (!wdt_is_enabled(trch_wdt)) goto cleanup; // should stay enabled
+    if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (wdt_is_enabled(trch_wdt)) goto cleanup; // shoudl disable itself
+    if (!check_disabled(trch_wdt)) goto cleanup; // shoudl disable itself
  
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
@@ -80,22 +100,22 @@ int test_trch_wdt()
     while (runtime < total_timeout) {
         delay(kick_interval);
         if (!check_expiration(expired_stage, 0)) goto cleanup;
-        if (!wdt_is_enabled(trch_wdt)) goto cleanup; // should stay enabled
+        if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
         wdt_kick(trch_wdt);
         runtime += kick_interval;
         printf("wdt test: kick: runtime %u / total %u\r\n", runtime, total_timeout);
     }
     if (!check_expiration(expired_stage, 0)) goto cleanup;
-    if (!wdt_is_enabled(trch_wdt)) goto cleanup; // should stay enabled
+    if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
 
     // Without kicking -- expect expiration of each stage in sequence
     printf("wdt test: (3) without kicking...\r\n");
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
-    if (!wdt_is_enabled(trch_wdt)) goto cleanup; // should stay enabled
+    if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (wdt_is_enabled(trch_wdt)) goto cleanup; // should disable itself
+    if (!check_disabled(trch_wdt)) goto cleanup; // should disable itself
 
 
     wdt_kick(trch_wdt); // to clear count from perious test
@@ -105,18 +125,18 @@ int test_trch_wdt()
     wdt_enable(trch_wdt);
     delay(INTERVAL / 2);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
-    if (!wdt_is_enabled(trch_wdt)) goto cleanup;
+    if (!check_enabled(trch_wdt)) goto cleanup;
     wdt_disable(trch_wdt); // pause
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
-    if (wdt_is_enabled(trch_wdt)) goto cleanup;
+    if (!check_disabled(trch_wdt)) goto cleanup;
     wdt_enable(trch_wdt); // resume
     delay(INTERVAL / 2); // second half should be enough for 1st stage to expire
     if (!check_expiration(expired_stage, 1)) goto cleanup;
-    if (!wdt_is_enabled(trch_wdt)) goto cleanup;
+    if (!check_enabled(trch_wdt)) goto cleanup;
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (wdt_is_enabled(trch_wdt)) goto cleanup;
+    if (!check_disabled(trch_wdt)) goto cleanup;
 
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
@@ -170,7 +190,7 @@ int test_rtps_wdt()
     wdt_enable(rtps_wdt);
     delay(INTERVAL * 2);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (wdt_is_enabled(rtps_wdt)) goto cleanup;
+    if (!check_disabled(rtps_wdt)) goto cleanup;
 
     // The test where RTPS does kick is done as part of the WDT test
     // in the main loop, that represents a representative setup of WDT.
