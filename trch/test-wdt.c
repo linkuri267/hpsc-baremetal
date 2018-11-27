@@ -97,11 +97,32 @@ int test_trch_wdt()
     if (!check_expiration(expired_stage, 2)) goto cleanup;
     if (wdt_is_enabled(trch_wdt)) goto cleanup; // should disable itself
 
+
+    wdt_kick(trch_wdt); // to clear count from perious test
+    expired_stage = 0;
+
+    printf("wdt test: (4) without kicking, pause resume...\r\n");
+    wdt_enable(trch_wdt);
+    delay(INTERVAL / 2);
+    if (!check_expiration(expired_stage, 0)) goto cleanup;
+    if (!wdt_is_enabled(trch_wdt)) goto cleanup;
+    wdt_disable(trch_wdt); // pause
+    delay(INTERVAL);
+    if (!check_expiration(expired_stage, 0)) goto cleanup;
+    if (wdt_is_enabled(trch_wdt)) goto cleanup;
+    wdt_enable(trch_wdt); // resume
+    delay(INTERVAL / 2); // second half should be enough for 1st stage to expire
+    if (!check_expiration(expired_stage, 1)) goto cleanup;
+    if (!wdt_is_enabled(trch_wdt)) goto cleanup;
+    delay(INTERVAL);
+    if (!check_expiration(expired_stage, 2)) goto cleanup;
+    if (wdt_is_enabled(trch_wdt)) goto cleanup;
+
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
 
     // Without kicking, but disabled -- expect no expiration
-    printf("wdt test: (4) without kicking, disabled timer...\r\n");
+    printf("wdt test: (5) without kicking, disabled timer...\r\n");
     wdt_enable(trch_wdt);
     delay(INTERVAL / 2);
     wdt_disable(trch_wdt);
