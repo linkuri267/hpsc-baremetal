@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "printf.h"
 #include "panic.h"
@@ -30,6 +31,7 @@
 
 #define GICR_IGROUPRn           0x0080
 #define GICR_ISENABLER0         0x0100
+#define GICR_ICENABLER0         0x0180
 #define GICR_ICFGR0             0x0c00
 #define GICR_ICFGR1             0x0c04
 #define GICR_IGROUPMODR0        0x0d00
@@ -85,28 +87,11 @@ static unsigned irq_to_intid(unsigned irq, gic_irq_type_t type)
     }
 }
 
-static void get_int_regs(unsigned intid, gic_irq_type_t type,
-                         uint32_t *reg_enable, unsigned *shift_enable,
-                         uint32_t *reg_cfg, unsigned *shift_cfg)
+static bool use_redist(gic_irq_type_t type)
 {
-    if ((type == GIC_IRQ_TYPE_SGI || type == GIC_IRQ_TYPE_PPI) &&
+    return (type == GIC_IRQ_TYPE_SGI || type == GIC_IRQ_TYPE_PPI) &&
         // when affinity routing is enabled, use GICR registers
-        (REGB_READ32(gic.base, GICD(GICD_CTLR)) & GICD_CTRL__ARE)) {
-        *reg_enable = GICR_PPI_SGI(GICR_ISENABLER0);
-        switch (type) {
-            case GIC_IRQ_TYPE_SGI: *reg_cfg = GICR_PPI_SGI(GICR_ICFGR0); break;
-            case GIC_IRQ_TYPE_PPI: *reg_cfg = GICR_PPI_SGI(GICR_ICFGR1); break;
-            default: ASSERT("unreachable");
-        }
-        *shift_enable = intid % 32;
-        *shift_cfg    = intid % 16;
-    } else {
-        *reg_enable = GICD(GICD_ISENABLERn) + (intid / 32) * 4;
-        *shift_enable = intid % 32;
-
-        *reg_cfg = GICD(GICD_ICFGRn) + (intid / 16) * 4;
-        *shift_cfg = intid % 16;
-    }
+        (REGB_READ32(gic.base, GICD(GICD_CTLR)) & GICD_CTRL__ARE);
 }
 
 static void check_irq(unsigned irq, gic_irq_type_t type)
@@ -116,35 +101,55 @@ static void check_irq(unsigned irq, gic_irq_type_t type)
     ASSERT(type != GIC_IRQ_TYPE_LPI); // not supported by driver
 }
 
+// TODO: split configuration and enable into two separate functions
 void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg) {
     // Assumes that startup code enabled EnableGrp{0,1NS,1S} in GIC_CTLR
-
-    uint32_t reg_enable, reg_cfg;
-    unsigned shift_enable, shift_cfg;
     check_irq(irq, type);
-
     unsigned intid = irq_to_intid(irq, type);
-    get_int_regs(intid, type, &reg_enable, &shift_enable, &reg_cfg, &shift_cfg);
+    uint32_t cfg_bit = cfg == GIC_IRQ_CFG_EDGE ? 1 : 0;
 
     printf("GIC: enable IRQ #%u (INTID %u) type %u cfg %s\r\n",
-           irq, intid, type, irq_cfg_name(type));
-    REGB_SET32(gic.base, reg_enable, 1 << shift_enable);
+           irq, intid, type, irq_cfg_name(cfg));
 
-    printf("GIC: configure IRQ #%u (INTID %u)\r\n", irq, intid);
-    REGB_SET32(gic.base, reg_cfg,
-               (cfg == GIC_IRQ_CFG_EDGE ? 1 : 0) << shift_cfg);
+    if (use_redist(type)) {
+        switch (type) {
+            case GIC_IRQ_TYPE_SGI:
+                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), cfg_bit << (intid % 16));
+                break;
+            case GIC_IRQ_TYPE_PPI:
+                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), cfg_bit << (intid % 16));
+            default:
+                ASSERT("unreachable");
+        }
+        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ISENABLER0), 1 << (intid % 32));
+    } else {
+        REGB_SET32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, cfg_bit << (intid % 16));
+        REGB_WRITE32(gic.base, GICD(GICD_ISENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
+    }
 }
 
 void gic_int_disable(unsigned irq, gic_irq_type_t type) {
-    uint32_t reg_enable, reg_cfg;
-    unsigned shift_enable, shift_cfg;
     check_irq(irq, type);
-
     unsigned intid = irq_to_intid(irq, type);
-    get_int_regs(intid, type, &reg_enable, &shift_enable, &reg_cfg, &shift_cfg);
 
-    printf("GIC: disable IRQ #%u (INTID %u)\r\n", irq, intid);
-    REGB_CLEAR32(gic.base, reg_enable, 1 << shift_enable);
+    printf("GIC: disable IRQ #%u (INTID %u) type %u\r\n",
+           irq, intid, type);
+
+    if (use_redist(type)) {
+        switch (type) {
+            case GIC_IRQ_TYPE_SGI:
+                REGB_CLEAR32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), 1 << (intid % 16));
+                break;
+            case GIC_IRQ_TYPE_PPI:
+                REGB_CLEAR32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), 1 << (intid % 16));
+            default:
+                ASSERT("unreachable");
+        }
+        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ICENABLER0), 1 << (intid % 32));
+    } else {
+        REGB_CLEAR32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, 1 << (intid % 16));
+        REGB_WRITE32(gic.base, GICD(GICD_ICENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
+    }
 }
 
 struct irq *gic_request(unsigned irqn, gic_irq_type_t type, gic_irq_cfg_t cfg)
