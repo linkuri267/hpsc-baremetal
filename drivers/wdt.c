@@ -147,6 +147,7 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
 {
     ASSERT(wdt);
     ASSERT(wdt->monitor);
+    ASSERT(!wdt_is_enabled(wdt)); // not strict requirement, but for sanity
     if (num_stages > MAX_STAGES) {
         printf("ERROR: WDT: more stages than supported: %u >= %u\r\n",
                num_stages, MAX_STAGES);
@@ -155,6 +156,10 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
     wdt->num_stages = num_stages;
 
     for (unsigned stage = 0; stage < num_stages; ++stage) {
+        // Loading alone does not clear the current count (which may have been
+        // left over if timer previously enabled and disabled).
+        exec_stage_cmd(wdt, SCMD_CLEAR, stage);
+
         REGB_WRITE64(wdt->base, STAGE_REG(REG__TERMINAL, stage), timeouts[stage]);
         exec_stage_cmd(wdt, SCMD_LOAD, stage);
     }
