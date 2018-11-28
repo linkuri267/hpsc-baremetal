@@ -133,7 +133,8 @@ int main(void)
         // the WFI output signal from the core, and/or (B) have a scheduler
         // (with a tick interval shorter than the watchdog timeout interval)
         // and kick from the scheuduler tick. As a temporary stop-gap, we go
-        // with (C): kick from first stage timeout (see watchdog.c)
+        // with (C): kick on return from WFI/WFI as a result of first stage
+        // timeout IRQ.
         watchdog_kick();
 #endif // TEST_WDT
 

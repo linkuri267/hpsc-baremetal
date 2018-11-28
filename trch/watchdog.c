@@ -29,12 +29,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_TRCH:
             // ASSERT(stage == 0); // TODO: no last stage interrupt, because hw reset
             if (stage == 0) {
-                // This does not make much FT sense. If we had a scheduler
-                // (driven by another timer), presumably we would be kicking
-                // from the scheduling loop. We could also kick from main loop,
-                // but then we need to work around WFI/WFE. For now, just cheat
-                // and kick on first stage expiration.
-                wdt_kick(wdt);
+		// nothing to do: main loop will return from WFI/WFE and kick
             } else {
                 panic("TRCH watchdog expired\r\n");
             }
