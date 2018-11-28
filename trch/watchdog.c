@@ -27,12 +27,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
     // Expand this with appropriate responses to faults
     switch (cpuid) {
         case CPUID_TRCH:
-            // ASSERT(stage == 0); // TODO: no last stage interrupt, because hw reset
-            if (stage == 0) {
-		// nothing to do: main loop will return from WFI/WFE and kick
-            } else {
-                panic("TRCH watchdog expired\r\n");
-            }
+            ASSERT(stage == 0); // no last stage interrupt, because wired to hw reset
+	    // nothing to do: main loop will return from WFI/WFE and kick
             break;
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
@@ -124,8 +120,4 @@ void wdt_rtps0_st2_isr()
 void wdt_trch_st1_isr()
 {
     wdt_isr(trch_wdt, /* stage */ 0);
-}
-void wdt_trch_st2_isr()
-{
-    wdt_isr(trch_wdt, /* stage */ 1);
 }
