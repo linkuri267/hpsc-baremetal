@@ -14,7 +14,7 @@ struct wdt *trch_wdt;
 
 #define NUM_STAGES 2 // fixed in HW, but flexible in driver
 
-// IDs for CPU 0 in each subsystem
+// IDs for CPU 0 in each subsystem (private to this file)
 #define CPUID_TRCH 0
 #define CPUID_RTPS 1
 #define CPUID_HPPS 3
