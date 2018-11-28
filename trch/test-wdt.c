@@ -72,7 +72,6 @@ int test_trch_wdt()
     }
     
     nvic_int_enable(WDT_TRCH_ST1_IRQ);
-    nvic_int_enable(WDT_TRCH_ST2_IRQ);
 
     rc = 1;
 
@@ -83,9 +82,6 @@ int test_trch_wdt()
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
-    delay(INTERVAL);
-    if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (!check_disabled(trch_wdt)) goto cleanup; // shoudl disable itself
  
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
@@ -108,20 +104,10 @@ int test_trch_wdt()
     if (!check_expiration(expired_stage, 0)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
 
-    // Without kicking -- expect expiration of each stage in sequence
-    printf("wdt test: (3) without kicking...\r\n");
-    delay(INTERVAL);
-    if (!check_expiration(expired_stage, 1)) goto cleanup;
-    if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
-    delay(INTERVAL);
-    if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (!check_disabled(trch_wdt)) goto cleanup; // should disable itself
-
-
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
 
-    printf("wdt test: (4) without kicking, pause resume...\r\n");
+    printf("wdt test: (3) without kicking, pause resume...\r\n");
     wdt_enable(trch_wdt);
     delay(INTERVAL / 2);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
@@ -134,15 +120,12 @@ int test_trch_wdt()
     delay(INTERVAL / 2); // second half should be enough for 1st stage to expire
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup;
-    delay(INTERVAL);
-    if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (!check_disabled(trch_wdt)) goto cleanup;
 
     wdt_kick(trch_wdt); // to clear count from perious test
     expired_stage = 0;
 
     // Without kicking, but disabled -- expect no expiration
-    printf("wdt test: (5) without kicking, disabled timer...\r\n");
+    printf("wdt test: (4) without kicking, disabled timer...\r\n");
     wdt_enable(trch_wdt);
     delay(INTERVAL / 2);
     wdt_disable(trch_wdt);
@@ -151,12 +134,14 @@ int test_trch_wdt()
     delay(INTERVAL);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
 
+    // NOTE: can't test Stage 2 expiration, because it's not wired to an IRQ
+    // but instead is hard-widred to RESET.
+
     rc = 0;
 cleanup:
     wdt_disable(trch_wdt);
     // TODO: order is important since ISR might run while destroying
     nvic_int_disable(WDT_TRCH_ST1_IRQ);
-    nvic_int_disable(WDT_TRCH_ST2_IRQ);
     wdt_destroy(trch_wdt);
     return rc;
 }
@@ -191,6 +176,9 @@ int test_rtps_wdt()
     delay(INTERVAL * 2);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
     if (!check_disabled(rtps_wdt)) goto cleanup;
+
+    // NOTE: Can't test Stage 1 expiration because the first stage generates an
+    // IRQ only to the RTPS core.
 
     // The test where RTPS does kick is done as part of the WDT test
     // in the main loop, that represents a representative setup of WDT.

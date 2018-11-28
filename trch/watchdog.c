@@ -74,14 +74,12 @@ int watchdog_trch_start() {
     
     wdt_enable(trch_wdt);
     nvic_int_enable(WDT_TRCH_ST1_IRQ);
-    nvic_int_enable(WDT_TRCH_ST2_IRQ); // TODO: not going to exist
     return 0;
 }
 
 void watchdog_trch_stop() {
     // NOTE: order: ISR might be called during destroy if IRQ is not disabled
     nvic_int_disable(WDT_TRCH_ST1_IRQ);
-    nvic_int_disable(WDT_TRCH_ST2_IRQ); // TODO: not going to exist
     wdt_disable(trch_wdt);
     wdt_destroy(trch_wdt);
 }

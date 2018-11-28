@@ -39,8 +39,7 @@
 #define WDT_PPI_IRQ                      8
 
 #define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
-#define WDT_TRCH_ST1_IRQ         17
-#define WDT_TRCH_ST2_IRQ         18 // TODO: should not exist, since hard reset (but keep for testing)
+#define WDT_TRCH_ST1_IRQ         17 // no ST2 IRQ, because it's wired to reset in HW
 
 #define WDT_RTPS0_TRCH_BASE      ((volatile uint32_t *)0x21003000)
 #define WDT_RTPS0_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)

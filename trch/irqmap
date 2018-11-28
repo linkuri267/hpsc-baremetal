@@ -22,7 +22,6 @@ TRCH_DMA_ABORT_IRQ : dma_trch_dma_abort_isr
 
 #if TEST_TRCH_WDT | TEST_TRCH_WDT_STANDALONE
 WDT_TRCH_ST1_IRQ : wdt_trch_st1_isr
-WDT_TRCH_ST2_IRQ : wdt_trch_st2_isr
 #endif
 
 #if TEST_RTPS_WDT | TEST_RTPS_WDT_STANDALONE
