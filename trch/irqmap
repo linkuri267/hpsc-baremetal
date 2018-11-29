@@ -25,5 +25,17 @@ WDT_TRCH_ST1_IRQ : wdt_trch_st1_isr
 #endif
 
 #if TEST_RTPS_WDT | TEST_RTPS_WDT_STANDALONE
-WDT_RTPS0_ST2_IRQ : wdt_rtps0_st2_isr
+WDT_RTPS_ST2_IRQ_START + 0: wdt_rtps0_st2_isr
+WDT_RTPS_ST2_IRQ_START + 1: wdt_rtps1_st2_isr
+#endif
+
+#if TEST_HPPS_WDT | TEST_HPPS_WDT_STANDALONE
+WDT_HPPS_ST2_IRQ_START + 0: wdt_hpps0_st2_isr
+WDT_HPPS_ST2_IRQ_START + 1: wdt_hpps1_st2_isr
+WDT_HPPS_ST2_IRQ_START + 2: wdt_hpps2_st2_isr
+WDT_HPPS_ST2_IRQ_START + 3: wdt_hpps3_st2_isr
+WDT_HPPS_ST2_IRQ_START + 4: wdt_hpps4_st2_isr
+WDT_HPPS_ST2_IRQ_START + 5: wdt_hpps5_st2_isr
+WDT_HPPS_ST2_IRQ_START + 6: wdt_hpps6_st2_isr
+WDT_HPPS_ST2_IRQ_START + 7: wdt_hpps7_st2_isr
 #endif

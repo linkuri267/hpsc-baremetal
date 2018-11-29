@@ -20,7 +20,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 int watchdog_init()
 {
     volatile unsigned expired_stage = 0;
-    wdt = wdt_create_target("RTPS0", WDT_RTPS0_RTPS_BASE,
+    wdt = wdt_create_target("RTPS0", WDT_RTPS_RTPS_BASE + 0 * WDT_RTPS_SIZE,
                             handle_timeout, (void *)&expired_stage);
     if (!wdt)
         return 1;

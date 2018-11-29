@@ -147,48 +147,87 @@ cleanup:
 }
 #endif // TEST_TRCH_WDT_STANDALONE
 
-#if TEST_RTPS_WDT_STANDALONE
-int test_rtps_wdt()
+#if TEST_RTPS_WDT_STANDALONE || TEST_HPPS_WDT_STANDALONE
+int test_wdt(struct wdt **wdt_ptr, const char *name,
+             volatile uint32_t *base, unsigned irq)
 {
-    // TODO: test RTPS1 too once we have the second core booting (in SPLIT mode?)
     int rc = 1;
 
     volatile unsigned expired_stage;
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
-    rtps_wdt = wdt_create_monitor("RTPS0", WDT_RTPS0_TRCH_BASE,
-                                  wdt_tick, (void *)&expired_stage);
-    if (!rtps_wdt)
+    struct wdt *wdt = wdt_create_monitor(name, base,
+                    wdt_tick, (void *)&expired_stage);
+    if (!wdt)
         return 1;
+    *wdt_ptr = wdt; // for ISR
 
-    rc = wdt_configure(rtps_wdt, NUM_STAGES, timeouts);
+    rc = wdt_configure(wdt, NUM_STAGES, timeouts);
     if (rc) {
-	wdt_destroy(rtps_wdt);
+	wdt_destroy(wdt);
 	return rc;
     }
 
-    nvic_int_enable(WDT_RTPS0_ST2_IRQ);
+    nvic_int_enable(irq);
 
     rc = 1;
 
-    // Do not reset RTPS, expect timer expiration
+    // Do not reset the target core, so expect timer expiration
     expired_stage = 0;
-    wdt_enable(rtps_wdt);
+    wdt_enable(wdt);
+    if (!check_enabled(wdt)) goto cleanup;
     delay(INTERVAL * 2);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
-    if (!check_disabled(rtps_wdt)) goto cleanup;
+    if (!check_disabled(wdt)) goto cleanup;
 
-    // NOTE: Can't test Stage 1 expiration because the first stage generates an
-    // IRQ only to the RTPS core.
+    // NOTE: Can't test Stage 1 expiration because the first stage generates
+    // only a private IRQ to the target core.
 
-    // The test where RTPS does kick is done as part of the WDT test
+    // The test where the target core does kick is done as part of the WDT test
     // in the main loop, that represents a representative setup of WDT.
 
     rc = 0;
 cleanup:
-    wdt_disable(rtps_wdt);
+    wdt_disable(wdt);
     // TODO: order is important since ISR might run while destroying
-    nvic_int_disable(WDT_RTPS0_ST2_IRQ);
-    wdt_destroy(rtps_wdt);
+    nvic_int_disable(irq);
+    wdt_destroy(wdt);
     return rc;
 }
+#endif // TEST_RTPS_WDT_STANDALONE || TEST_HPPS_WDT_STANDALONE
+
+#if TEST_RTPS_WDT_STANDALONE
+int test_rtps_wdt()
+{
+     static const char * const rtps_wdt_names[HPPS_NUM_CORES] = {
+         "RTPS0", "RTPS1"
+     };
+     for (int core = 0; core < RTPS_NUM_CORES; ++core) {
+	     int rc = test_wdt(&rtps_wdts[core], rtps_wdt_names[core],
+		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
+                                                          core * WDT_RTPS_SIZE),
+		WDT_RTPS_ST2_IRQ_START + core);
+	     if (rc)
+		return rc;
+     }
+     return 0;
+}
 #endif // TEST_RTPS_WDT_STANDALONE
+
+#if TEST_HPPS_WDT_STANDALONE
+int test_hpps_wdt()
+{
+     static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
+         "HPPS0", "HPPS1", "HPPS2", "HPPS3",
+         "HPPS4", "HPPS5", "HPPS6", "HPPS7"
+     };
+     for (int core = 0; core < HPPS_NUM_CORES; ++core) {
+	     int rc = test_wdt(&hpps_wdts[core], hpps_wdt_names[core],
+		(volatile uint32_t *)((volatile uint8_t *)WDT_HPPS_TRCH_BASE +
+                                                          core * WDT_HPPS_SIZE),
+		WDT_HPPS_ST2_IRQ_START + core);
+	     if (rc)
+		return rc;
+     }
+     return 0;
+}
+#endif // TEST_HPPS_WDT_STANDALONE

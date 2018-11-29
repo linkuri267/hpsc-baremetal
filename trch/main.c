@@ -50,6 +50,11 @@ int notmain ( void )
         panic("RTPS WDT test");
 #endif // TEST_RTPS_WDT_STANDALONE
 
+#if TEST_HPPS_WDT_STANDALONE
+    if (test_hpps_wdt())
+        panic("HPPS WDT test");
+#endif // TEST_HPPS_WDT_STANDALONE
+
 #if TEST_FLOAT
     if (test_float())
         panic("float test");
@@ -137,6 +142,10 @@ int notmain ( void )
 #if TEST_RTPS_WDT
     watchdog_rtps_start();
 #endif // TEST_RTPS_WDT
+
+#if TEST_HPPS_WDT
+    watchdog_hpps_start();
+#endif // TEST_HPPS_WDT
 
 #if TEST_BOOT_RTPS
     reset_component(COMPONENT_RTPS);

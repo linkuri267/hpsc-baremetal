@@ -3,6 +3,9 @@
 
 // This file fulfills the role of a device tree
 
+#define HPPS_NUM_CORES 8
+#define RTPS_NUM_CORES 2
+
 #define RTPS_GIC_BASE   0x30e00000
 #define TRCH_NVIC_BASE  0xe000e000
 
@@ -41,15 +44,18 @@
 #define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
 #define WDT_TRCH_ST1_IRQ         17 // no ST2 IRQ, because it's wired to reset in HW
 
-#define WDT_RTPS0_TRCH_BASE      ((volatile uint32_t *)0x21003000)
-#define WDT_RTPS0_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)
-#define WDT_RTPS1_TRCH_BASE      ((volatile uint32_t *)0x21004000)
-#define WDT_RTPS1_RTPS_BASE      ((volatile uint32_t *)0x30a0b000)
+#define WDT_RTPS_TRCH_BASE      ((volatile uint32_t *)0x21003000)
+#define WDT_RTPS_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)
+#define WDT_RTPS_SIZE           0x1000
+
+#define WDT_HPPS_TRCH_BASE      ((volatile uint32_t *)0x21010000)
+#define WDT_HPPS_RTPS_BASE      ((volatile uint32_t *)0xfff70000)
+#define WDT_HPPS_SIZE           0x10000
 
 // Stage 1 is hooked up to a PPI IRQ on respective core: WDT_PPI_IRQ
 // Stage 2 is hooked up to a normal interrupt input on TRCH NVIC
-#define WDT_RTPS0_ST2_IRQ         19
-#define WDT_RTPS1_ST2_IRQ         20
+#define WDT_RTPS_ST2_IRQ_START    19
+#define WDT_HPPS_ST2_IRQ_START    24
 
 // From QEMU device tree / HW spec
 #define MASTER_ID_TRCH_CPU  0x2d
