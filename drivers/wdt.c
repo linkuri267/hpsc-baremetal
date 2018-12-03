@@ -205,7 +205,6 @@ bool wdt_is_enabled(struct wdt *wdt)
 void wdt_enable(struct wdt *wdt)
 {
     ASSERT(wdt);
-    ASSERT(wdt->monitor);
     printf("WDT %s: enable\r\n", wdt->name);
     REGB_SET32(wdt->base, REG__CONFIG, REG__CONFIG__EN);
 }

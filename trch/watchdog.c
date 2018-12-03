@@ -70,7 +70,6 @@ static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
 	return NULL;
     }
 
-    wdt_enable(wdt);
     nvic_int_enable(irq);
     return wdt;
 }

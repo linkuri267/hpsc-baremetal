@@ -41,11 +41,7 @@ int test_wdt()
     if (!wdt)
         return 1;
 
-    if (!wdt_is_enabled(wdt)) {
-        printf("ERROR: wdt test: TRCH did not setup the WDT\r\n");
-        wdt_destroy(wdt);
-        return 1;
-    }
+    wdt_enable(wdt);
 
     gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
 
