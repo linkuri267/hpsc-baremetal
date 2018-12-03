@@ -126,6 +126,7 @@ int main(void)
 
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
+        printf("RTPS: main loop\r\n");
 
 #if TEST_WDT
         // Kicking from here is insufficient, because we sleep. There are two

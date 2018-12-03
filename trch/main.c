@@ -176,6 +176,8 @@ int notmain ( void )
 
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
+        printf("TRCH: main loop\r\n");
+
 #if TEST_TRCH_WDT
         // Kicking from here is insufficient, because we sleep. There are two
         // ways to complete: (A) have TRCH disable the watchdog in response to
