@@ -86,7 +86,7 @@ int notmain ( void )
      endpoint->rcv_irq = hpps_rcv_irq;
      endpoint->rcv_int_idx = HPPS_RCV_IRQ_IDX;
      endpoint->ack_irq = hpps_ack_irq;
-     endpoint->rcv_int_idx = HPPS_ACK_IRQ_IDX;
+     endpoint->ack_int_idx = HPPS_ACK_IRQ_IDX;
 #endif // TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX
 
 #if TEST_HPPS_TRCH_MAILBOX_SSW
