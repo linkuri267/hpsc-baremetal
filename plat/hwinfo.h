@@ -1,6 +1,10 @@
 #ifndef HWINFO_H
 #define HWINFO_H
 
+// Copies from Qemu Device Tree repository
+#include "hpsc-irqs.dtsh"
+#include "hpsc-busids.dtsh"
+
 // This file fulfills the role of a device tree
 
 #define HPPS_NUM_CORES 8
@@ -14,12 +18,7 @@
 #define HPPS_SMMU_BASE                ((volatile uint32_t *)0xf9300000)
 
 #define TRCH_DMA_BASE   ((volatile uint32_t *)0x21000000)
-#define TRCH_DMA_ABORT_IRQ  59
-#define TRCH_DMA_EV0_IRQ    60
-
 #define RTPS_DMA_BASE   ((volatile uint32_t *)0x30a08000)
-#define RTPS_DMA_ABORT_IRQ  61
-#define RTPS_DMA_EV0_IRQ    62
 
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
@@ -30,19 +29,7 @@
 #define MBOX_HPPS_TRCH__BASE      ((volatile uint32_t *)0xfff50000)
 #define MBOX_HPPS_RTPS__BASE      ((volatile uint32_t *)0xfff60000)
 
-#define MBOX_LSIO__IRQ_START              72
-#define MBOX_HPPS_TRCH__IRQ_START         136
-#define MBOX_HPPS_RTPS__IRQ_START         203
-
-#define TIMER_PHYS_PPI_IRQ              14
-#define TIMER_SEC_PPI_IRQ               13
-#define TIMER_VIRT_PPI_IRQ              11
-#define TIMER_HYP_PPI_IRQ               10
-
-#define WDT_PPI_IRQ                      8
-
 #define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
-#define WDT_TRCH_ST1_IRQ         17 // no ST2 IRQ, because it's wired to reset in HW
 
 #define WDT_RTPS_TRCH_BASE      ((volatile uint32_t *)0x21003000)
 #define WDT_RTPS_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)
@@ -51,31 +38,5 @@
 #define WDT_HPPS_TRCH_BASE      ((volatile uint32_t *)0x21010000)
 #define WDT_HPPS_RTPS_BASE      ((volatile uint32_t *)0xfff70000)
 #define WDT_HPPS_SIZE           0x10000
-
-// Stage 1 is hooked up to a PPI IRQ on respective core: WDT_PPI_IRQ
-// Stage 2 is hooked up to a normal interrupt input on TRCH NVIC
-#define WDT_RTPS_ST2_IRQ_START    19
-#define WDT_HPPS_ST2_IRQ_START    24
-
-// From QEMU device tree / HW spec
-#define MASTER_ID_TRCH_CPU  0x2d
-
-#define MASTER_ID_RTPS_CPU0 0x2e
-#define MASTER_ID_RTPS_CPU1 0x2f
-
-#define MASTER_ID_HPPS_CPU0 0x80
-#define MASTER_ID_HPPS_CPU1 0x8d
-#define MASTER_ID_HPPS_CPU2 0x8e
-#define MASTER_ID_HPPS_CPU3 0x8f
-#define MASTER_ID_HPPS_CPU4 0x90
-#define MASTER_ID_HPPS_CPU5 0x9d
-#define MASTER_ID_HPPS_CPU6 0x9e
-#define MASTER_ID_HPPS_CPU7 0x9f
-
-#define MASTER_ID_TRCH_DMA  0x875
-#define MASTER_ID_RTPS_DMA  0x876
-#define MASTER_ID_HPPS_DMA  0x877
-#define MASTER_ID_SRIO0_DMA 0x878
-#define MASTER_ID_SRIO1_DMA 0x879
 
 #endif // HWINFO_H

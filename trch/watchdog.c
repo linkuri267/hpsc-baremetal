@@ -84,7 +84,7 @@ static void destroy_wdt(struct wdt *wdt, unsigned irq)
 
 int watchdog_trch_start() {
     uint64_t timeouts[] = { 5000000, 5000000 }; // about 2 sec each wall-clock in Qemu
-    trch_wdt = create_wdt("TRCH", WDT_TRCH_BASE, WDT_TRCH_ST1_IRQ,
+    trch_wdt = create_wdt("TRCH", WDT_TRCH_BASE, TRCH_IRQ__WDT_TRCH_ST1,
 		      timeouts, CPUID_TRCH);
     if (!trch_wdt)
 	return 1;
@@ -92,7 +92,7 @@ int watchdog_trch_start() {
 }
 
 void watchdog_trch_stop() {
-    destroy_wdt(trch_wdt, WDT_TRCH_ST1_IRQ);
+    destroy_wdt(trch_wdt, TRCH_IRQ__WDT_TRCH_ST1);
     trch_wdt = NULL;
 }
 
@@ -113,7 +113,7 @@ int watchdog_rtps_start() {
 	rtps_wdts[i] = create_wdt(rtps_wdt_names[i],
 		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
 						          i * WDT_RTPS_SIZE),
-		WDT_RTPS_ST2_IRQ_START + i, timeouts, CPUID_RTPS + i);
+		TRCH_IRQ__WDT_RTPS0_ST2 + i, timeouts, CPUID_RTPS + i);
 	if (!rtps_wdts[i])
 	    goto cleanup;
     }
@@ -121,7 +121,7 @@ int watchdog_rtps_start() {
 
 cleanup:
     for (--i; i >= 0; --i) {
-	destroy_wdt(rtps_wdts[i], WDT_RTPS_ST2_IRQ_START + i);
+	destroy_wdt(rtps_wdts[i], TRCH_IRQ__WDT_RTPS0_ST2 + i);
 	rtps_wdts[i] = NULL;
     }
     return 1;
@@ -129,7 +129,7 @@ cleanup:
 
 void watchdog_rtps_stop() {
     for (int i = 0; i < RTPS_NUM_CORES;  ++i) {
-	destroy_wdt(rtps_wdts[i], WDT_RTPS_ST2_IRQ_START + i);
+	destroy_wdt(rtps_wdts[i], TRCH_IRQ__WDT_RTPS0_ST2 + i);
 	rtps_wdts[i] = NULL;
     }
 }
@@ -148,7 +148,7 @@ int watchdog_hpps_start() {
 	hpps_wdts[i] = create_wdt(hpps_wdt_names[i],
 		(volatile uint32_t *)((volatile uint8_t *)WDT_HPPS_TRCH_BASE +
 							  i * WDT_HPPS_SIZE),
-		WDT_HPPS_ST2_IRQ_START + i, timeouts, CPUID_HPPS + i);
+		TRCH_IRQ__WDT_HPPS0_ST2 + i, timeouts, CPUID_HPPS + i);
 	if (!hpps_wdts[i])
 	    goto cleanup;
     }
@@ -156,7 +156,7 @@ int watchdog_hpps_start() {
 
 cleanup:
     for (--i; i >= 0; --i) {
-	destroy_wdt(hpps_wdts[i], WDT_HPPS_ST2_IRQ_START + i);
+	destroy_wdt(hpps_wdts[i], TRCH_IRQ__WDT_HPPS0_ST2 + i);
 	hpps_wdts[i] = NULL;
     }
     return 1;
@@ -164,7 +164,7 @@ cleanup:
 
 void watchdog_hpps_stop() {
     for (int i = 0; i < HPPS_NUM_CORES;  ++i) {
-	destroy_wdt(hpps_wdts[i], WDT_HPPS_ST2_IRQ_START + i);
+	destroy_wdt(hpps_wdts[i], TRCH_IRQ__WDT_HPPS0_ST2 + i);
 	hpps_wdts[i] = NULL;
     }
 }

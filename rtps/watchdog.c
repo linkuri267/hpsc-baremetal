@@ -27,7 +27,7 @@ int watchdog_init()
 
     wdt_enable(wdt);
 
-    gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
+    gic_int_enable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
     return 0;
 }
 
@@ -35,7 +35,7 @@ void watchdog_deinit()
 {
     ASSERT(wdt);
     // NOTE: order: ISR might be called during destroy if IRQ is not disabled
-    gic_int_disable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI);
+    gic_int_disable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
     wdt = NULL;
 }

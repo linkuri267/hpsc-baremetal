@@ -71,7 +71,7 @@ int test_trch_wdt()
         return rc;
     }
     
-    nvic_int_enable(WDT_TRCH_ST1_IRQ);
+    nvic_int_enable(TRCH_IRQ__WDT_TRCH_ST1);
 
     rc = 1;
 
@@ -141,7 +141,7 @@ int test_trch_wdt()
 cleanup:
     wdt_disable(trch_wdt);
     // TODO: order is important since ISR might run while destroying
-    nvic_int_disable(WDT_TRCH_ST1_IRQ);
+    nvic_int_disable(TRCH_IRQ__WDT_TRCH_ST1);
     wdt_destroy(trch_wdt);
     return rc;
 }
@@ -205,7 +205,7 @@ int test_rtps_wdt()
 	     int rc = test_wdt(&rtps_wdts[core], rtps_wdt_names[core],
 		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
                                                           core * WDT_RTPS_SIZE),
-		WDT_RTPS_ST2_IRQ_START + core);
+		TRCH_IRQ__WDT_RTPS0_ST2 + core);
 	     if (rc)
 		return rc;
      }
@@ -224,7 +224,7 @@ int test_hpps_wdt()
 	     int rc = test_wdt(&hpps_wdts[core], hpps_wdt_names[core],
 		(volatile uint32_t *)((volatile uint8_t *)WDT_HPPS_TRCH_BASE +
                                                           core * WDT_HPPS_SIZE),
-		WDT_HPPS_ST2_IRQ_START + core);
+		TRCH_IRQ__WDT_HPPS0_ST2 + core);
 	     if (rc)
 		return rc;
      }
