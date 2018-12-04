@@ -284,6 +284,7 @@ static void mbox_isr(unsigned event, unsigned interrupt)
     uint32_t val;
     struct mbox *mbox;
     unsigned i;
+    bool handled = false;
 
     // Technically, could iterate only over one IP block if we care to split
     // the main mailbox array into multiple arrays, one per block.
@@ -296,7 +297,7 @@ static void mbox_isr(unsigned event, unsigned interrupt)
         // Two criteria: (1) Cause is set, and (2) Mapped to our IRQ
         addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CAUSE);
         val = *addr;
-        // printf("mbox_receive: cause: %p -> %08lx\r\n", addr, val);
+        printf("mbox_receive: cause: %p -> %08lx\r\n", addr, val);
         if (!(val & event))
             continue; // this mailbox didn't raise the interrupt
         addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_ENABLE);
@@ -304,6 +305,8 @@ static void mbox_isr(unsigned event, unsigned interrupt)
         printf("mbox_receive: int enable: %p -> %08lx\r\n", addr, val);
         if (!(val & interrupt))
             continue; // this mailbox has an event but it's not ours
+
+        handled = true;
 
         switch (event) {
             case HPSC_MBOX_EVENT_A:
@@ -314,8 +317,10 @@ static void mbox_isr(unsigned event, unsigned interrupt)
                 break;
             default:
                 printf("ERROR: mbox_isr: invalid event %u\r\n", event);
+                ASSERT(false && "invalid event");
         }
    }
+   ASSERT(handled); // otherwise, we're not correctly subscribed to interrupts
 }
 
 void mbox_rcv_isr(unsigned int_idx)
