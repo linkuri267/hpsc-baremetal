@@ -11,7 +11,7 @@
 #define REG__TERMINAL        0x00
 #define REG__COUNT           0x08
 
-#define NUM_STAGE_REGS       2
+#define NUM_STAGES           2
 #define STAGE_REG_SIZE       8
 
 // Global offsets
@@ -26,7 +26,8 @@
 #define REG__STATUS__TIMEOUT_SHIFT 0
 
 
-#define STAGE_REGS_SIZE (NUM_STAGE_REGS * STAGE_REG_SIZE) // register space size per stage
+
+#define STAGE_REGS_SIZE (NUM_STAGES * STAGE_REG_SIZE) // register space size per stage
 #define STAGE_REG(reg, stage) ((STAGE_REGS_SIZE * stage) + reg)
 
 // The split by command type is for driver implementation convenience, in
