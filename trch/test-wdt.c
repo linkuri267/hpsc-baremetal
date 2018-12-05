@@ -65,7 +65,7 @@ int test_trch_wdt()
         return 1;
 
     uint64_t timeouts[] = { INTERVAL, INTERVAL };
-    int rc = wdt_configure(trch_wdt, NUM_STAGES, timeouts);
+    int rc = wdt_configure(trch_wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(trch_wdt);
         return rc;
@@ -161,7 +161,7 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
         return 1;
     *wdt_ptr = wdt; // for ISR
 
-    rc = wdt_configure(wdt, NUM_STAGES, timeouts);
+    rc = wdt_configure(wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(wdt);
 	return rc;

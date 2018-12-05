@@ -64,7 +64,7 @@ static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
     if (!wdt)
         return NULL;
 
-    int rc = wdt_configure(wdt, NUM_STAGES, timeouts);
+    int rc = wdt_configure(wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(wdt);
 	return NULL;

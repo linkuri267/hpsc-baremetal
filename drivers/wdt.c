@@ -23,6 +23,7 @@
 
 // Fields
 #define REG__CONFIG__EN      0x1
+#define REG__CONFIG__TICKDIV__SHIFT 2
 #define REG__STATUS__TIMEOUT__SHIFT 0
 
 #define HPSC_WDT_COUNTER_WIDTH (64 - (NUM_STAGES - 1)) // see comments in Qemu model
@@ -144,7 +145,8 @@ struct wdt *wdt_create_target(const char *name, volatile uint32_t *base,
     return wdt;
 }
 
-int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
+int wdt_configure(struct wdt *wdt, unsigned freq,
+                  unsigned num_stages, uint64_t *timeouts)
 {
     ASSERT(wdt);
     ASSERT(wdt->monitor);
@@ -152,6 +154,11 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
     if (num_stages > MAX_STAGES) {
         printf("ERROR: WDT: more stages than supported: %u >= %u\r\n",
                num_stages, MAX_STAGES);
+        return 1;
+    }
+    if (!(WDT_MIN_FREQ_HZ <= freq && freq <= WDT_MAX_FREQ_HZ && freq % WDT_MIN_FREQ_HZ == 0)) {
+        printf("ERROR: WDT: freq is out of range: %u not a multiple of %u in [%u, %u]\r\n",
+               WDT_MIN_FREQ_HZ, freq, WDT_MIN_FREQ_HZ, WDT_MAX_FREQ_HZ);
         return 1;
     }
     for (unsigned stage = 0; stage < num_stages; ++stage) {
@@ -164,6 +171,12 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
     }
 
     wdt->num_stages = num_stages;
+
+    // Set divider and zero other fields
+    ASSERT(freq % WDT_MIN_FREQ_HZ == 0);
+    unsigned div = WDT_MAX_FREQ_HZ / freq;
+    printf("WDT %s: set divider to %u\r\n", wdt->name, div);
+    REGB_WRITE32(wdt->base, REG__CONFIG, div << REG__CONFIG__TICKDIV__SHIFT);
 
     for (unsigned stage = 0; stage < num_stages; ++stage) {
         // Loading alone does not clear the current count (which may have been
