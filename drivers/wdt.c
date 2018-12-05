@@ -23,7 +23,7 @@
 
 // Fields
 #define REG__CONFIG__EN      0x1
-#define REG__STATUS__TIMEOUT_SHIFT 0
+#define REG__STATUS__TIMEOUT__SHIFT 0
 
 #define HPSC_WDT_COUNTER_WIDTH (64 - (NUM_STAGES - 1)) // see comments in Qemu model
 
@@ -245,7 +245,7 @@ void wdt_isr(struct wdt *wdt, unsigned stage)
     // TODO: spec unclear: if we are not allowed to clear the int source, then
     // we have to disable the interrupt via the interrupt controller, and
     // re-enable it in wdt_enable.
-    REGB_CLEAR32(wdt->base, REG__STATUS, 1 << ( REG__STATUS__TIMEOUT_SHIFT + stage));
+    REGB_CLEAR32(wdt->base, REG__STATUS, 1 << ( REG__STATUS__TIMEOUT__SHIFT + stage));
 
     if (wdt->cb)
         wdt->cb(wdt, stage, wdt->cb_arg);
