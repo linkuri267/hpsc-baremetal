@@ -19,6 +19,7 @@ TEST_FLAGS = \
 	TEST_RT_MMU_ACCESS \
 	TEST_BOOT_RTPS \
 	TEST_BOOT_HPPS \
+	TEST_SRAM \
 
 # Enable disable tests here:
 TEST_IPI 			= 0
@@ -38,6 +39,7 @@ TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 TEST_RT_MMU_ACCESS 		= 1 # if not defined, then just init and deinit
 TEST_BOOT_RTPS 			= 1
 TEST_BOOT_HPPS 			= 1
+TEST_SRAM                      = 1
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -79,6 +81,7 @@ OBJS = \
        watchdog.o \
        reset.o \
        server.o \
+       sram.o \
        main.o \
 
 

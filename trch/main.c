@@ -15,6 +15,7 @@
 #include "server.h"
 #include "watchdog.h"
 #include "test.h"
+#include "sram.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
 
@@ -69,6 +70,11 @@ int notmain ( void )
     if (test_rt_mmu())
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
+
+#if TEST_SRAM
+    printf("[%u] looking for SRAM ...\r\n");
+    file_load_from_sram();
+#endif // TEST_SRAM
 
 #if SERVER
     struct endpoint *endpoint;
@@ -174,6 +180,7 @@ int notmain ( void )
     watchdog_trch_start();
 #endif // TEST_RTPS_WDT
 
+
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
         printf("TRCH: main loop\r\n");
@@ -196,6 +203,7 @@ int notmain ( void )
         while (!cmd_dequeue(&cmd))
             cmd_handle(&cmd);
 #endif // SERVER
+
 
         printf("[%u] Waiting for interrupt...\r\n", ++iter);
         asm("wfi");
