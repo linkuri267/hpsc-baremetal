@@ -25,7 +25,7 @@
 #define REG__CONFIG__EN      0x1
 #define REG__STATUS__TIMEOUT_SHIFT 0
 
-
+#define HPSC_WDT_COUNTER_WIDTH (64 - (NUM_STAGES - 1)) // see comments in Qemu model
 
 #define STAGE_REGS_SIZE (NUM_STAGES * STAGE_REG_SIZE) // register space size per stage
 #define STAGE_REG(reg, stage) ((STAGE_REGS_SIZE * stage) + reg)
@@ -154,6 +154,15 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
                num_stages, MAX_STAGES);
         return 1;
     }
+    for (unsigned stage = 0; stage < num_stages; ++stage) {
+        if (timeouts[stage] & (~0ULL << HPSC_WDT_COUNTER_WIDTH)) {
+                printf("ERROR: WDT: timeout for stage %u exceeds counter width (%u bits): %08x%08x\r\n",
+                       stage, HPSC_WDT_COUNTER_WIDTH,
+                      (uint32_t)(timeouts[stage] >> 32), (uint32_t)(timeouts[stage] & 0xffffffff));
+                return 2;
+        }
+    }
+
     wdt->num_stages = num_stages;
 
     for (unsigned stage = 0; stage < num_stages; ++stage) {
