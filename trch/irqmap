@@ -3,39 +3,44 @@
 // We multiplex events from all mailboxes (in one IP block) onto one IRQ pair
 
 #include "hwinfo.h"
+
+// Copies from Qemu Device Tree repo (transitive via hwinfo.h not supported)
+#include "hpsc-irqs.dtsh"
+#include "hpsc-busids.dtsh"
+
 #include "mailbox-map.h"
 
 #if TEST_RTPS_TRCH_MAILBOX
-MBOX_LSIO__IRQ_START+MBOX_HPPS_TRCH__TRCH_RCV_INT : mbox_hpps_rcv_isr
-MBOX_LSIO__IRQ_START+MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_hpps_ack_isr
+TRCH_IRQ__TR_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT : mbox_lsio_rcv_isr
+TRCH_IRQ__TR_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_lsio_ack_isr
 #endif
 
 #if TEST_HPPS_TRCH_MAILBOX | TEST_HPPS_TRCH_MAILBOX_SSW
-MBOX_HPPS_TRCH__IRQ_START+MBOX_HPPS_TRCH__TRCH_RCV_INT : mbox_lsio_rcv_isr
-MBOX_HPPS_TRCH__IRQ_START+MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_lsio_ack_isr
+TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT : mbox_hpps_rcv_isr
+TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_hpps_ack_isr
 #endif
 
 #if TEST_TRCH_DMA
-TRCH_DMA_EV0_IRQ : dma_trch_dma_event_0_isr
-TRCH_DMA_ABORT_IRQ : dma_trch_dma_abort_isr
+TRCH_IRQ__TRCH_DMA_ABORT : dma_trch_dma_abort_isr
+TRCH_IRQ__TRCH_DMA_EV0 : dma_trch_dma_event_0_isr
 #endif
 
 #if TEST_TRCH_WDT | TEST_TRCH_WDT_STANDALONE
-WDT_TRCH_ST1_IRQ : wdt_trch_st1_isr
+TRCH_IRQ__WDT_TRCH_ST1 : wdt_trch_st1_isr
 #endif
 
 #if TEST_RTPS_WDT | TEST_RTPS_WDT_STANDALONE
-WDT_RTPS_ST2_IRQ_START + 0: wdt_rtps0_st2_isr
-WDT_RTPS_ST2_IRQ_START + 1: wdt_rtps1_st2_isr
+TRCH_IRQ__WDT_RTPS0_ST2: wdt_rtps0_st2_isr
+TRCH_IRQ__WDT_RTPS1_ST2: wdt_rtps1_st2_isr
 #endif
 
 #if TEST_HPPS_WDT | TEST_HPPS_WDT_STANDALONE
-WDT_HPPS_ST2_IRQ_START + 0: wdt_hpps0_st2_isr
-WDT_HPPS_ST2_IRQ_START + 1: wdt_hpps1_st2_isr
-WDT_HPPS_ST2_IRQ_START + 2: wdt_hpps2_st2_isr
-WDT_HPPS_ST2_IRQ_START + 3: wdt_hpps3_st2_isr
-WDT_HPPS_ST2_IRQ_START + 4: wdt_hpps4_st2_isr
-WDT_HPPS_ST2_IRQ_START + 5: wdt_hpps5_st2_isr
-WDT_HPPS_ST2_IRQ_START + 6: wdt_hpps6_st2_isr
-WDT_HPPS_ST2_IRQ_START + 7: wdt_hpps7_st2_isr
+TRCH_IRQ__WDT_HPPS0_ST2: wdt_hpps0_st2_isr
+TRCH_IRQ__WDT_HPPS1_ST2: wdt_hpps1_st2_isr
+TRCH_IRQ__WDT_HPPS2_ST2: wdt_hpps2_st2_isr
+TRCH_IRQ__WDT_HPPS3_ST2: wdt_hpps3_st2_isr
+TRCH_IRQ__WDT_HPPS4_ST2: wdt_hpps4_st2_isr
+TRCH_IRQ__WDT_HPPS5_ST2: wdt_hpps5_st2_isr
+TRCH_IRQ__WDT_HPPS6_ST2: wdt_hpps6_st2_isr
+TRCH_IRQ__WDT_HPPS7_ST2: wdt_hpps7_st2_isr
 #endif

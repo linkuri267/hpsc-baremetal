@@ -84,15 +84,15 @@ int notmain ( void )
 #define HPPS_RCV_IRQ_IDX MBOX_HPPS_TRCH__TRCH_RCV_INT
 #define HPPS_ACK_IRQ_IDX MBOX_HPPS_TRCH__TRCH_ACK_INT
     struct irq *hpps_rcv_irq =
-        nvic_request(MBOX_HPPS_TRCH__IRQ_START + HPPS_RCV_IRQ_IDX);
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_RCV_IRQ_IDX);
     struct irq *hpps_ack_irq =
-        nvic_request(MBOX_HPPS_TRCH__IRQ_START + HPPS_ACK_IRQ_IDX);
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_ACK_IRQ_IDX);
 
      endpoint = &endpoints[ENDPOINT_HPPS];
      endpoint->rcv_irq = hpps_rcv_irq;
      endpoint->rcv_int_idx = HPPS_RCV_IRQ_IDX;
      endpoint->ack_irq = hpps_ack_irq;
-     endpoint->rcv_int_idx = HPPS_ACK_IRQ_IDX;
+     endpoint->ack_int_idx = HPPS_ACK_IRQ_IDX;
 #endif // TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX
 
 #if TEST_HPPS_TRCH_MAILBOX_SSW
@@ -124,8 +124,8 @@ int notmain ( void )
 #if TEST_RTPS_TRCH_MAILBOX
 #define LSIO_RCV_IRQ_IDX MBOX_LSIO__TRCH_RCV_INT
 #define LSIO_ACK_IRQ_IDX MBOX_LSIO__TRCH_ACK_INT
-     struct irq *lsio_rcv_irq = nvic_request(MBOX_LSIO__IRQ_START + LSIO_RCV_IRQ_IDX);
-     struct irq *lsio_ack_irq = nvic_request(MBOX_LSIO__IRQ_START + LSIO_ACK_IRQ_IDX);
+     struct irq *lsio_rcv_irq = nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
+     struct irq *lsio_ack_irq = nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX);
 
      endpoint = &endpoints[ENDPOINT_LSIO];
      endpoint->rcv_irq = lsio_rcv_irq;

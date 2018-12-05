@@ -13,10 +13,10 @@ int test_rtps_trch_mailbox()
 #define LSIO_RCV_IRQ_IDX  MBOX_LSIO__RTPS_RCV_INT
 #define LSIO_ACK_IRQ_IDX  MBOX_LSIO__RTPS_ACK_INT
     struct irq *lsio_rcv_irq =
-        gic_request(MBOX_LSIO__IRQ_START + LSIO_RCV_IRQ_IDX,
+        gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
     struct irq *lsio_ack_irq =
-        gic_request(MBOX_LSIO__IRQ_START + LSIO_ACK_IRQ_IDX,
+        gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
 
     struct mbox_link *rtps_link = mbox_link_connect(MBOX_LSIO__BASE,

@@ -11,7 +11,7 @@
 #define REG__TERMINAL        0x00
 #define REG__COUNT           0x08
 
-#define NUM_STAGE_REGS       2
+#define NUM_STAGES           2
 #define STAGE_REG_SIZE       8
 
 // Global offsets
@@ -23,10 +23,12 @@
 
 // Fields
 #define REG__CONFIG__EN      0x1
-#define REG__STATUS__TIMEOUT_SHIFT 0
+#define REG__CONFIG__TICKDIV__SHIFT 2
+#define REG__STATUS__TIMEOUT__SHIFT 0
 
+#define HPSC_WDT_COUNTER_WIDTH (64 - (NUM_STAGES - 1)) // see comments in Qemu model
 
-#define STAGE_REGS_SIZE (NUM_STAGE_REGS * STAGE_REG_SIZE) // register space size per stage
+#define STAGE_REGS_SIZE (NUM_STAGES * STAGE_REG_SIZE) // register space size per stage
 #define STAGE_REG(reg, stage) ((STAGE_REGS_SIZE * stage) + reg)
 
 // The split by command type is for driver implementation convenience, in
@@ -143,7 +145,8 @@ struct wdt *wdt_create_target(const char *name, volatile uint32_t *base,
     return wdt;
 }
 
-int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
+int wdt_configure(struct wdt *wdt, unsigned freq,
+                  unsigned num_stages, uint64_t *timeouts)
 {
     ASSERT(wdt);
     ASSERT(wdt->monitor);
@@ -153,7 +156,27 @@ int wdt_configure(struct wdt *wdt, unsigned num_stages, uint64_t *timeouts)
                num_stages, MAX_STAGES);
         return 1;
     }
+    if (!(WDT_MIN_FREQ_HZ <= freq && freq <= WDT_MAX_FREQ_HZ && freq % WDT_MIN_FREQ_HZ == 0)) {
+        printf("ERROR: WDT: freq is out of range: %u not a multiple of %u in [%u, %u]\r\n",
+               WDT_MIN_FREQ_HZ, freq, WDT_MIN_FREQ_HZ, WDT_MAX_FREQ_HZ);
+        return 1;
+    }
+    for (unsigned stage = 0; stage < num_stages; ++stage) {
+        if (timeouts[stage] & (~0ULL << HPSC_WDT_COUNTER_WIDTH)) {
+                printf("ERROR: WDT: timeout for stage %u exceeds counter width (%u bits): %08x%08x\r\n",
+                       stage, HPSC_WDT_COUNTER_WIDTH,
+                      (uint32_t)(timeouts[stage] >> 32), (uint32_t)(timeouts[stage] & 0xffffffff));
+                return 2;
+        }
+    }
+
     wdt->num_stages = num_stages;
+
+    // Set divider and zero other fields
+    ASSERT(freq % WDT_MIN_FREQ_HZ == 0);
+    unsigned div = WDT_MAX_FREQ_HZ / freq;
+    printf("WDT %s: set divider to %u\r\n", wdt->name, div);
+    REGB_WRITE32(wdt->base, REG__CONFIG, div << REG__CONFIG__TICKDIV__SHIFT);
 
     for (unsigned stage = 0; stage < num_stages; ++stage) {
         // Loading alone does not clear the current count (which may have been
@@ -235,7 +258,7 @@ void wdt_isr(struct wdt *wdt, unsigned stage)
     // TODO: spec unclear: if we are not allowed to clear the int source, then
     // we have to disable the interrupt via the interrupt controller, and
     // re-enable it in wdt_enable.
-    REGB_CLEAR32(wdt->base, REG__STATUS, 1 << ( REG__STATUS__TIMEOUT_SHIFT + stage));
+    REGB_CLEAR32(wdt->base, REG__STATUS, 1 << ( REG__STATUS__TIMEOUT__SHIFT + stage));
 
     if (wdt->cb)
         wdt->cb(wdt, stage, wdt->cb_arg);

@@ -96,10 +96,10 @@ int main(void)
 #define HPPS_RCV_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_RCV_INT
 #define HPPS_ACK_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_ACK_INT
     struct irq *hpps_rcv_irq =
-        gic_request(MBOX_HPPS_RTPS__IRQ_START + HPPS_RCV_IRQ_IDX,
+        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_RCV_IRQ_IDX,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
     struct irq *hpps_ack_irq =
-        gic_request(MBOX_HPPS_RTPS__IRQ_START + HPPS_ACK_IRQ_IDX,
+        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_ACK_IRQ_IDX,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
 
     struct mbox_link *hpps_link = mbox_link_connect(MBOX_HPPS_RTPS__BASE,
@@ -164,18 +164,18 @@ void irq_handler(unsigned intid) {
         unsigned ppi = intid - GIC_NR_SGIS;
         switch (ppi) {
 #if TEST_GTIMER
-            case TIMER_HYP_PPI_IRQ:
+            case PPI_IRQ__TIMER_HYP:
                     gtimer_isr(GTIMER_HYP);
                     break;
-            case TIMER_PHYS_PPI_IRQ:
+            case PPI_IRQ__TIMER_PHYS:
                     gtimer_isr(GTIMER_PHYS);
                     break;
-            case TIMER_VIRT_PPI_IRQ:
+            case PPI_IRQ__TIMER_VIRT:
                     gtimer_isr(GTIMER_VIRT);
                     break;
 #endif // TEST_GTIMER
 #if TEST_WDT
-            case WDT_PPI_IRQ:
+            case PPI_IRQ__WDT:
                 wdt_isr(wdt, /* stage */ 0);
                 break;
 #endif // TEST_WDT
@@ -189,26 +189,26 @@ void irq_handler(unsigned intid) {
             // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
             // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
     #if TEST_HPPS_RTPS_MAILBOX
-            case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_RCV_INT:
+            case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
                     break;
-            case MBOX_HPPS_RTPS__IRQ_START + MBOX_HPPS_RTPS__RTPS_ACK_INT:
+            case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
                     break;
     #endif // TEST_HPPS_RTPS_MAILBOX
     #if TEST_RTPS_TRCH_MAILBOX
-            case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_RCV_INT:
+            case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
                     break;
-            case MBOX_LSIO__IRQ_START + MBOX_LSIO__RTPS_ACK_INT:
+            case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
                     break;
     #endif // TEST_RTPS_TRCH_MAILBOX
     #if TEST_RTPS_DMA
-            case RTPS_DMA_ABORT_IRQ:
+            case RTPS_IRQ__RTPS_DMA_ABORT:
                     dma_abort_isr(rtps_dma);
                     break;
-            case RTPS_DMA_EV0_IRQ:
+            case RTPS_IRQ__RTPS_DMA_EV0:
                     dma_event_isr(rtps_dma, 0);
                     break;
     #endif

@@ -43,7 +43,7 @@ int test_wdt()
 
     wdt_enable(wdt);
 
-    gic_int_enable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
+    gic_int_enable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
 
     unsigned total_timeout = 0;
     unsigned timeouts[] = { wdt_timeout(wdt, 0), wdt_timeout(wdt, 1) };
@@ -67,7 +67,7 @@ int test_wdt()
 
 cleanup:
     // NOTE: order is important, since ISR may be called during destroy
-    gic_int_disable(WDT_PPI_IRQ, GIC_IRQ_TYPE_PPI);
+    gic_int_disable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
     wdt = NULL;
     return rc;

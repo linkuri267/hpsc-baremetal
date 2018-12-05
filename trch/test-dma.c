@@ -23,8 +23,8 @@ static void dma_tx_completed(void *arg, int rc)
 
 int test_trch_dma()
 {
-    nvic_int_enable(TRCH_DMA_ABORT_IRQ);
-    nvic_int_enable(TRCH_DMA_EV0_IRQ);
+    nvic_int_enable(TRCH_IRQ__TRCH_DMA_ABORT);
+    nvic_int_enable(TRCH_IRQ__TRCH_DMA_EV0);
 
     trch_dma = dma_create("TRCH", TRCH_DMA_BASE,
                           trch_dma_mcode, sizeof(trch_dma_mcode));
@@ -74,8 +74,8 @@ int test_trch_dma()
     if (dma_destroy(trch_dma))
 	return 1;
 
-    nvic_int_disable(TRCH_DMA_ABORT_IRQ);
-    nvic_int_disable(TRCH_DMA_EV0_IRQ);
+    nvic_int_disable(TRCH_IRQ__TRCH_DMA_ABORT);
+    nvic_int_disable(TRCH_IRQ__TRCH_DMA_EV0);
 
     return 0;
 }

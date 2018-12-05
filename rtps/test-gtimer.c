@@ -44,9 +44,9 @@ int test_gtimer()
         return 1;
     }
 #endif
-    gic_int_enable(TIMER_PHYS_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
-    gic_int_enable(TIMER_VIRT_PPI_IRQ, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
-    // gic_int_enable(TIMER_HYP_PPI_IRQ,  GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL); // from EL2 only
+    gic_int_enable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
+    gic_int_enable(PPI_IRQ__TIMER_VIRT, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
+    // gic_int_enable(PPI_IRQ__TIMER_HYP,  GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL); // from EL2 only
 
     enum gtimer el1_timers[] = { GTIMER_PHYS, GTIMER_VIRT };
 
@@ -86,9 +86,9 @@ int test_gtimer()
         gtimer_unsubscribe(timer);
    }
 
-    gic_int_disable(TIMER_PHYS_PPI_IRQ, GIC_IRQ_TYPE_PPI);
-    gic_int_disable(TIMER_VIRT_PPI_IRQ, GIC_IRQ_TYPE_PPI);
-    // gic_int_disable(TIMER_HYP_PPI_IRQ, GIC_IRQ_TYPE_PPI); // from EL2 only
+    gic_int_disable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI);
+    gic_int_disable(PPI_IRQ__TIMER_VIRT, GIC_IRQ_TYPE_PPI);
+    // gic_int_disable(PPI_IRQ__TIMER_HYP, GIC_IRQ_TYPE_PPI); // from EL2 only
 
     return 0;
 }
