@@ -188,30 +188,30 @@ void irq_handler(unsigned intid) {
         switch (irq) {
             // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
             // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
-    #if TEST_HPPS_RTPS_MAILBOX
+#if TEST_HPPS_RTPS_MAILBOX
             case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
                     break;
             case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
                     break;
-    #endif // TEST_HPPS_RTPS_MAILBOX
-    #if TEST_RTPS_TRCH_MAILBOX
+#endif // TEST_HPPS_RTPS_MAILBOX
+#if TEST_RTPS_TRCH_MAILBOX
             case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
                     break;
             case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
                     break;
-    #endif // TEST_RTPS_TRCH_MAILBOX
-    #if TEST_RTPS_DMA
+#endif // TEST_RTPS_TRCH_MAILBOX
+#if TEST_RTPS_DMA
             case RTPS_IRQ__RTPS_DMA_ABORT:
                     dma_abort_isr(rtps_dma);
                     break;
             case RTPS_IRQ__RTPS_DMA_EV0:
                     dma_event_isr(rtps_dma, 0);
                     break;
-    #endif
+#endif
             default:
                     printf("WARN: no ISR for IRQ #%u\r\n", irq);
         }

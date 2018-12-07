@@ -142,4 +142,6 @@ $(BLDDIR)/$(TARGET) : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
 %.dis.s: %.o
 	$(ARM_NONE_EABI)-objdump $<  -D > $@
 
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
+
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))
