@@ -114,7 +114,7 @@ TARGET=trch.elf
 clean:
 	rm -rf $(BLDDIR) vectors.s isr.c
 
-isrs: irqmap genisr.py
+isrs: irqmap genisr.py Makefile
 	./genisr.py -v $(INC_FLAGS) $(TEST_ARGS) --irqmap $< vectors.s isr.c
 .INTERMEDIATE: isrs
 vectors.s: isrs
@@ -128,5 +128,7 @@ $(BLDDIR)/%.o : %.c | dirs
 
 $(BLDDIR)/$(TARGET): trch.ld $(addprefix $(BLDDIR)/,$(OBJS))
 	$(ARM_NONE_EABI)-ld -o $@ -T $^
+
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
 
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))
