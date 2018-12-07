@@ -34,9 +34,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
             ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
-            reset_component(COMPONENT_RTPS);
-	    wdt_kick(wdt); // reset the counter (re-enabling alone does do that)
-	    wdt_enable(wdt);
+            ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
+            reset_component(COMPONENT_RTPS); // TODO: reset only once
             break;
         case CPUID_HPPS + 0:
         case CPUID_HPPS + 1:
@@ -47,9 +46,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_HPPS + 6:
         case CPUID_HPPS + 7:
             ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
-            reset_component(COMPONENT_HPPS);
-	    wdt_kick(wdt); // reset the counter (re-enabling alone does do that)
-	    wdt_enable(wdt);
+            ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
+            reset_component(COMPONENT_HPPS); // TODO: reset only once
             break;
         default:
 	    ASSERT(false && "invalid context");
