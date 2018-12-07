@@ -794,7 +794,9 @@ cpu0:
 #	MSR     CPSR_c, #0x10
 #DK's test to set up stack poointer
         LDR     r13, =__stack_end__ - 0x2000 /* 0x200 (STACKSIZE) * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
-        B       main
+        BL      main
+hang:
+        B hang
 
 //    .size Reset_Handler, . - Reset_Handler	// Original
 
