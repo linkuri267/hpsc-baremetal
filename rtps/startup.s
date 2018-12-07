@@ -97,6 +97,7 @@ Start:
 // Note: LDR PC instructions are used here, though branch (B) instructions
 // could also be used, unless the exception handlers are >32MB away.
 
+#ifdef EL2_BARE_METAL
 EL2_Vectors:
         LDR PC, EL2_Reset_Addr
         LDR PC, EL2_Undefined_Addr
@@ -150,6 +151,7 @@ EL2_FIQ_Handler:
 // Note: LDR PC instructions are used here, though branch (B) instructions
 // could also be used, unless the exception handlers are >32MB away.
 
+#endif
     .align 5
 EL1_Vectors:
         LDR PC, EL1_Reset_Addr
@@ -217,6 +219,7 @@ EL1_FIQ_Handler:
     .thumb
 #endif
 
+#ifdef EL2_BARE_METAL
 .type EL2_Reset_Handler, "function"
 EL2_Reset_Handler:
 
@@ -391,6 +394,8 @@ EL2_Reset_Handler:
         ORR r0, r0, #(0x1 << 5)         // Set T bit
         ORR r0, r0, #(0x1 << 5)         // Set T bit
 // DK end
+
+#endif // EL2_BARE_METAL
     .global __use_two_region_memory
 
 EL1_Reset_Handler:

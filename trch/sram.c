@@ -43,6 +43,7 @@ void file_load_from_sram()
             * load_addr_32 = * sram_addr_32;
             load_addr_32++;
             sram_addr_32++;
+            printf("%-th\n", j);
         }
         load_addr = (unsigned char *) load_addr_32;
         sram_addr = (unsigned char *) sram_addr_32;

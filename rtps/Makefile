@@ -98,6 +98,7 @@ OBJS += test-dma.o
 endif
 
 TARGET=rtps.elf
+TARGET_BIN=rtps.bin
 
 .DEFAULT_GOAL := $(BLDDIR)/$(TARGET)
 
@@ -106,6 +107,7 @@ clean:
 
 # If hardware floating point is either not present or not required, add -mfpu=none to the compile step
 CPU_FLAGS = -mcpu=cortex-r52 -mthumb -mfloat-abi=hard -mfpu=vfpv3
+
 CCOPT = \
 	-g -O0 $(CPU_FLAGS) \
 	-nostdlib -nostartfiles -ffreestanding \
@@ -135,6 +137,7 @@ $(BLDDIR)/%.o : %.c | dirs
 
 $(BLDDIR)/$(TARGET) : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
 	$(ARM_NONE_EABI)-gcc -T $^ -o $@ $(LDFLAGS)
+	$(ARM_NONE_EABI)-objcopy -O binary $(BLDDIR)/$(TARGET) $(BLDDIR)/$(TARGET_BIN)
 
 %.dis.s: %.o
 	$(ARM_NONE_EABI)-objdump $<  -D > $@
