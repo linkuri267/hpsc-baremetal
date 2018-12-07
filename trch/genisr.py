@@ -196,7 +196,7 @@ __entry: /* same as 'reset', but must not be marked with .thumb_func */
 
 .thumb_func
 reset:
-    bl notmain
+    b crt_init
     b hang
     b hang
 
@@ -209,6 +209,19 @@ svc:
 .thumb_func
 hang:   b .
     b hang
+
+.thumb_func
+crt_init:
+    // Zero-initialize .bss
+    ldr r0, =__bss_start__
+    ldr r1, =__bss_end__
+    mov r2, #0
+bss_zero_loop:
+    str r2, [r0]
+    add r0, #4
+    cmp r0, r1
+    bne bss_zero_loop
+    bl main
 """
 + "\n");
 

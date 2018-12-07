@@ -31,7 +31,7 @@ struct endpoint endpoints[] = {
 };
 #endif // SERVER
 
-int notmain ( void )
+int main ( void )
 {
     cdns_uart_startup(); // init UART peripheral
     printf("TRCH\r\n");
