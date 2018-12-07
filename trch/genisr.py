@@ -222,6 +222,7 @@ bss_zero_loop:
     cmp r0, r1
     bne bss_zero_loop
     bl main
+    b hang
 """
 + "\n");
 
