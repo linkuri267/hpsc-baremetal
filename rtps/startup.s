@@ -245,12 +245,12 @@ EL2_Reset_Handler:
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c8, 1                   // write HPRLAR0
 
-        // Region 1 - Data
+        // Region 1 - Data: .data and .bss (assumed juxtaposed)
         LDR     r1, =__data_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c8, 4                   // write HPRBAR1
-        LDR     r1, =__data_end__
+        LDR     r1, =__bss_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
@@ -595,12 +595,12 @@ Finished:
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c8, 1                   // write PRLAR0
 
-        // Region 1 - Data
+        // Region 1 - Data: .data and .bss (assumed juxtaposed)
         LDR     r1, =__data_start__
         LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c8, 4                   // write PRBAR1
-        LDR     r1, =__data_end__
+        LDR     r1, =__bss_end__
         ADD     r1, r1, #63
         BFC     r1, #0, #6                              // align Limit to 64bytes
         LDR     r2, =((AttrIndx0<<1) | (ENable))
@@ -792,7 +792,17 @@ cpu0:
 #DK's test to switch from SVC mode to User mode. it works.
 # but it is disabled for now.
 #	MSR     CPSR_c, #0x10
-#DK's test to set up stack poointer
+
+crt_init: # Zero-initialize .bss
+        ldr r0, =__bss_start__
+        ldr r1, =__bss_end__
+        mov r2, #0
+bss_zero_loop:
+        str r2, [r0]
+        add r0, #4
+        cmp r0, r1
+        bne bss_zero_loop
+
         LDR     r13, =__stack_end__ - 0x2000 /* 0x200 (STACKSIZE) * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
         BL      main
 hang:

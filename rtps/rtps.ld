@@ -32,15 +32,17 @@ SECTIONS
     .data BLOCK(64) : {
         __data_start__ = .;
         *(.data*)
+        __data_end__ = .;
     } > RTPS_DDR_LOW_1
     .bss BLOCK(64) : {
+        __bss_start__ = .;
         *(.bss)
         *(COMMON)
          . = ALIGN(64);
-        __data_end__ = .;
+        __bss_end__ = .;
     } > RTPS_DDR_LOW_1
     end = .;
-    __stack_start__ = __data_end__;
+    __stack_start__ = __bss_end__;
     __stack_end__ = ORIGIN(RTPS_DDR_LOW_1) + LENGTH(RTPS_DDR_LOW_1) - 64;
 
    __tcm_a_start__ = ORIGIN(TCM_A);
