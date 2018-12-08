@@ -23,6 +23,9 @@ struct wdt *hpps_wdts[HPPS_NUM_CORES] = {0};
 static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 {
     unsigned cpuid = (unsigned)arg;
+    unsigned component = COMPONENT_INVALID;
+    int rc;
+
     printf("watchdog: cpu %u: stage %u: expired\r\n", cpuid, stage);
 
     // Expand this with appropriate responses to faults
@@ -33,10 +36,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
             break;
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
-            ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
-            ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
-            wdt_kick(wdt); // reload the timer so that it's ready when subsytem enables it
-            reset_component(COMPONENT_RTPS); // TODO: reset only once
+            component = COMPONENT_RTPS;
             break;
         case CPUID_HPPS + 0:
         case CPUID_HPPS + 1:
@@ -46,13 +46,22 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_HPPS + 5:
         case CPUID_HPPS + 6:
         case CPUID_HPPS + 7:
-            ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
-            ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
-            wdt_kick(wdt); // reload the timer so that it's ready when subsytem enables it
-            reset_component(COMPONENT_HPPS); // TODO: reset only once
+            component = COMPONENT_HPPS;
             break;
         default:
 	    ASSERT(false && "invalid context");
+    }
+
+    if (component != COMPONENT_INVALID) {
+        ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
+        ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
+        wdt_kick(wdt); // to reload the timer, so that it's ready when subsystem enables it
+        rc = reset_component(component); // TODO: reset only once
+        if (rc) {
+            printf("ERROR: WATCHDOG: failed to reset component %u\r\n",
+                   component);
+            return;
+        }
     }
 }
 

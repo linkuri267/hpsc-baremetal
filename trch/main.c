@@ -154,11 +154,13 @@ int main ( void )
 #endif // TEST_HPPS_WDT
 
 #if TEST_BOOT_RTPS
-    reset_component(COMPONENT_RTPS);
+    if (reset_component(COMPONENT_RTPS))
+        panic("reset RTPS");
 #endif // TEST_BOOT_RTPS
 
 #if TEST_BOOT_HPPS
-    reset_component(COMPONENT_HPPS);
+    if (reset_component(COMPONENT_HPPS))
+        panic("reset HPPS");
 #endif // TEST_BOOT_HPPS
 
 #if TEST_IPI

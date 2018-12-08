@@ -43,6 +43,7 @@ int server_init(struct endpoint *endpts, size_t num_endpts)
 int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
 {
     size_t i;
+    int rc;
     switch (cmd->msg[0]) {
         case CMD_NOP:
             printf("NOP ...\r\n");
@@ -68,12 +69,15 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_RESET_HPPS:
             printf("RESET_HPPS ...\r\n");
-            reset_component(COMPONENT_HPPS);
+            rc = reset_component(COMPONENT_HPPS);
+            if (rc) {
+                reply[0] = -1;
+                return 1;
+            }
             reply[0] = 0;
             return 1;
         case CMD_MBOX_LINK_CONNECT: {
             printf("MBOX_LINK_CONNECT ...\r\n");
-            int rc;
             unsigned endpoint_idx = cmd->msg[1];
 
             if (endpoint_idx >= num_endpoints) {

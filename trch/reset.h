@@ -4,10 +4,11 @@
 #include <stdbool.h>
 
 typedef enum {
-    COMPONENT_RTPS = 1,
+    COMPONENT_INVALID = 0,
+    COMPONENT_RTPS,
     COMPONENT_HPPS,
 } component_t;
 
-void reset_component(component_t component);
+int reset_component(component_t component);
 
 #endif // RESET_H
