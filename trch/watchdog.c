@@ -35,6 +35,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_RTPS + 1:
             ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
             ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
+            wdt_kick(wdt); // reload the timer so that it's ready when subsytem enables it
             reset_component(COMPONENT_RTPS); // TODO: reset only once
             break;
         case CPUID_HPPS + 0:
@@ -47,6 +48,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_HPPS + 7:
             ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
             ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
+            wdt_kick(wdt); // reload the timer so that it's ready when subsytem enables it
             reset_component(COMPONENT_HPPS); // TODO: reset only once
             break;
         default:
