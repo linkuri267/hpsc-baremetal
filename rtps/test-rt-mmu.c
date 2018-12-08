@@ -41,5 +41,17 @@ int test_rt_mmu()
     }
     printf("%p -> %08x\r\n", addr, val);
 
+    // Write TRCH's value back, so that this test is idempotent (useful with reboots)
+    valref = 0xbeeff00d;
+    printf("%p <- %08x\r\n", addr, valref);
+    *addr = valref;
+    val = *addr;
+    if (val != valref) {
+        printf("mmu test: value at %p differs from written value: %x != %x\r\n",
+               addr, val, valref);
+        return 1;
+    }
+    printf("%p -> %08x\r\n", addr, val);
+
     return 0;
 }
