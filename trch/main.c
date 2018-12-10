@@ -14,6 +14,7 @@
 #include "nvic.h"
 #include "server.h"
 #include "watchdog.h"
+#include "mmus.h"
 #include "test.h"
 #include "sram.h"
 
@@ -66,9 +67,17 @@ int main ( void )
         panic("TRCH DMA test");
 #endif // TEST_TRCH_DMA
 
-#if TEST_RT_MMU
+#if TEST_RT_MMU_STANDALONE
     if (test_rt_mmu())
         panic("RTPS/TRCH-HPPS MMU test");
+#endif // TEST_RT_MMU_STANDALONE
+
+#if TEST_RT_MMU
+    if (rt_mmu_init())
+        panic("RTPS/TRCH-HPPS MMU setup");
+    // Never de-init since need some of the mappings while running. We could
+    // remove mappings for loading the boot image binaries, but we don't
+    // bother, since then would have to recreate them when reseting HPPS/RTPS.
 #endif // TEST_RT_MMU
 
 #if TEST_SRAM

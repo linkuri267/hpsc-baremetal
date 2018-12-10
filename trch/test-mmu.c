@@ -3,7 +3,6 @@
 #include "printf.h"
 #include "hwinfo.h"
 #include "dram-map.h"
-#include "mailbox.h"
 #include "mmu.h"
 
 #include "test.h"
@@ -13,7 +12,7 @@
 
 int test_rt_mmu()
 {
-    struct mmu *rt_mmu = mmu_create("RTPS/TRCH->HPPS",
+    struct mmu *rt_mmu = mmu_create("RTPS/TRCH->HPPS (test)",
 		RTPS_TRCH_TO_HPPS_SMMU_BASE);
     if (!rt_mmu)
 	return 1;
@@ -32,9 +31,6 @@ int test_rt_mmu()
 	return 1;
     if (mmu_map(rtps_ctx, 0xc0000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	return 1;
-    if (mmu_map(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE,
-			  (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
-	return 1;
 
     struct mmu_stream *rtps_stream =
 		mmu_stream_create(MASTER_ID_RTPS_CPU0, rtps_ctx);
@@ -49,9 +45,6 @@ int test_rt_mmu()
 	return 1;
     if (mmu_map(trch_ctx, 0xc1000000, 0x100000000, MMU_TEST_REGION_SIZE))
 	return 1;
-    if (mmu_map(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE,
-			  (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE))
-	return 1;
 
     struct mmu_stream *trch_stream =
 		mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
@@ -62,7 +55,6 @@ int test_rt_mmu()
 
     mmu_enable(rt_mmu);
 
-#ifdef TEST_RT_MMU_ACCESS
     // In this test, TRCH accesses same location as RTPS but via a different virtual addr.
     // RTPS should read 0xc0000000 and find 0xbeeff00d, not 0xf00dbeef.
 
@@ -75,18 +67,12 @@ int test_rt_mmu()
     val = 0xf00dbeef;
     printf("%p <- %08x\r\n", addr, val);
     *addr = val;
-#else // !TEST_RT_MMU_ACCESS
-
-   // We can't always tear down, because we need to leave the MMU
-   // configured for the other subsystems to do their test accesses
 
     mmu_disable(rt_mmu);
 
     if (mmu_stream_destroy(rtps_stream))
 	return 1;
 
-    if (mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
-	return 1;
     if (mmu_unmap(rtps_ctx, 0xc0000000, MMU_TEST_REGION_SIZE))
 	return 1;
     if (mmu_unmap(rtps_ctx, 0x8e100000,  MMU_TEST_REGION_SIZE))
@@ -98,8 +84,6 @@ int test_rt_mmu()
     if (mmu_stream_destroy(trch_stream))
 	return 1;
 
-    if (mmu_unmap(trch_ctx, (uint32_t)HPPS_MBOX_BASE, HPSC_MBOX_AS_SIZE))
-	return 1;
     if (mmu_unmap(trch_ctx, 0xc1000000, MMU_TEST_REGION_SIZE))
 	return 1;
     if (mmu_unmap(trch_ctx, 0xc0000000, MMU_TEST_REGION_SIZE))
@@ -110,6 +94,5 @@ int test_rt_mmu()
 
     if (mmu_destroy(rt_mmu))
     balloc_destroy(ba);
-#endif // !TEST_RT_ACCESS
     return 0;
 }
