@@ -363,9 +363,6 @@ EL2_Reset_Handler:
 	DSB
         MCR p15, 4, r0, c1, c0, 1       // Write to HACTLR
 	ISB
-    // Change EL1 exception base address
-        LDR r0, =EL1_Vectors
-        MCR p15, 0, r0, c12, c0, 0      // Write to VBAR
 
     // DK test for reading HVBAR
         MRC p15, 4, r0, c12, c0, 0      // Read from HVBAR
@@ -792,6 +789,10 @@ cpu0:
 #DK's test to switch from SVC mode to User mode. it works.
 # but it is disabled for now.
 #	MSR     CPSR_c, #0x10
+
+        // Change EL1 exception base address
+        LDR r0, =EL1_Vectors
+        MCR p15, 0, r0, c12, c0, 0      // Write to VBAR
 
 crt_init: # Zero-initialize .bss
         ldr r0, =__bss_start__
