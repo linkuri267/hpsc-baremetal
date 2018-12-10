@@ -391,9 +391,10 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
                     level, pt, index, &pt[index],
                     (uint32_t)(desc >> 32), (uint32_t)desc);
 
-            if (ALIGNED(vaddr, levp->block_size) && sz >= levp->block_size) {
-                printf("MMU: map: walk: level %u: block of size 0x%x\r\n",
-                        level, levp->block_size);
+            if (ALIGNED(vaddr, levp->lsb_bit) && sz >= levp->block_size) {
+                printf("MMU: map: walk: level %u: vaddr %08x%08x block of size 0x%x\r\n",
+                        level, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
+                        levp->block_size);
                 break; // insert a block mapping at this level
             }
 
@@ -487,7 +488,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
             walk[level].pt = pt;
             walk[level].index = index;
 
-            if (ALIGNED(vaddr, levp->block_size) && sz >= levp->block_size) {
+            if (ALIGNED(vaddr, levp->lsb_bit) && sz >= levp->block_size) {
                 printf("MMU: unmap: walk: level %u: pt %p: block of size 0x%x\r\n",
                         level, pt, levp->block_size);
                 break; // it's has to be a block mapping at this level, delete it below
