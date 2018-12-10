@@ -1,12 +1,13 @@
 #include <stdint.h>
 
 #include "printf.h"
+#include "dram-map.h"
 #include "test.h"
 
 int test_rt_mmu()
 {
     // Translated by MMU via identity map (in HPPS LOW DRAM)
-    volatile uint32_t *addr = (volatile uint32_t *)0x8e100000;
+    volatile uint32_t *addr = (volatile uint32_t *)RT_MMU_TEST_DATA_LO_ADDR;
     uint32_t valref = 0xf00dcafe;
     printf("%p <- %08x\r\n", addr, valref);
     *addr = valref;
@@ -19,7 +20,7 @@ int test_rt_mmu()
     printf("%p -> %08x\r\n", addr, val);
 
     // Translated by MMU (test configured to HPPS HIGH DRAM, 0x100000000)
-    addr = (volatile uint32_t *)0xc0000000;
+    addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_0_WIN_ADDR;
 
     valref = 0xbeeff00d; // written test code on TRCH
     val = *addr;

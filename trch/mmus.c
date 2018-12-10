@@ -5,6 +5,10 @@
 
 #include "mmus.h"
 
+#if MMU_TEST_REGION_SIZE > RT_MMU_TEST_DATA_LO_SIZE
+#error MMU_TEST_REGION greater than scratch space RT_MMU_TEST_DATA_LO_SIZE
+#endif
+
 static struct mmu *rt_mmu;
 static struct mmu_context *trch_ctx;
 static struct mmu_context *rtps_ctx;
@@ -49,9 +53,34 @@ int rt_mmu_init()
                           HPPS_DDR_LOW_SIZE))
         goto cleanup_hpps_ddr_low;
 
+#if TEST_RT_MMU_STANDALONE
+    if (mmu_map(trch_ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_1_ADDR,
+                          RT_MMU_TEST_DATA_HI_SIZE))
+	goto cleanup_hi1_win;
+    if (mmu_map(trch_ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_0_ADDR,
+                          RT_MMU_TEST_DATA_HI_SIZE))
+	goto cleanup_hi0_win;
+    if (mmu_map(rtps_ctx, RT_MMU_TEST_DATA_LO_ADDR,  RT_MMU_TEST_DATA_LO_ADDR,
+                          RT_MMU_TEST_DATA_LO_SIZE))
+	goto cleanup_lo_win;
+    if (mmu_map(rtps_ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_0_ADDR,
+                          RT_MMU_TEST_DATA_HI_SIZE))
+	goto cleanup_rtps_hi0_win;
+#endif // TEST_RT_MMU_STANDALONE
+
     mmu_enable(rt_mmu);
     return 0;
 
+#if TEST_RT_MMU_STANDALONE
+cleanup_rtps_hi0_win:
+    mmu_unmap(rtps_ctx, RT_MMU_TEST_DATA_LO_ADDR, RT_MMU_TEST_DATA_LO_SIZE);
+cleanup_lo_win:
+    mmu_unmap(trch_ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
+cleanup_hi0_win:
+    mmu_unmap(trch_ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
+cleanup_hi1_win:
+    mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
+#endif // TEST_RT_MMU_STANDALONE
 cleanup_hpps_ddr_low:
     mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_rtps_mailbox:

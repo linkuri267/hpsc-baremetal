@@ -67,11 +67,6 @@ int main ( void )
         panic("TRCH DMA test");
 #endif // TEST_TRCH_DMA
 
-#if TEST_RT_MMU_STANDALONE
-    if (test_rt_mmu())
-        panic("RTPS/TRCH-HPPS MMU test");
-#endif // TEST_RT_MMU_STANDALONE
-
 #if TEST_RT_MMU
     if (rt_mmu_init())
         panic("RTPS/TRCH-HPPS MMU setup");
@@ -79,6 +74,11 @@ int main ( void )
     // remove mappings for loading the boot image binaries, but we don't
     // bother, since then would have to recreate them when reseting HPPS/RTPS.
 #endif // TEST_RT_MMU
+
+#if TEST_RT_MMU_STANDALONE
+    if (test_rt_mmu())
+        panic("RTPS/TRCH-HPPS MMU test");
+#endif // TEST_RT_MMU_STANDALONE
 
 #if TEST_SRAM
     printf("looking for SRAM ...\r\n");
