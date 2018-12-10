@@ -21,7 +21,7 @@ void file_load_from_sram()
     for(i = 0; i < sizeof(global_table); i++) {
         ptr[i] = * (sram_start_addr + i);
     }
-    printf("Files in SRAM: 0x%lx, low_mark_data(0x%lx), high_mark_fd(0x%x)\n", gt.n_files, gt.low_mark_data, gt.high_mark_fd);
+    printf("Files in SRAM: 0x%lx, low_mark_data(0x%lx), high_mark_fd(0x%x)\r\n", gt.n_files, gt.low_mark_data, gt.high_mark_fd);
     for (i = 0; i < gt.n_files ; i++) {
         uint32_t offset;
         fd_buf = (file_descriptor *)(sram_start_addr + sizeof(gt) + sizeof(file_descriptor)*i);
@@ -33,12 +33,12 @@ void file_load_from_sram()
         load_addr_32 = (uint32_t *)fd_buf->load_addr;
         uint32_t iter = fd_buf->size / sizeof(uint32_t);
         uint32_t rem = fd_buf->size % sizeof(uint32_t);
-        printf("Loading %d-th file\n", i);
-        printf("     @ 0x%x\n", fd_buf->load_addr);
-        printf("     size(0x%x)\n", fd_buf->size);
-        printf("     sramaddr(0x%x)\n", sram_start_addr + offset);
-        printf("     iter (0x%x)\n", iter);
-        printf("     rem (0x%x)\n", rem);
+        printf("Loading %d-th file\r\n", i);
+        printf("     @ 0x%x\r\n", fd_buf->load_addr);
+        printf("     size(0x%x)\r\n", fd_buf->size);
+        printf("     sramaddr(0x%x)\r\n", sram_start_addr + offset);
+        printf("     iter (0x%x)\r\n", iter);
+        printf("     rem (0x%x)\r\n", rem);
         for (j = 0; j < iter; j++) {
             * load_addr_32 = * sram_addr_32;
             load_addr_32++;

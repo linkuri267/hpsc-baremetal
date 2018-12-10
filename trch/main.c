@@ -81,7 +81,7 @@ int main ( void )
 #endif // TEST_RT_MMU
 
 #if TEST_SRAM
-    printf("[%u] looking for SRAM ...\r\n");
+    printf("looking for SRAM ...\r\n");
     file_load_from_sram();
 #endif // TEST_SRAM
 
