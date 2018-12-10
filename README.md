@@ -13,6 +13,7 @@ Drivers:
 * Driver for ARM DMA-330 (credit: based on Linux driver)
 * Driver for HPSC Mailbox
 * Driver for HPSC Watchdog Timer (WDT)
+* Driver for SMC-353 Memory Controller (SRAM port only)
 
 Library code:
 
