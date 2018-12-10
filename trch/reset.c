@@ -34,6 +34,11 @@ int reset_component(component_t component)
 {
     switch (component) {
         case COMPONENT_HPPS:
+            printf("RESET: HPPS: halt CPU0-7, release CPU0\r\n");
+
+            REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ);
+            REGB_SET32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET);
+
 #if TEST_BOOT_FROM_SMC_SRAM
             if (smc_sram_load("hpps-fw"))
                 return 1;
@@ -41,27 +46,22 @@ int reset_component(component_t component)
                 return 1;
 #endif // TEST_BOOT_FROM_SMC_SRAM
 
-            printf("RESET: HPPS: halt CPU0-7, release CPU0\r\n");
-
-            REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ);
-            REGB_SET32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET);
-
             REGB_CLEAR32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ & 0x1);
             REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET & 0x1);
             break;
         case COMPONENT_RTPS:
+            printf("RESET: RTPS: halt CPU0-1, release CPU0\r\n");
+
+            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
+            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
+            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
+
 #if TEST_BOOT_FROM_SMC_SRAM
             if (smc_sram_load("rtps-bl"))
                 return 1;
             if (smc_sram_load("rtps-os"))
                 return 1;
 #endif // TEST_BOOT_FROM_SMC_SRAM
-
-            printf("RESET: RTPS: halt CPU0-1, release CPU0\r\n");
-
-            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
-            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
-            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
 
             REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET & 0x1);
