@@ -64,6 +64,7 @@ OBJS = \
        vectors.o \
        isr.o \
        lib/mem.o \
+       lib/str.o \
        lib/delay.o \
        lib/object.o \
        lib/balloc.o \
