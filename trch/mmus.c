@@ -45,29 +45,14 @@ int rt_mmu_init()
 			  (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
         goto cleanup_rtps_mailbox;
 
-    if (mmu_map(trch_ctx, HPPS_ATF_ADDR, HPPS_ATF_ADDR, HPPS_ATF_SIZE))
-        goto cleanup_hpps_atf;
-    if (mmu_map(trch_ctx, HPPS_BL_ADDR, HPPS_BL_ADDR, HPPS_BL_SIZE))
-        goto cleanup_hpps_bl;
-    if (mmu_map(trch_ctx, HPPS_DT_ADDR, HPPS_DT_ADDR, HPPS_DT_SIZE))
-        goto cleanup_hpps_dt;
-    if (mmu_map(trch_ctx, HPPS_KERN_ADDR, HPPS_KERN_ADDR, HPPS_KERN_SIZE))
-        goto cleanup_hpps_kern;
-    if (mmu_map(trch_ctx, HPPS_ROOTFS_ADDR, HPPS_ROOTFS_ADDR, HPPS_ROOTFS_SIZE))
-        goto cleanup_hpps_rootfs;
+    if (mmu_map(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_ADDR,
+                          HPPS_DDR_LOW_SIZE))
+        goto cleanup_hpps_ddr_low;
 
     mmu_enable(rt_mmu);
     return 0;
 
-cleanup_hpps_rootfs:
-    mmu_unmap(trch_ctx, HPPS_KERN_ADDR, HPPS_KERN_SIZE);
-cleanup_hpps_kern:
-    mmu_unmap(trch_ctx, HPPS_DT_ADDR, HPPS_DT_SIZE);
-cleanup_hpps_dt:
-    mmu_unmap(trch_ctx, HPPS_BL_ADDR, HPPS_BL_SIZE);
-cleanup_hpps_bl:
-    mmu_unmap(trch_ctx, HPPS_ATF_ADDR, HPPS_ATF_SIZE);
-cleanup_hpps_atf:
+cleanup_hpps_ddr_low:
     mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_rtps_mailbox:
     mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
@@ -91,11 +76,7 @@ int rt_mmu_deinit()
     int rc = 0;
     mmu_disable(rt_mmu);
 
-    rc |= mmu_unmap(trch_ctx, HPPS_ATF_ADDR, HPPS_ATF_SIZE);
-    rc |= mmu_unmap(trch_ctx, HPPS_BL_ADDR, HPPS_BL_SIZE);
-    rc |= mmu_unmap(trch_ctx, HPPS_DT_ADDR, HPPS_DT_SIZE);
-    rc |= mmu_unmap(trch_ctx, HPPS_KERN_ADDR, HPPS_KERN_SIZE);
-    rc |= mmu_unmap(trch_ctx, HPPS_ROOTFS_ADDR, HPPS_ROOTFS_SIZE);
+    rc |= mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
 
     rc |= mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
     rc |= mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
