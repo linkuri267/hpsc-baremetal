@@ -16,7 +16,6 @@
 #include "watchdog.h"
 #include "mmus.h"
 #include "test.h"
-#include "sram.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
 
@@ -79,11 +78,6 @@ int main ( void )
     if (test_rt_mmu())
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU_STANDALONE
-
-#if TEST_SRAM
-    printf("looking for SRAM ...\r\n");
-    file_load_from_sram();
-#endif // TEST_SRAM
 
 #if SERVER
     struct endpoint *endpoint;

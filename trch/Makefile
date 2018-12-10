@@ -19,7 +19,7 @@ TEST_FLAGS = \
 	TEST_RT_MMU_STANDALONE \
 	TEST_BOOT_RTPS \
 	TEST_BOOT_HPPS \
-	TEST_SRAM \
+	TEST_BOOT_FROM_SMC_SRAM \
 
 # Enable disable tests here:
 TEST_IPI 			= 0
@@ -39,7 +39,7 @@ TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 TEST_RT_MMU_STANDALONE		= 1
 TEST_BOOT_RTPS 			= 1
 TEST_BOOT_HPPS 			= 1
-TEST_SRAM			= 1
+TEST_BOOT_FROM_SMC_SRAM		= 1
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -79,10 +79,10 @@ OBJS = \
        drivers/mmu.o \
        drivers/dma.o \
        drivers/wdt.o \
+       drivers/smc.o \
        watchdog.o \
        reset.o \
        server.o \
-       sram.o \
        main.o \
 
 

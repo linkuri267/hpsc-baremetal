@@ -4,6 +4,10 @@
 #include "printf.h"
 #include "regops.h"
 
+#if TEST_BOOT_FROM_SMC_SRAM
+#include "smc.h"
+#endif // TEST_BOOT_FROM_SMC_SRAM
+
 #include "reset.h"
 
 #define APU       ((volatile uint8_t *)0xfd5c0000)
@@ -30,6 +34,13 @@ int reset_component(component_t component)
 {
     switch (component) {
         case COMPONENT_HPPS:
+#if TEST_BOOT_FROM_SMC_SRAM
+            if (smc_sram_load("hpps-fw"))
+                return 1;
+            if (smc_sram_load("hpps-bl"))
+                return 1;
+#endif // TEST_BOOT_FROM_SMC_SRAM
+
             printf("RESET: HPPS: halt CPU0-7, release CPU0\r\n");
 
             REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ);
@@ -39,6 +50,13 @@ int reset_component(component_t component)
             REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET & 0x1);
             break;
         case COMPONENT_RTPS:
+#if TEST_BOOT_FROM_SMC_SRAM
+            if (smc_sram_load("rtps-bl"))
+                return 1;
+            if (smc_sram_load("rtps-os"))
+                return 1;
+#endif // TEST_BOOT_FROM_SMC_SRAM
+
             printf("RESET: RTPS: halt CPU0-1, release CPU0\r\n");
 
             REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);

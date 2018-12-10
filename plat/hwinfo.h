@@ -39,4 +39,7 @@
 #define WDT_HPPS_RTPS_BASE      ((volatile uint32_t *)0xfff70000)
 #define WDT_HPPS_SIZE           0x10000
 
+#define SMC_SRAM_BASE           0x28000000
+#define SMC_SRAM_SIZE            0x8000000
+
 #endif // HWINFO_H
