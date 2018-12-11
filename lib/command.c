@@ -31,6 +31,9 @@ int cmd_enqueue(struct cmd *cmd)
 
     printf("enqueue command (tail %u head %u): cmd %u arg %u...\r\n",
            cmdq_tail, cmdq_head, cmdq[cmdq_head].msg[0], cmdq[cmdq_head].msg[1]);
+
+    // TODO: SEV (to prevent race between queue check and WFE in main loop)
+
     return 0;
 }
 
