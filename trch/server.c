@@ -2,10 +2,10 @@
 #include <unistd.h>
 
 #include "printf.h"
-#include "reset.h"
 #include "command.h"
 #include "mailbox-link.h"
 #include "hwinfo.h"
+#include "boot.h"
 #include "server.h"
 
 #define ENDPOINT_HPPS 0
@@ -69,11 +69,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_RESET_HPPS:
             printf("RESET_HPPS ...\r\n");
-            rc = reset_subsys(SUBSYS_HPPS);
-            if (rc) {
-                reply[0] = -1;
-                return 1;
-            }
+            boot_request_reboot(SUBSYS_HPPS);
             reply[0] = 0;
             return 1;
         case CMD_MBOX_LINK_CONNECT: {

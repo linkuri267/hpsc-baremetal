@@ -5,6 +5,7 @@
 #include "panic.h"
 #include "reset.h"
 #include "hwinfo.h"
+#include "boot.h"
 
 #include "watchdog.h"
 
@@ -24,7 +25,9 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 {
     unsigned cpuid = (unsigned)arg;
     unsigned subsys = SUBSYS_INVALID;
-    int rc;
+    struct wdt **wdts;
+    unsigned num_cores;
+    int rc, i;
 
     printf("watchdog: cpu %u: stage %u: expired\r\n", cpuid, stage);
 
@@ -37,6 +40,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
             subsys = SUBSYS_RTPS;
+            num_cores = HPPS_NUM_CORES;
+            wdts = rtps_wdts;
             break;
         case CPUID_HPPS + 0:
         case CPUID_HPPS + 1:
@@ -47,6 +52,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_HPPS + 6:
         case CPUID_HPPS + 7:
             subsys = SUBSYS_HPPS;
+            num_cores = HPPS_NUM_CORES;
+            wdts = hpps_wdts;
             break;
         default:
 	    ASSERT(false && "invalid context");
@@ -56,12 +63,45 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
         ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
         wdt_kick(wdt); // to reload the timer, so that it's ready when subsystem enables it
-        rc = reset_subsys(subsys); // TODO: reset only once
+
+        // The purpose of the following logic is to make the reset happen only
+        // once, upon the expiration of any WDT timer from the set of timers of
+        // a subsystem, instead of initiating a reset in response to the expiration
+        // of every timer in the set. The only-once logic is somewhat subtle, because we
+        // cannot know when the timers that were going to expire have expired and
+        // thus we could start the reboot. We cannot wait for all timers in the
+        // set to expire, becsause (1) the subsystem might not have enabled all
+        // timers, and (2) the subsystem might be in a half-broken state where
+        // it continues to kick some but not all timers.
+
+        rc = reset_assert(subsys); // will prevent all CPUs from kicking
         if (rc) {
             printf("ERROR: WATCHDOG: failed to reset subsys %u\r\n",
                    subsys);
             return;
         }
+
+        // Disable the WDTs for all other cores, so that they don't fire.  We
+        // might still get an ISR from timers that already expired before we
+        // disabled them, but that's ok: all of those ISRs (as well as the
+        // first one), will collectively enqueue only one reboot request.  The
+        // key is that by disabling all other WDTs from the first ISR, we
+        // guarantee that the extra ISRs will happen back to back, i.e.
+        // without entering the main loop, and thus without processing the
+        // reboot request. So, when the main loop does run, it is safe to
+        // initiate the reboot, since all timers will be disabled and reloaded.
+        //
+        // Note that the kick above will reload the counter of any timer that
+        // was enabled, and for timers that were never enabled, the counter
+        // does not need to be reloaded. (Instead of relying on this invariant,
+        // we could reload timers on each boot, but this is equivalent.)
+        for (i = 0; i < num_cores; ++i)
+            wdt_disable(wdts[i]);
+
+        // Enqueue the request for the main loop
+        // Note: we cannot use the command queue because we want all ISRs
+        // in a sequence to collectively generate one request (see above).
+        boot_request_reboot(subsys);
     }
 }
 

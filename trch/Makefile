@@ -82,6 +82,7 @@ OBJS = \
        drivers/smc.o \
        watchdog.o \
        reset.o \
+       boot.o \
        server.o \
        main.o \
 

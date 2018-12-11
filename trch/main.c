@@ -3,7 +3,6 @@
 
 #include "printf.h"
 #include "uart.h"
-#include "reset.h"
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"
@@ -15,6 +14,7 @@
 #include "server.h"
 #include "watchdog.h"
 #include "mmus.h"
+#include "boot.h"
 #include "test.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
@@ -157,13 +157,11 @@ int main ( void )
 #endif // TEST_HPPS_WDT
 
 #if TEST_BOOT_RTPS
-    if (reset_subsys(SUBSYS_RTPS))
-        panic("reset RTPS");
+    boot_request_reboot(SUBSYS_RTPS);
 #endif // TEST_BOOT_RTPS
 
 #if TEST_BOOT_HPPS
-    if (reset_subsys(SUBSYS_HPPS))
-        panic("reset HPPS");
+    boot_request_reboot(SUBSYS_HPPS);
 #endif // TEST_BOOT_HPPS
 
 #if TEST_IPI
@@ -184,7 +182,6 @@ int main ( void )
 #if TEST_TRCH_WDT
     watchdog_trch_start();
 #endif // TEST_RTPS_WDT
-
 
     unsigned iter = 0; // just to make output that changes to see it
     while (1) {
@@ -209,6 +206,7 @@ int main ( void )
             cmd_handle(&cmd);
 #endif // SERVER
 
+        boot_perform_reboots();
 
         printf("[%u] Waiting for interrupt...\r\n", ++iter);
         asm("wfi");
