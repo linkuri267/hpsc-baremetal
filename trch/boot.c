@@ -11,17 +11,21 @@ static int boot_load(subsys_t subsys)
     switch (subsys) {
         case SUBSYS_RTPS:
             printf("BOOT: load RTPS\r\n");
+#if TEST_BOOT_FROM_SMC_SRAM
             if (smc_sram_load("rtps-bl"))
                 return 1;
             if (smc_sram_load("rtps-os"))
                 return 1;
+#endif // TEST_BOOT_FROM_SMC_SRAM
             break;
         case SUBSYS_HPPS:
             printf("BOOT: load HPPS\r\n");
+#if TEST_BOOT_FROM_SMC_SRAM
             if (smc_sram_load("hpps-fw"))
                 return 1;
             if (smc_sram_load("hpps-bl"))
                 return 1;
+#endif // TEST_BOOT_FROM_SMC_SRAM
             break;
         default:
             printf("BOOT: ERROR: unknown subsystem %x\r\n", subsys);
