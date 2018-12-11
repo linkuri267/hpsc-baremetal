@@ -186,7 +186,7 @@ void watchdog_rtps_stop() {
 
 int watchdog_hpps_start() {
     int i;
-    uint64_t timeouts[] = { 100000000, 50000000 };
+    uint64_t timeouts[] = { 100000000, 100000000 };
 
     static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
 	"HPPS0", "HPPS1", "HPPS2", "HPPS3",
