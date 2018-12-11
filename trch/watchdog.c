@@ -137,6 +137,7 @@ int watchdog_trch_start() {
 		      timeouts, CPUID_TRCH);
     if (!trch_wdt)
 	return 1;
+    wdt_enable(trch_wdt); // TRCH is the monitored target, so it enables
     return 0;
 }
 
