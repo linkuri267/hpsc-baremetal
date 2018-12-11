@@ -69,7 +69,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_RESET_HPPS:
             printf("RESET_HPPS ...\r\n");
-            rc = reset_component(COMPONENT_HPPS);
+            rc = reset_subsys(SUBSYS_HPPS);
             if (rc) {
                 reply[0] = -1;
                 return 1;

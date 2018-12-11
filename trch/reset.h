@@ -3,12 +3,8 @@
 
 #include <stdbool.h>
 
-typedef enum {
-    COMPONENT_INVALID = 0,
-    COMPONENT_RTPS,
-    COMPONENT_HPPS,
-} component_t;
+#include "subsys.h"
 
-int reset_component(component_t component);
+int reset_subsys(subsys_t subsys);
 
 #endif // RESET_H

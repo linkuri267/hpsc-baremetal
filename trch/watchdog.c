@@ -23,7 +23,7 @@ struct wdt *hpps_wdts[HPPS_NUM_CORES] = {0};
 static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 {
     unsigned cpuid = (unsigned)arg;
-    unsigned component = COMPONENT_INVALID;
+    unsigned subsys = SUBSYS_INVALID;
     int rc;
 
     printf("watchdog: cpu %u: stage %u: expired\r\n", cpuid, stage);
@@ -36,7 +36,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
             break;
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
-            component = COMPONENT_RTPS;
+            subsys = SUBSYS_RTPS;
             break;
         case CPUID_HPPS + 0:
         case CPUID_HPPS + 1:
@@ -46,20 +46,20 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_HPPS + 5:
         case CPUID_HPPS + 6:
         case CPUID_HPPS + 7:
-            component = COMPONENT_HPPS;
+            subsys = SUBSYS_HPPS;
             break;
         default:
 	    ASSERT(false && "invalid context");
     }
 
-    if (component != COMPONENT_INVALID) {
+    if (subsys != SUBSYS_INVALID) {
         ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
         ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
         wdt_kick(wdt); // to reload the timer, so that it's ready when subsystem enables it
-        rc = reset_component(component); // TODO: reset only once
+        rc = reset_subsys(subsys); // TODO: reset only once
         if (rc) {
-            printf("ERROR: WATCHDOG: failed to reset component %u\r\n",
-                   component);
+            printf("ERROR: WATCHDOG: failed to reset subsys %u\r\n",
+                   subsys);
             return;
         }
     }

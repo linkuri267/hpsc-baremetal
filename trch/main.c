@@ -157,12 +157,12 @@ int main ( void )
 #endif // TEST_HPPS_WDT
 
 #if TEST_BOOT_RTPS
-    if (reset_component(COMPONENT_RTPS))
+    if (reset_subsys(SUBSYS_RTPS))
         panic("reset RTPS");
 #endif // TEST_BOOT_RTPS
 
 #if TEST_BOOT_HPPS
-    if (reset_component(COMPONENT_HPPS))
+    if (reset_subsys(SUBSYS_HPPS))
         panic("reset HPPS");
 #endif // TEST_BOOT_HPPS
 

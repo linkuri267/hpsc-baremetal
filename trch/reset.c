@@ -3,6 +3,7 @@
 
 #include "printf.h"
 #include "regops.h"
+#include "subsys.h"
 
 #if TEST_BOOT_FROM_SMC_SRAM
 #include "smc.h"
@@ -30,10 +31,10 @@
 #define RPU_CTRL__RPU_1_CFG  0x200
 #define RPU_CTRL__RPU_1_CFG__NCPUHALT 0x1
 
-int reset_component(component_t component)
+int reset_subsys(subsys_t subsys)
 {
-    switch (component) {
-        case COMPONENT_HPPS:
+    switch (subsys) {
+        case SUBSYS_HPPS:
             printf("RESET: HPPS: halt CPU0-7, release CPU0\r\n");
 
             REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ);
@@ -49,7 +50,7 @@ int reset_component(component_t component)
             REGB_CLEAR32(APU, APU__PWRCTL, APU__PWRCTL__CPUPWRDWNREQ & 0x1);
             REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET & 0x1);
             break;
-        case COMPONENT_RTPS:
+        case SUBSYS_RTPS:
             printf("RESET: RTPS: halt CPU0-1, release CPU0\r\n");
 
             REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
