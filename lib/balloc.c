@@ -3,7 +3,7 @@
 
 #include "printf.h"
 #include "panic.h"
-#include "mem.h"
+#include "object.h"
 #include "balloc.h"
 
 #define MAX_ALLOCATORS 4
@@ -39,23 +39,14 @@ static void dump_balloc(struct balloc *ba)
 
 struct balloc *balloc_create(const char *name, void *addr, unsigned size)
 {
-    unsigned idx = 0;
-    while (idx < MAX_ALLOCATORS && ballocs[idx].valid)
-        ++idx;
-    if (idx == MAX_ALLOCATORS) {
-        printf("ERROR: BALLOC %s: create failed: no space\r\n", name);
+    struct balloc *ba = OBJECT_ALLOC(ballocs);
+    if (!ba)
         return NULL;
-    }
-
-    struct balloc *ba = &ballocs[idx];
-    ba->valid = true;
-
-    bzero(ba, sizeof(*ba));
     ba->name = name;
     ba->free_blocks[0].addr = addr;
     ba->free_blocks[0].size = size;
-    printf("BALLOC %s: %u: init: new free block 0 (%p,0x%x)\r\n",
-            ba->name, idx, ba->free_blocks[0].addr, ba->free_blocks[0].size);
+    printf("BALLOC %s: init: new free block 0 (%p,0x%x)\r\n",
+            ba->name, ba->free_blocks[0].addr, ba->free_blocks[0].size);
     return ba;
 }
 
@@ -63,8 +54,7 @@ void balloc_destroy(struct balloc *ba)
 {
      ASSERT(ba);
      printf("BALLOC %s: destroy\r\n", ba->name);
-     ba->valid = false;
-     bzero(ba, sizeof(*ba));
+     OBJECT_FREE(ba);
 }
 
 void *balloc_alloc(struct balloc *ba, unsigned sz, unsigned align_bits)
