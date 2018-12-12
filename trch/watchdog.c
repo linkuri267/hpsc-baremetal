@@ -132,7 +132,7 @@ static void destroy_wdt(struct wdt *wdt, unsigned irq)
 }
 
 int watchdog_trch_start() {
-    uint64_t timeouts[] = { 5000000, 50000000 }; // about 2 sec each wall-clock in Qemu
+    uint64_t timeouts[] = { 50000000, 100000000 }; // about 10 sec for ST1 in wall-clock in Qemu
     trch_wdt = create_wdt("TRCH", WDT_TRCH_BASE, TRCH_IRQ__WDT_TRCH_ST1,
 		      timeouts, CPUID_TRCH);
     if (!trch_wdt)
