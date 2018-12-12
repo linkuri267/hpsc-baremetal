@@ -97,10 +97,9 @@ ifeq ($(strip $(TEST_RTPS_DMA)),1)
 OBJS += test-dma.o
 endif
 
-TARGET=rtps.elf
-TARGET_BIN=rtps.bin
+TARGET=rtps
 
-.DEFAULT_GOAL := $(BLDDIR)/$(TARGET)
+.DEFAULT_GOAL := $(BLDDIR)/$(TARGET).bin
 
 clean:
 	rm -rf $(BLDDIR)
@@ -135,9 +134,11 @@ $(BLDDIR)/%.o : %.s | dirs
 $(BLDDIR)/%.o : %.c | dirs
 	$(ARM_NONE_EABI)-gcc -MMD -c $(CCOPT) -o $@ $<
 
-$(BLDDIR)/$(TARGET) : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
+$(BLDDIR)/$(TARGET).elf : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
 	$(ARM_NONE_EABI)-gcc -T $^ -o $@ $(LDFLAGS)
-	$(ARM_NONE_EABI)-objcopy -O binary $(BLDDIR)/$(TARGET) $(BLDDIR)/$(TARGET_BIN)
+
+$(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
+	$(ARM_NONE_EABI)-objcopy -O binary $< $@
 
 %.dis.s: %.o
 	$(ARM_NONE_EABI)-objdump $<  -D > $@
