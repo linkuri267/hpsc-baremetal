@@ -25,6 +25,10 @@ static int boot_load(subsys_t subsys)
                 return 1;
             if (smc_sram_load("hpps-bl"))
                 return 1;
+            if (smc_sram_load("hpps-dt"))
+                return 1;
+            if (smc_sram_load("hpps-os"))
+                return 1;
 #endif // TEST_BOOT_FROM_SMC_SRAM
             break;
         default:
