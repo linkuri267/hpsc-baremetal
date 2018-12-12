@@ -8,6 +8,8 @@
 
 #define FILE_NAME_LENGTH 200
 
+#define PAGE_SIZE (1 << 14) // 16KB (used for progress display only)
+
 typedef struct {
     uint32_t valid;
     uint32_t offset;	/* offset in SRAM image */
@@ -27,7 +29,7 @@ typedef struct {
 int smc_sram_load(const char *fname)
 {
     global_table gt;
-    unsigned i, j;
+    unsigned i, p, w, b;
     file_descriptor * fd_buf;
     unsigned char * sram_start_addr = (unsigned char *)SMC_SRAM_BASE;
     unsigned char * load_addr;
@@ -59,25 +61,37 @@ int smc_sram_load(const char *fname)
     load_addr = (unsigned char *)fd_buf->load_addr;
     sram_addr_32 = (uint32_t *) (sram_start_addr + offset);
     load_addr_32 = (uint32_t *)fd_buf->load_addr;
-    uint32_t iter = fd_buf->size / sizeof(uint32_t);
-    uint32_t rem = fd_buf->size % sizeof(uint32_t);
+    uint32_t pages = fd_buf->size / PAGE_SIZE;
+    uint32_t rem_words = (fd_buf->size % PAGE_SIZE) / sizeof(uint32_t);
+    uint32_t rem_bytes = (fd_buf->size % PAGE_SIZE) % sizeof(uint32_t);
 
-    printf("SMC: loading file #%u: %s (sram addr 0x%0x) -> 0x%x (sz 0x%x): "
-           "iter 0x%x rem 0x%x\r\n", i, fd_buf->name, sram_start_addr + offset,
-           fd_buf->load_addr, fd_buf->size, iter, rem);
+    printf("SMC: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
+           i, fd_buf->name, sram_start_addr + offset,
+           fd_buf->load_addr, fd_buf->size / 1024);
 
-    for (j = 0; j < iter; j++) {
+    // Split into pages, in order to print progress not too frequently and
+    // without having to add a conditional (for whether to print progress
+    // on every iteration of in the inner loop over words.
+    for (p = 0; p < pages; p++) {
+        for (w = 0; w < PAGE_SIZE / sizeof(uint32_t); w++) {
+            * load_addr_32 = * sram_addr_32;
+            load_addr_32++;
+            sram_addr_32++;
+        }
+        printf("SMC: loading... %3u%%\r", p * 100 / pages);
+    }
+    for (w = 0; w < rem_words; w++) {
         * load_addr_32 = * sram_addr_32;
         load_addr_32++;
         sram_addr_32++;
     }
     load_addr = (unsigned char *) load_addr_32;
     sram_addr = (unsigned char *) sram_addr_32;
-    for (j = 0; j < rem; j++) {
+    for (b = 0; b < rem_bytes; b++) {
         * load_addr = * sram_addr;
         load_addr++;
         sram_addr++;
     }
-    printf("SMC: loading completed\r\n");
+    printf("SMC: loading... 100%%\r\n");
     return 0;
 }
