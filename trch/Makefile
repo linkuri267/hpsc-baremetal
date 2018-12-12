@@ -63,6 +63,7 @@ VPATH = ..
 OBJS = \
        vectors.o \
        isr.o \
+       lib/sha256.o \
        lib/mem.o \
        lib/str.o \
        lib/delay.o \
