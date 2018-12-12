@@ -35,7 +35,17 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
     switch (cpuid) {
         case CPUID_TRCH:
             ASSERT(stage == 0); // no last stage interrupt, because wired to hw reset
-	    // nothing to do: main loop will return from WFI/WFE and kick
+            // Note: main loop will return from WFI/WFE and kick too, but in case we
+            // are busy with a long-running operation (e.g. loading data from SMC), then
+            // main loop won't get a chance to run, so we kick it from here.
+            //
+            // Kicking on ST1 expiration is somewhat unsatisfactory: if we had
+            // a scheduler and a systick, the systick would return control flow
+            // to the scheduler loop, kick the WDT from that loop, and then
+            // return to task (or context switch to another task). Even so, the
+            // WDT would then be monitoring the scheduler, not whether any task
+            // is stuck.
+            wdt_kick(wdt);
             break;
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
