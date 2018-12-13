@@ -3,6 +3,7 @@
 
 #include "printf.h"
 #include "panic.h"
+#include "mem.h"
 #include "object.h"
 #include "balloc.h"
 
@@ -45,8 +46,11 @@ struct balloc *balloc_create(const char *name, void *addr, unsigned size)
     ba->name = name;
     ba->free_blocks[0].addr = addr;
     ba->free_blocks[0].size = size;
-    printf("BALLOC %s: init: new free block 0 (%p,0x%x)\r\n",
+
+    printf("BALLOC %s: init: zero-initing free block 0 (%p,0x%x)\r\n",
             ba->name, ba->free_blocks[0].addr, ba->free_blocks[0].size);
+    bzero(addr, size);
+    printf("BALLOC %s: ready\r\n", ba->name);
     return ba;
 }
 
