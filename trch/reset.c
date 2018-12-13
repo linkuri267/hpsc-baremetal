@@ -45,9 +45,9 @@ int reset_assert(subsys_t subsys)
             break;
         case SUBSYS_HPPS:
             printf("RESET: assert: HPPS: halt CPU0-7\r\n");
-            REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUxPWRDWNREQ);
             REGB_SET32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPUx_RESET |
                                               CRF__RST_FPD_APU__GIC_RESET);
+            REGB_SET32(APU, APU__PWRCTL, APU__PWRCTL__CPUxPWRDWNREQ);
             break;
         default:
             printf("RESET: ERROR: unknown subsystem %x\r\n", subsys);
