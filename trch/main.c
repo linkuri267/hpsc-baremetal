@@ -34,7 +34,7 @@ struct endpoint endpoints[] = {
 int main ( void )
 {
     cdns_uart_startup(); // init UART peripheral
-    printf("TRCH\r\n");
+    printf("\r\n\r\nTRCH\r\n");
 
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");

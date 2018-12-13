@@ -45,7 +45,7 @@ void soft_reset (void)
 int main(void)
 {
     cdns_uart_startup();
-    printf("RTPS\r\n");
+    printf("\r\n\r\nRTPS\r\n");
 
     enable_caches();
     enable_interrupts();
