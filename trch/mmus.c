@@ -22,6 +22,8 @@ int rt_mmu_init()
     if (!rt_mmu)
 	return 1;
 
+    mmu_disable(rt_mmu); // might be already enabled if the core reboots
+
     ba = balloc_create("RT", (uint64_t *)RTPS_HPPS_PT_ADDR, RTPS_HPPS_PT_SIZE);
     if (!ba)
         goto cleanup_balloc;
