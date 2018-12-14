@@ -71,8 +71,7 @@ int test_trch_dma()
             return 1;
     printf("\r\n");
 
-    if (dma_destroy(trch_dma))
-	return 1;
+    dma_destroy(trch_dma);
 
     nvic_int_disable(TRCH_IRQ__TRCH_DMA_ABORT);
     nvic_int_disable(TRCH_IRQ__TRCH_DMA_EV0);

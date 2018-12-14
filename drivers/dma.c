@@ -1309,7 +1309,7 @@ struct dma *dma_create(const char *name, volatile uint32_t *base,
     return (struct dma *)d;
 }
 
-int dma_destroy(struct dma *dma)
+void dma_destroy(struct dma *dma)
 {
     struct pl330_dmac *pl330 = (struct pl330_dmac *)dma; // TODO: rename?
 
@@ -1317,7 +1317,6 @@ int dma_destroy(struct dma *dma)
 
     // TODO: kill threads?
     OBJECT_FREE(pl330);
-    return 0;
 }
 
 struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,

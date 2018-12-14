@@ -10,7 +10,7 @@ typedef void (*dma_cb_t)(void *arg, int rc);
 
 struct dma *dma_create(const char *name, volatile uint32_t *base,
                        uint8_t *mcode_addr, unsigned mcode_sz);
-int dma_destroy(struct dma *dma);
+void dma_destroy(struct dma *dma);
 
 // If callback is NULL, then must reap with dma_wait
 // TODO: split into compilation and launching methods

@@ -114,8 +114,7 @@ int test_rtps_dma()
     }
 #endif // TEST_RTPS_MMU
 
-    if (dma_destroy(rtps_dma))
-	return 1;
+    dma_destroy(rtps_dma);
 
     gic_int_disable(RTPS_IRQ__RTPS_DMA_ABORT, GIC_IRQ_TYPE_SPI);
     gic_int_disable(RTPS_IRQ__RTPS_DMA_EV0, GIC_IRQ_TYPE_SPI);
