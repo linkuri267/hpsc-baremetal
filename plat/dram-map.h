@@ -39,7 +39,7 @@
 
 // Buffers for DMA test: in RTPS DRAM
 #define RTPS_DMA_SRC_ADDR       0x40001000
-#define RTPS_DMA_SIZE           0x00000020
+#define RTPS_DMA_SIZE           0x00000200
 #define RTPS_DMA_DST_ADDR       0x40002000 // align to page
 #define RTPS_DMA_DST_REMAP_ADDR 0x40003000 // MMU test maps this to DST_ADDR
 
