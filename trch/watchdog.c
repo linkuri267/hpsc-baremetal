@@ -50,7 +50,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:
             subsys = SUBSYS_RTPS;
-            num_cores = HPPS_NUM_CORES;
+            num_cores = RTPS_NUM_CORES;
             wdts = rtps_wdts;
             break;
         case CPUID_HPPS + 0:
