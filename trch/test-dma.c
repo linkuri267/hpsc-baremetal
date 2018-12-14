@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include "printf.h"
+#include "panic.h"
 #include "dma.h"
 #include "hwinfo.h"
 #include "nvic.h"
@@ -31,12 +32,9 @@ int test_trch_dma()
     if (!trch_dma)
 	return 1;
 
-    printf("DMA src: ");
-    for (unsigned i = 0; i < sizeof(dma_src_buf) / sizeof(dma_src_buf[0]); ++i) {
+    for (unsigned i = 0; i < sizeof(dma_src_buf) / sizeof(dma_src_buf[0]); ++i)
         dma_src_buf[i] = 0xf00d0000 | i;
-        printf("%x ", dma_src_buf[i]);
-    }
-    printf("\r\n");
+    dump_buf("DMA src", dma_src_buf, sizeof(dma_src_buf) / sizeof(dma_src_buf[0]));
 
 #if TEST_TRCH_DMA_CB
     bool dma_done = false;
@@ -63,13 +61,13 @@ int test_trch_dma()
 #endif
     printf("DMA tx completed\r\n");
 
-    printf("DMA dst: ");
-    for (unsigned i = 0; i < sizeof(dma_dst_buf) / sizeof(dma_dst_buf[0]); ++i)
-        if (dma_dst_buf[i] == dma_src_buf[i])
-            printf("%x ", dma_dst_buf[i]);
-        else
+    dump_buf("DMA dst", dma_dst_buf, sizeof(dma_dst_buf) / sizeof(dma_dst_buf[0]));
+    for (unsigned i = 0; i < sizeof(dma_dst_buf) / sizeof(dma_dst_buf[0]); ++i) {
+        if (dma_dst_buf[i] != dma_src_buf[i]) {
+	    printf("DMA test: dest contents does not match src\r\n");
             return 1;
-    printf("\r\n");
+	}
+    }
 
     dma_destroy(trch_dma);
 

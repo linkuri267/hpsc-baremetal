@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include "printf.h"
+#include "panic.h"
 #include "mem.h"
 #include "dma.h"
 #include "hwinfo.h"
@@ -20,15 +21,6 @@ static void dma_tx_completed(void *arg, int rc)
     *dma_tx_done = true;
 }
 #endif // TEST_RTPS_DMA_CB
-
-static void dump_buf(const char *name, uint32_t *buf)
-{
-    printf("DMA %s: %p: ", name, buf);
-    for (unsigned i = 0; i < RTPS_DMA_WORDS; ++i) {
-        printf("%x ", buf[i]);
-    }
-    printf("\r\n");
-}
 
 static bool cmp_buf(uint32_t *src, uint32_t *dst)
 {
@@ -83,12 +75,12 @@ int test_rtps_dma()
 
     for (unsigned i = 0; i < RTPS_DMA_WORDS; ++i)
         src_buf[i] = 0xf00d0000 | i;
-    dump_buf("src", src_buf);
+    dump_buf("src", src_buf, RTPS_DMA_WORDS);
 
     int rc = do_copy(src_buf, dst_buf, RTPS_DMA_SIZE);
     if (rc)
         return rc;
-    dump_buf("dst", dst_buf);
+    dump_buf("dst", dst_buf, RTPS_DMA_WORDS);
     if (!cmp_buf(src_buf, dst_buf)) {
         printf("DMA test: dst data mismatches src\r\n");
         return 1;
@@ -107,7 +99,7 @@ int test_rtps_dma()
     rc = do_copy(src_buf, (uint32_t *)RTPS_DMA_DST_REMAP_ADDR, RTPS_DMA_SIZE);
     if (rc)
         return rc;
-    dump_buf("dst", dst_buf);
+    dump_buf("dst", dst_buf, RTPS_DMA_WORDS);
     if (!cmp_buf(src_buf, dst_buf)) {
         printf("DMA test (remap): dst data mismatches src\r\n");
         return 1;

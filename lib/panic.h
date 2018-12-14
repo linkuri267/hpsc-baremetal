@@ -1,6 +1,8 @@
 #ifndef PANIC_H
 #define PANIC_H
 
+#include <stdint.h>
+
 #include "printf.h"
 
 #define ASSERT(cond) \
@@ -10,5 +12,6 @@
         }
 
 void panic(const char *msg);
+void dump_buf(const char *name, uint32_t *buf, unsigned words);
 
 #endif // PANIC_H
