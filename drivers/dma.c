@@ -254,7 +254,7 @@ static unsigned cmd_line;
 #endif
 
 #define MAX_CHANS               8
-#define MCBUFSZ                 64
+#define MCBUFSZ                 128
 
 /* Populated by the PL330 core driver for DMA API driver's info */
 struct pl330_config {
