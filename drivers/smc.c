@@ -59,15 +59,17 @@ int smc_sram_load(const char *fname)
     uint32_t offset = fd_buf->offset;
     sram_addr = (unsigned char *) (sram_start_addr + offset);
     load_addr = (unsigned char *)fd_buf->load_addr;
+
+    printf("SMC: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
+           i, fd_buf->name, sram_start_addr + offset,
+           fd_buf->load_addr, fd_buf->size / 1024);
+
     sram_addr_32 = (uint32_t *) (sram_start_addr + offset);
     load_addr_32 = (uint32_t *)fd_buf->load_addr;
     uint32_t pages = fd_buf->size / PAGE_SIZE;
     uint32_t rem_words = (fd_buf->size % PAGE_SIZE) / sizeof(uint32_t);
     uint32_t rem_bytes = (fd_buf->size % PAGE_SIZE) % sizeof(uint32_t);
 
-    printf("SMC: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
-           i, fd_buf->name, sram_start_addr + offset,
-           fd_buf->load_addr, fd_buf->size / 1024);
 
     // Split into pages, in order to print progress not too frequently and
     // without having to add a conditional (for whether to print progress
