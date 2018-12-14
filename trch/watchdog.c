@@ -14,6 +14,10 @@ struct wdt *trch_wdt = NULL;
 struct wdt *rtps_wdts[RTPS_NUM_CORES] = {0};
 struct wdt *hpps_wdts[HPPS_NUM_CORES] = {0};
 
+// TODO: launch both timers, when we have both cores running and kicking
+#undef RTPS_NUM_CORES
+#define RTPS_NUM_CORES 1
+
 #define NUM_STAGES 2 // fixed in HW, but flexible in driver
 
 // IDs for CPU 0 in each subsystem (private to this file)
@@ -164,11 +168,11 @@ int watchdog_rtps_start() {
     int i;
     uint64_t timeouts[] = { 10000000, 50000000 }; // about 1 sec, 5 sec
 
-    static const char * const rtps_wdt_names[HPPS_NUM_CORES] = {
-	"RTPS0", "RTPS1"
+    static const char * const rtps_wdt_names[RTPS_NUM_CORES] = {
+	"RTPS0", /* "RTPS1" */ // TODO: when we have both cores
     };
 
-    for (i = 0; i < /* RTPS_NUM_CORES */ 1; ++i) { // TODO: start both timers in SPLIT mode
+    for (i = 0; i < RTPS_NUM_CORES; ++i) {
 	ASSERT(i < sizeof(rtps_wdt_names) / sizeof(rtps_wdt_names[0]));
 	rtps_wdts[i] = create_wdt(rtps_wdt_names[i],
 		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
