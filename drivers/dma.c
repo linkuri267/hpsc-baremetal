@@ -1405,7 +1405,7 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
     struct _arg_GO go;
     go.chan = 0;
     go.addr = (u32)thrd->req[idx].mc_bus;
-    go.ns = 1;
+    go.ns = 0; // all users of this driver run in secure mode
     _emit_GO(0, insn, &go);
 
     /* Set to generate interrupts for SEV */
