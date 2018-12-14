@@ -12,7 +12,7 @@ static uint8_t trch_dma_mcode[256]; // store in TRCH SRAM
 static uint32_t dma_src_buf[8];
 static uint32_t dma_dst_buf[8];
 
-#ifdef TEST_TRCH_DMA_CB
+#if TEST_TRCH_DMA_CB
 static void dma_tx_completed(void *arg, int rc)
 {
     volatile bool *dma_tx_done = arg;
@@ -38,14 +38,14 @@ int test_trch_dma()
     }
     printf("\r\n");
 
-#ifdef TEST_TRCH_DMA_CB
+#if TEST_TRCH_DMA_CB
     bool dma_done = false;
 #endif
 
     struct dma_tx *dma_tx =
         dma_transfer(trch_dma, /* chan */ 0,
                      dma_src_buf, dma_dst_buf, sizeof(dma_dst_buf),
-#ifdef TEST_TRCH_DMA_CB
+#if TEST_TRCH_DMA_CB
                      dma_tx_completed, &dma_done);
 #else
                      NULL, NULL);
@@ -54,7 +54,7 @@ int test_trch_dma()
         return 1;
 
     printf("Waiting for DMA tx to complete\r\n");
-#ifdef TEST_TRCH_DMA_CB
+#if TEST_TRCH_DMA_CB
     while (!dma_done);
 #else
     int rc = dma_wait(dma_tx);
