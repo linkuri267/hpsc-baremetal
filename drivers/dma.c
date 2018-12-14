@@ -344,6 +344,7 @@ struct _pl330_req {
         dma_cb_t cb;
         void *cb_arg;
         int rc;
+        struct dma_tx *tx;
 };
 
 /* A DMAC Thread */
@@ -459,8 +460,15 @@ struct _xfer_spec {
     struct dma_pl330_desc *desc;
 };
 
-#define MAX_DMAS 8
+struct dma_tx {
+    struct dma_pl330_desc desc;
+    struct _pl330_req *req;
+};
+
+#define MAX_DMAS  8
+#define MAX_TXES  8
 static struct pl330_dmac dmas[MAX_DMAS];
+static struct dma_tx txes[MAX_TXES];
 
 static inline bool is_manager(struct pl330_thread *thrd)
 {
@@ -1343,58 +1351,66 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
 
     printf("DMA %s: INS %08x\r\n", pl330->name, readl(regs + CR3));
 
-    struct dma_pl330_desc desc;
-    bzero(&desc, sizeof(desc));
-    desc.px.src_addr = (u32)src;
-    desc.px.dst_addr = (u32)dst;
-    desc.px.bytes = sz;
+    struct dma_tx *tx = OBJECT_ALLOC(txes);
+    if (!tx)
+        return NULL;
+    tx->req = req;
+    req->tx = tx;
 
-    desc.rqcfg.dst_inc = 1;
-    desc.rqcfg.src_inc = 1;
-    desc.rqcfg.nonsecure = 0;
-    desc.rqcfg.privileged = 1;
-    desc.rqcfg.insnaccess = 1;
-    desc.rqcfg.brst_len /* :5 */ = 1;
-    desc.rqcfg.brst_size /* :3 */ = 1; /* in power of 2 */
+    struct dma_pl330_desc *desc = &tx->desc;
+    desc->px.src_addr = (u32)src;
+    desc->px.dst_addr = (u32)dst;
+    desc->px.bytes = sz;
 
-    desc.rqcfg.dcctl = CCTRL0;
-    desc.rqcfg.scctl = CCTRL0;
-    desc.rqcfg.swap = SWAP_NO;
+    desc->rqcfg.dst_inc = 1;
+    desc->rqcfg.src_inc = 1;
+    desc->rqcfg.nonsecure = 0;
+    desc->rqcfg.privileged = 1;
+    desc->rqcfg.insnaccess = 1;
+    desc->rqcfg.brst_len /* :5 */ = 1;
+    desc->rqcfg.brst_size /* :3 */ = 1; /* in power of 2 */
 
-    desc.rqcfg.pcfg = &pl330->pcfg;
+    desc->rqcfg.dcctl = CCTRL0;
+    desc->rqcfg.scctl = CCTRL0;
+    desc->rqcfg.swap = SWAP_NO;
 
-    desc.status = BUSY;
+    desc->rqcfg.pcfg = &pl330->pcfg;
 
-    desc.bytes_requested = sz; // TODO: unused
-    desc.last = 1;             // TODO: unused
+    desc->status = BUSY;
 
-    desc.rqtype = DMA_MEM_TO_MEM;
-    desc.peri = 0;
+    desc->bytes_requested = sz; // TODO: unused
+    desc->last = 1;             // TODO: unused
 
-    u32 ccr = _prepare_ccr(&desc.rqcfg);
+    desc->rqtype = DMA_MEM_TO_MEM;
+    desc->peri = 0;
+
+    u32 ccr = _prepare_ccr(&desc->rqcfg);
 
     thrd->ev = chan; // one-to-one thread-event allocation 
 
     struct _xfer_spec xs;
     xs.ccr = ccr;
-    xs.desc = &desc;
+    xs.desc = desc;
 
     /* First dry run to check if req is acceptable */
     int ret = _setup_req(pl330, 1, thrd, idx, &xs);
     if (ret < 0) {
         printf("DMA: failed to construct request\r\n");
+        OBJECT_FREE(tx);
         return NULL;
     }
 
     if (ret > pl330->mcbufsz / 2) {
-        printf("DMA: try increasing mcbufsz (%i/%i)\r\n", pl330->mcbufsz / 2);
+        printf("DMA: microcode buffer too small for req: %u > %u)\r\n",
+               ret, pl330->mcbufsz / 2);
+        OBJECT_FREE(tx);
         return NULL;
     }
 
     thrd->lstenq = idx; // TODO: unused
     thrd->req_running = idx;
 
-    req->desc = &desc;
+    req->desc = desc;
     req->cb = cb;
     req->cb_arg = cb_arg;
     req->rc = -1;
@@ -1412,16 +1428,17 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
     writel(readl(regs + INTEN) | (1 << thrd->ev), regs + INTEN);
 
     _execute_DBGINSN(thrd, insn, /* as manager */ true);
-
-    return (struct dma_tx *)req;
+    return tx;
 }
 
 int dma_wait(struct dma_tx *tx)
 {
-    struct _pl330_req *req = (struct _pl330_req *)tx;
+    struct _pl330_req *req = tx->req;
     while (req->desc->status != DONE);
     int rc = req->rc;
     req->desc = NULL;
+    req->tx = NULL;
+    OBJECT_FREE(tx);
     return rc;
 }
 
@@ -1509,7 +1526,10 @@ void dma_event_isr(struct dma *dma, unsigned ev)
 
     if (req->cb) {
         req->cb(req->cb_arg, req->rc);
+        struct dma_tx *tx = req->tx;
         req->desc = NULL; // release request state
+        req->tx = NULL;
+        OBJECT_FREE(tx);
     } // else: channel busy until reaped by dma_wait
 }
 
