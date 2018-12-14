@@ -59,6 +59,11 @@ COPS = \
 	$(TEST_ARGS) \
 	$(INC_FLAGS) \
 
+# -z max-page-size: alignment of program headers in the ELF file
+#	removes large gaps (0x10000) in the ELF file (see: readelf -l)
+LDFLAGS = \
+	-z max-page-size=4 \
+
 VPATH = ..
 OBJS = \
        vectors.o \
@@ -113,9 +118,9 @@ ifeq ($(if $(filter-out 0,$(strip \
 OBJS += test-wdt.o
 endif
 
-TARGET=trch.elf
+TARGET=trch
 
-.DEFAULT_GOAL := $(BLDDIR)/$(TARGET)
+.DEFAULT_GOAL := $(BLDDIR)/$(TARGET).bin
 
 clean:
 	rm -rf $(BLDDIR) vectors.s isr.c
@@ -132,8 +137,14 @@ $(BLDDIR)/%.o : %.s | dirs
 $(BLDDIR)/%.o : %.c | dirs
 	$(ARM_NONE_EABI)-gcc -MMD $(COPS) -c $< -o $@
 
-$(BLDDIR)/$(TARGET): trch.ld $(addprefix $(BLDDIR)/,$(OBJS))
-	$(ARM_NONE_EABI)-ld -o $@ -T $^
+$(BLDDIR)/$(TARGET).dbg.elf: trch.ld $(addprefix $(BLDDIR)/,$(OBJS))
+	$(ARM_NONE_EABI)-ld $(LDFLAGS) -o $@ -T $^
+
+$(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
+	$(ARM_NONE_EABI)-strip -x -s -R .comment -R '.ARM.*' -o $@ $<
+
+$(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
+	$(ARM_NONE_EABI)-objcopy -O binary $< $@
 
 $(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
 

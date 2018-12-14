@@ -120,12 +120,16 @@ CCOPT = \
 # Enable use of TCM in assembler code with -DTCM
 
 AOPT = --warn --fatal-warnings $(CPU_FLAGS)
+
+# -z max-page-size: alignment of program headers in the ELF file
+#	removes large gaps (0x10000) in the ELF file (see: readelf -l)
 LDFLAGS = \
 	$(CPU_FLAGS) \
 	--entry=Start  \
  	-lgcc -lc -lrdimon \
 	-Wl,--gc-sections \
 	-static \
+	-Wl,-z,max-page-size=4 \
 
 $(BLDDIR)/%.o : %.s | dirs
 	$(ARM_NONE_EABI)-gcc -c $(CCOPT) -x assembler-with-cpp -o $@ $<
@@ -134,8 +138,11 @@ $(BLDDIR)/%.o : %.s | dirs
 $(BLDDIR)/%.o : %.c | dirs
 	$(ARM_NONE_EABI)-gcc -MMD -c $(CCOPT) -o $@ $<
 
-$(BLDDIR)/$(TARGET).elf : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
-	$(ARM_NONE_EABI)-gcc -T $^ -o $@ $(LDFLAGS)
+$(BLDDIR)/$(TARGET).dbg.elf : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
+	$(ARM_NONE_EABI)-gcc $(LDFLAGS) -o $@ -T $^
+
+$(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
+	$(ARM_NONE_EABI)-strip -x -s -R .comment -R '.ARM.*' -o $@ $<
 
 $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 	$(ARM_NONE_EABI)-objcopy -O binary $< $@
