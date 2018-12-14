@@ -13,7 +13,7 @@
 
 struct dma *rtps_dma; // must be exposed for the ISR
 
-#ifdef TEST_RTPS_DMA_CB
+#if TEST_RTPS_DMA_CB
 static void dma_tx_completed(void *arg, int rc)
 {
     volatile bool *dma_tx_done = arg;
@@ -32,14 +32,14 @@ static bool cmp_buf(uint32_t *src, uint32_t *dst)
 
 static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
 {
-#ifdef TEST_RTPS_DMA_CB
+#if TEST_RTPS_DMA_CB
     bool dma_done = false;
 #endif
 
     struct dma_tx *dma_tx =
         dma_transfer(rtps_dma, /* chan */ 0,
                      src, dst, RTPS_DMA_SIZE,
-#ifdef TEST_RTPS_DMA_CB
+#if TEST_RTPS_DMA_CB
                      dma_tx_completed, &dma_done);
 #else
                      NULL, NULL);
@@ -48,7 +48,7 @@ static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
         return 1;
 
     printf("Waiting for DMA tx to complete\r\n");
-#ifdef TEST_RTPS_DMA_CB
+#if TEST_RTPS_DMA_CB
     while (!dma_done);
 #else
     int rc = dma_wait(dma_tx);
