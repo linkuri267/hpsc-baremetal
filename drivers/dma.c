@@ -1477,8 +1477,9 @@ void dma_abort_isr(struct dma *dma)
 
                 _stop(thrd);
 
-                thrd->req_running = -1;
                 req->rc = PL330_ERR_FAIL; // TODO: PL330_ERR_ABORT? (in ABORT ISR but no fault?)
+                req->desc->status = DONE;
+                thrd->req_running = -1;
 
                 if (req->cb) {
                     req->cb(req->cb_arg, req->rc);
