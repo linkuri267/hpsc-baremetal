@@ -16,6 +16,7 @@
 #include "mmus.h"
 #include "dmas.h"
 #include "boot.h"
+#include "smc.h"
 #include "test.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
@@ -75,8 +76,9 @@ int main ( void )
 #else // !TEST_TRCH_DMA
     struct dma *trch_dma = NULL;
 #endif // !TEST_TRCH_DMA
-    (void)trch_dma); // not yet used
 
+    if (smc_init(trch_dma))
+        panic("SMC init");
 
 #if TEST_RT_MMU
     if (rt_mmu_init())

@@ -3,6 +3,8 @@
 #include "printf.h"
 #include "hwinfo.h"
 #include "str.h"
+#include "dma.h"
+#include "bit.h"
 
 #include "smc.h"
 
@@ -26,17 +28,69 @@ typedef struct {
     uint32_t fsize;		/* sram file size */
 } global_table;
 
+static struct dma *dmac = NULL; // optional
+
+static int load_dma(uint32_t *sram_addr, uint32_t *load_addr, unsigned size)
+{
+    printf("SMC: initiating DMA transfer\r\n");
+
+    struct dma_tx *dtx = dma_transfer(dmac, /* chan */ 0, // TODO: allocate channel per user
+        sram_addr, load_addr, ALIGN(size, DMA_MAX_BURST_BITS),
+        NULL, NULL /* no callback */);
+    int rc = dma_wait(dtx);
+    if (rc) {
+        printf("SMC: DMA transfer failed: rc %u\r\n", rc);
+        return rc;
+    }
+    printf("SMC: DMA transfer succesful\r\n");
+    return 0;
+}
+
+static int load_memcpy(uint32_t *sram_addr, uint32_t *load_addr, unsigned size)
+{
+    unsigned p, w, b;
+
+    uint32_t pages = size / PAGE_SIZE;
+    uint32_t rem_words = (size % PAGE_SIZE) / sizeof(uint32_t);
+    uint32_t rem_bytes = (size % PAGE_SIZE) % sizeof(uint32_t);
+
+    // Split into pages, in order to print progress not too frequently and
+    // without having to add a conditional (for whether to print progress
+    // on every iteration of in the inner loop over words.
+    for (p = 0; p < pages; p++) {
+        for (w = 0; w < PAGE_SIZE / sizeof(uint32_t); w++) {
+            * load_addr = * sram_addr;
+            load_addr++;
+            sram_addr++;
+        }
+        printf("SMC: loading... %3u%%\r", p * 100 / pages);
+    }
+    for (w = 0; w < rem_words; w++) {
+        * load_addr = * sram_addr;
+        load_addr++;
+        sram_addr++;
+    }
+    uint8_t *load_addr_8 = (uint8_t *) load_addr;
+    uint8_t *sram_addr_8 = (uint8_t *) sram_addr;
+    for (b = 0; b < rem_bytes; b++) {
+        * load_addr_8 = * sram_addr_8;
+        load_addr_8++;
+        sram_addr_8++;
+    }
+    printf("SMC: loading... 100%%\r\n");
+    return 0;
+}
+
 int smc_sram_load(const char *fname)
 {
     global_table gt;
-    unsigned i, p, w, b;
-    file_descriptor * fd_buf;
-    unsigned char * sram_start_addr = (unsigned char *)SMC_SRAM_BASE;
-    unsigned char * load_addr;
-    unsigned char * sram_addr;
-    unsigned char * ptr = (unsigned char *) &gt;
+    unsigned i;
     uint32_t * load_addr_32;
     uint32_t * sram_addr_32;
+    file_descriptor * fd_buf;
+    unsigned char * sram_start_addr = (unsigned char *)SMC_SRAM_BASE;
+    unsigned char * ptr = (unsigned char *) &gt;
+    int rc;
 
     for(i = 0; i < sizeof(global_table); i++) {
         ptr[i] = * (sram_start_addr + i);
@@ -57,8 +111,6 @@ int smc_sram_load(const char *fname)
     }
 
     uint32_t offset = fd_buf->offset;
-    sram_addr = (unsigned char *) (sram_start_addr + offset);
-    load_addr = (unsigned char *)fd_buf->load_addr;
 
     printf("SMC: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
            i, fd_buf->name, sram_start_addr + offset,
@@ -66,34 +118,21 @@ int smc_sram_load(const char *fname)
 
     sram_addr_32 = (uint32_t *) (sram_start_addr + offset);
     load_addr_32 = (uint32_t *)fd_buf->load_addr;
-    uint32_t pages = fd_buf->size / PAGE_SIZE;
-    uint32_t rem_words = (fd_buf->size % PAGE_SIZE) / sizeof(uint32_t);
-    uint32_t rem_bytes = (fd_buf->size % PAGE_SIZE) % sizeof(uint32_t);
 
+    if (dmac)
+        rc = load_dma(sram_addr_32, load_addr_32, fd_buf->size);
+    else
+        rc = load_memcpy(sram_addr_32, load_addr_32, fd_buf->size);
+    return rc;
+}
 
-    // Split into pages, in order to print progress not too frequently and
-    // without having to add a conditional (for whether to print progress
-    // on every iteration of in the inner loop over words.
-    for (p = 0; p < pages; p++) {
-        for (w = 0; w < PAGE_SIZE / sizeof(uint32_t); w++) {
-            * load_addr_32 = * sram_addr_32;
-            load_addr_32++;
-            sram_addr_32++;
-        }
-        printf("SMC: loading... %3u%%\r", p * 100 / pages);
-    }
-    for (w = 0; w < rem_words; w++) {
-        * load_addr_32 = * sram_addr_32;
-        load_addr_32++;
-        sram_addr_32++;
-    }
-    load_addr = (unsigned char *) load_addr_32;
-    sram_addr = (unsigned char *) sram_addr_32;
-    for (b = 0; b < rem_bytes; b++) {
-        * load_addr = * sram_addr;
-        load_addr++;
-        sram_addr++;
-    }
-    printf("SMC: loading... 100%%\r\n");
+int smc_init(struct dma *dma)
+{
+    dmac = dma;
     return 0;
+}
+
+void smc_deinit()
+{
+    dmac = NULL;
 }
