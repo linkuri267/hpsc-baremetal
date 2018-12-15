@@ -1447,11 +1447,18 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
 int dma_wait(struct dma_tx *tx)
 {
     struct _pl330_req *req = tx->req;
-    while (req->desc->status != DONE);
+    while (req->desc->status != DONE) {
+        printf("DMA: waiting\r\n");
+        // TODO: wfe with sev (otherwise there's a race here, but it's not a
+        // problem as long as we have the watchdog timer, which will wake us up
+        // in case of the race, i.e. sleep after the condition check.)
+        asm("wfi");
+    }
     int rc = req->rc;
     req->desc = NULL;
     req->tx = NULL;
     OBJECT_FREE(tx);
+    printf("DMA: completed: rc %u\r\n", rc);
     return rc;
 }
 
