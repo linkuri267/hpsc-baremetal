@@ -12,10 +12,10 @@ int watchdog_trch_start();
 void watchdog_trch_stop();
 void watchdog_trch_kick();
 
-int watchdog_rtps_start();
-void watchdog_rtps_stop();
+int watchdog_rtps_init();
+void watchdog_rtps_deinit();
 
-int watchdog_hpps_start();
-void watchdog_hpps_stop();
+int watchdog_hpps_init();
+void watchdog_hpps_deinit();
 
 #endif // WATCHDOG_H

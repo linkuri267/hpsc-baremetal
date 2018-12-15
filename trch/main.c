@@ -163,11 +163,11 @@ int main ( void )
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #if TEST_RTPS_WDT
-    watchdog_rtps_start();
+    watchdog_rtps_init();
 #endif // TEST_RTPS_WDT
 
 #if TEST_HPPS_WDT
-    watchdog_hpps_start();
+    watchdog_hpps_init();
 #endif // TEST_HPPS_WDT
 
     if (boot_config())

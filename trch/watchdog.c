@@ -164,7 +164,7 @@ void watchdog_trch_kick() {
     wdt_kick(trch_wdt);
 }
 
-int watchdog_rtps_start() {
+int watchdog_rtps_init() {
     int i;
     uint64_t timeouts[] = { 10000000, 50000000 }; // about 1 sec, 5 sec
 
@@ -191,14 +191,14 @@ cleanup:
     return 1;
 }
 
-void watchdog_rtps_stop() {
+void watchdog_rtps_deinit() {
     for (int i = 0; i < RTPS_NUM_CORES;  ++i) {
 	destroy_wdt(rtps_wdts[i], TRCH_IRQ__WDT_RTPS0_ST2 + i);
 	rtps_wdts[i] = NULL;
     }
 }
 
-int watchdog_hpps_start() {
+int watchdog_hpps_init() {
     int i;
     uint64_t timeouts[] = { 100000000, 200000000 };
 
@@ -226,7 +226,7 @@ cleanup:
     return 1;
 }
 
-void watchdog_hpps_stop() {
+void watchdog_hpps_deinit() {
     for (int i = 0; i < HPPS_NUM_CORES;  ++i) {
 	destroy_wdt(hpps_wdts[i], TRCH_IRQ__WDT_HPPS0_ST2 + i);
 	hpps_wdts[i] = NULL;
