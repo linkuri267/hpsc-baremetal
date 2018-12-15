@@ -14,7 +14,8 @@ TEST_FLAGS = \
 	TEST_HPPS_WDT \
 	TEST_HPPS_WDT_STANDALONE \
 	TEST_TRCH_DMA \
-	TEST_TRCH_DMA_CB \
+	TEST_TRCH_DMA_STANDALONE \
+	TEST_TRCH_DMA_STANDALONE_CB \
 	TEST_RT_MMU \
 	TEST_RT_MMU_STANDALONE \
 	TEST_BOOT_RTPS \
@@ -33,8 +34,9 @@ TEST_RTPS_WDT 			= 1
 TEST_RTPS_WDT_STANDALONE 	= 0
 TEST_HPPS_WDT 			= 1
 TEST_HPPS_WDT_STANDALONE 	= 0
+TEST_TRCH_DMA_STANDALONE	= 1
+TEST_TRCH_DMA_STANDALONE_CB 	= 1 # if set, use callback, otherwise call dma_wait
 TEST_TRCH_DMA 			= 1
-TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 TEST_RT_MMU_STANDALONE		= 1
 TEST_BOOT_RTPS 			= 1
@@ -101,6 +103,9 @@ OBJS += test-mmu.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
 OBJS += mmus.o
+endif
+ifeq ($(strip $(TEST_TRCH_DMA)),1)
+OBJS += dmas.o
 endif
 ifeq ($(strip $(TEST_FLOAT)),1)
 OBJS += test-float.o

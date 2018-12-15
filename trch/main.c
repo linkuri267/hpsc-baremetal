@@ -14,6 +14,7 @@
 #include "server.h"
 #include "watchdog.h"
 #include "mmus.h"
+#include "dmas.h"
 #include "boot.h"
 #include "test.h"
 
@@ -61,10 +62,21 @@ int main ( void )
         panic("float test");
 #endif // TEST_FLOAT
 
-#if TEST_TRCH_DMA
+#if TEST_TRCH_DMA_STANDALONE
     if (test_trch_dma())
         panic("TRCH DMA test");
-#endif // TEST_TRCH_DMA
+#endif // TEST_TRCH_DMA_STANDALONE
+
+#if TEST_TRCH_DMA
+    struct dma *trch_dma = trch_dma_init();
+    if (!trch_dma)
+        panic("TRCH DMA");
+    // never destroy, it is used by drivers
+#else // !TEST_TRCH_DMA
+    struct dma *trch_dma = NULL;
+#endif // !TEST_TRCH_DMA
+    (void)trch_dma); // not yet used
+
 
 #if TEST_RT_MMU
     if (rt_mmu_init())
