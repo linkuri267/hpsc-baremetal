@@ -1223,6 +1223,11 @@ static void read_dmac_config(struct pl330_dmac *pl330)
 	void __iomem *regs = pl330->base;
 	u32 val;
 
+        pl330->pcfg.periph_id = ((readl(regs + (PERIPH_ID +  0)) & 0xff) <<  0) |
+                                ((readl(regs + (PERIPH_ID +  4)) & 0xff) <<  8) |
+                                ((readl(regs + (PERIPH_ID +  8)) & 0xff) << 16) |
+                                ((readl(regs + (PERIPH_ID + 12)) & 0xff) << 24);
+
 	val = readl(regs + CRD) >> CRD_DATA_WIDTH_SHIFT;
 	val &= CRD_DATA_WIDTH_MASK;
 	pl330->pcfg.data_bus_width = 8 * (1 << val);
