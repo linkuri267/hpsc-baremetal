@@ -6,6 +6,7 @@
 #include "object.h"
 #include "mem.h"
 #include "dma.h"
+#include "bit.h"
 
 #define PL330_DEBUG_MCGEN
 
@@ -255,6 +256,11 @@ static unsigned cmd_line;
 
 #define MAX_CHANS               8
 #define MCBUFSZ                 128
+#define BURST_LEN_BITS          4 // See Table 3-21
+#define BURST_LEN               (1 << BURST_LEN_BITS)
+#define BURST_SIZE_BITS         4  // See Table 3-21
+#define BURST_SIZE              (1 << BURST_SIZE_BITS)
+#define TX_BURST_BITS           (BURST_LEN_BITS + BURST_SIZE_BITS)
 
 /* Populated by the PL330 core driver for DMA API driver's info */
 struct pl330_config {
@@ -431,7 +437,7 @@ struct pl330_reqcfg {
 	bool privileged;
 	bool insnaccess;
 	unsigned brst_len:5;
-	unsigned brst_size:3; /* in power of 2 */
+	unsigned brst_size:3; /* burst size = 2^(this value) */
 
 	enum pl330_cachectrl dcctl;
 	enum pl330_cachectrl scctl;
@@ -1333,6 +1339,14 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
         return NULL;
     }
 
+    if (!(ALIGNED(src, TX_BURST_BITS) &&
+          ALIGNED(dst, TX_BURST_BITS) &&
+          ALIGNED(sz, TX_BURST_BITS))) {
+        printf("DMA: ERROR: size/src/dst not aligned to burst bytes: %x\r\n",
+               1 << TX_BURST_BITS);
+        return NULL;
+    }
+
     // Only use req 0 ever. NOTE: this is not channel number, this is a request
     // queue (of length 2) from the Linux driver, which we don't use (for
     // simplicity) but keep to avoid changing the code copied from Linux.
@@ -1366,8 +1380,8 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
     desc->rqcfg.nonsecure = 0;
     desc->rqcfg.privileged = 1;
     desc->rqcfg.insnaccess = 1;
-    desc->rqcfg.brst_len /* :5 */ = 1;
-    desc->rqcfg.brst_size /* :3 */ = 1; /* in power of 2 */
+    desc->rqcfg.brst_len = BURST_LEN;
+    desc->rqcfg.brst_size = BURST_SIZE_BITS;
 
     desc->rqcfg.dcctl = CCTRL0;
     desc->rqcfg.scctl = CCTRL0;

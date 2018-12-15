@@ -10,8 +10,9 @@
 static struct dma *trch_dma;
 
 static uint8_t trch_dma_mcode[256]; // store in TRCH SRAM
-static uint32_t dma_src_buf[128];
-static uint32_t dma_dst_buf[128];
+
+static uint32_t dma_src_buf[128] __attribute__((aligned(MAX_BURST_BYTES)));
+static uint32_t dma_dst_buf[128] __attribute__((aligned(MAX_BURST_BYTES)));
 
 #if TEST_TRCH_DMA_CB
 static void dma_tx_completed(void *arg, int rc)

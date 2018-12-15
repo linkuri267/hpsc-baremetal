@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define MAX_BURST_BYTES 256 // property of HW, see Table 3-21
+
 struct dma;
 struct dma_tx;
 
