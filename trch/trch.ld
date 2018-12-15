@@ -1,7 +1,8 @@
 
 MEMORY
 {
-    SRAM : ORIGIN = 0x00000000, LENGTH = 0x100000
+    SRAM :          ORIGIN = 0x00000000, LENGTH = 0x0ff000
+    SRAM_BOOT_CFG : ORIGIN = 0x000ff000, LENGTH = 0x001000
 }
 
 SECTIONS
@@ -21,7 +22,7 @@ SECTIONS
     . = ALIGN(4);
     __bss_end__ = .;
 
-    __stacktop = LENGTH(SRAM) - 4;
+    __stacktop = ORIGIN(SRAM) + LENGTH(SRAM) - 4;
 }
 
 ENTRY(__entry)

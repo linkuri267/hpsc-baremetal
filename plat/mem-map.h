@@ -3,6 +3,14 @@
 
 // This file indicates the resource allocations in memory
 
+// In TRCH SRAM
+#define TRCH_BOOT_CFG_ADDR  0x000ff000
+#define TRCH_BOOT_CFG_SIZE  0x000ff000
+
+// TODO: turn this into a key-value env file
+#define TRCH_BOOT_CFG__BOOT_MODE  0x000ff000
+#define TRCH_BOOT_CFG__RTPS_MODE  0x000ff004
+
 // Binary images with executables for HPPS
 #define HPPS_DDR_LOW_ADDR   0x80000000
 #define HPPS_DDR_LOW_SIZE   0x3fe00000 // usable by the HPPS subsystem

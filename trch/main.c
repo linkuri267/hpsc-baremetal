@@ -170,6 +170,9 @@ int main ( void )
     watchdog_hpps_start();
 #endif // TEST_HPPS_WDT
 
+    if (boot_config())
+        panic("BOOT CFG");
+
 #if TEST_BOOT_RTPS
     boot_request_reboot(SUBSYS_RTPS);
 #endif // TEST_BOOT_RTPS
