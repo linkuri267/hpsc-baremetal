@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include "printf.h"
-#include "dram-map.h"
+#include "mem-map.h"
 #include "test.h"
 
 int test_rt_mmu()

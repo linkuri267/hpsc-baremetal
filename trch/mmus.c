@@ -1,5 +1,5 @@
 #include "hwinfo.h"
-#include "dram-map.h"
+#include "mem-map.h"
 #include "mailbox.h"
 #include "mmu.h"
 

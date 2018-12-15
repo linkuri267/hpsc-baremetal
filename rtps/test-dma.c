@@ -5,7 +5,7 @@
 #include "mem.h"
 #include "dma.h"
 #include "hwinfo.h"
-#include "dram-map.h"
+#include "mem-map.h"
 #include "gic.h"
 #include "test.h"
 

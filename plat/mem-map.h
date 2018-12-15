@@ -1,7 +1,7 @@
-#ifndef DRAM_MAP_H
-#define DRAM_MAP_H
+#ifndef MEM_MAP_H
+#define MEM_MAP_H
 
-// This file indicates the resource allocations in DRAM
+// This file indicates the resource allocations in memory
 
 // Binary images with executables for HPPS
 #define HPPS_DDR_LOW_ADDR   0x80000000
@@ -44,4 +44,4 @@
 #define RTPS_DMA_DST_REMAP_ADDR 0x40003000 // MMU test maps this to DST_ADDR
 
 
-#endif // DRAM_MAP_H
+#endif // MEM_MAP_H

@@ -1,7 +1,7 @@
 #include "mmu.h"
 #include "printf.h"
 #include "hwinfo.h"
-#include "dram-map.h"
+#include "mem-map.h"
 #include "test.h"
 
 #define PAGESIZE_BITS 12 /* 4K */

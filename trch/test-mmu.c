@@ -2,7 +2,7 @@
 
 #include "printf.h"
 #include "hwinfo.h"
-#include "dram-map.h"
+#include "mem-map.h"
 
 #include "test.h"
 
