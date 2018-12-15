@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-#define MAX_BURST_BYTES 256 // property of HW, see Table 3-21
+#define DMA_MAX_BURST_BITS  8 // property of HW, see Table 3-21
+#define DMA_MAX_BURST_BYTES (1 << DMA_MAX_BURST_BITS)
 
 struct dma;
 struct dma_tx;
