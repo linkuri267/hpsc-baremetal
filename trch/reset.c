@@ -24,8 +24,12 @@
 
 #define CRL__RST_LPD_TOP 0x23c
 #define CRL__RST_LPD_TOP__RPU_R5x_RESET         0x3
+#define CRL__RST_LPD_TOP__RPU_R51_RESET         0x2
 #define CRL__RST_LPD_TOP__RPU_R50_RESET         0x1
 #define CRL__RST_LPD_TOP__GIC_RESET      0x01000000
+
+#define RPU_CTRL__BASE	0x0
+#define RPU_CTRL__BASE_SPLIT 0x8
 
 #define RPU_CTRL__RPU_0_CFG  0x100
 #define RPU_CTRL__RPU_0_CFG__NCPUHALT 0x1
@@ -36,12 +40,23 @@
 int reset_assert(subsys_t subsys)
 {
     switch (subsys) {
-        case SUBSYS_RTPS:
-            printf("RESET: assert: RTPS: halt CPU0-1\r\n");
-            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R5x_RESET |
+        case SUBSYS_RTPS_SPLIT_0:
+            printf("RESET: assert: RTPS_SPLIT: halt CPU0-1\r\n");
+            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET |
                                                CRL__RST_LPD_TOP__GIC_RESET);
             REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
+            break;
+        case SUBSYS_RTPS_SPLIT_1:
+            printf("RESET: assert: RTPS_SPLIT: halt CPU0-1\r\n");
+            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R51_RESET |
+                                               CRL__RST_LPD_TOP__GIC_RESET);
             REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
+            break;
+        case SUBSYS_RTPS:
+            printf("RESET: assert: RTPS_LOCKSTEP: halt CPU0\r\n");
+            REGB_SET32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET |
+                                               CRL__RST_LPD_TOP__GIC_RESET);
+            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
             break;
         case SUBSYS_HPPS:
             printf("RESET: assert: HPPS: halt CPU0-7\r\n");
@@ -59,8 +74,24 @@ int reset_assert(subsys_t subsys)
 int reset_release(subsys_t subsys)
 {
     switch (subsys) {
+        case SUBSYS_RTPS_SPLIT_0:
+            printf("RESET: release: RTPS_SPLIT: release CPU0 and CPU1\r\n");
+            REGB_SET32(RPU_CTRL, RPU_CTRL__BASE, RPU_CTRL__BASE_SPLIT);
+            REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
+            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
+            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
+            break;
+        case SUBSYS_RTPS_SPLIT_1:
+            printf("RESET: release: RTPS_SPLIT: release CPU0 and CPU1\r\n");
+            REGB_SET32(RPU_CTRL, RPU_CTRL__BASE, RPU_CTRL__BASE_SPLIT);
+            REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
+            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R51_RESET);
+            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
+            break;
         case SUBSYS_RTPS:
-            printf("RESET: release: RTPS: release CPU0\r\n");
+            printf("RESET: release: RTPS_LOCKSTEP: release CPU0\r\n");
             REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
             delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
