@@ -174,7 +174,7 @@ int main ( void )
         panic("BOOT CFG");
 
 #if TEST_BOOT_RTPS
-#define RTPS_BOOT_MODE_ADDR 0xffff0
+#define RTPS_BOOT_MODE_ADDR 0xff004
 #define RTPS_BOOT_SPLIT 0x00000000
 #define RTPS_BOOT_LOCKSTEP 0x00000001
 #define RTPS_BOOT_SMP 0x00000002
