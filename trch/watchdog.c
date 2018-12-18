@@ -127,11 +127,23 @@ static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
     if (!wdt)
         return NULL;
 
+    // Might be already enabled if TRCH reboot's while other subsys is running
+    // TODO: reset semantics not known, perhpas all WDTs are reset as TRCH
+    // peripherals on the reset signal from the TRCH WDT ST2 expiration. For
+    // now, assume that this is not the case.
+    bool enabled = wdt_is_enabled(wdt);
+
+    if (enabled)
+        wdt_disable(wdt);
+
     int rc = wdt_configure(wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(wdt);
 	return NULL;
     }
+
+    if (enabled)
+        wdt_enable(wdt);
 
     nvic_int_enable(irq);
     return wdt;
