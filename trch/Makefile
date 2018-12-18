@@ -4,6 +4,8 @@ include ../Makefile.common
 TEST_FLAGS = \
 	TEST_IPI \
 	TEST_FLOAT \
+	TEST_SYSTICK \
+	TEST_SYSTICK_STANDALONE \
 	TEST_HPPS_TRCH_MAILBOX \
 	TEST_HPPS_TRCH_MAILBOX_SSW \
 	TEST_RTPS_TRCH_MAILBOX \
@@ -24,6 +26,8 @@ TEST_FLAGS = \
 # Enable disable tests here:
 TEST_IPI 			= 0
 TEST_FLOAT 			= 1
+TEST_SYSTICK			= 1
+TEST_SYSTICK_STANDALONE		= 0
 TEST_HPPS_TRCH_MAILBOX 		= 1
 TEST_HPPS_TRCH_MAILBOX_SSW 	= 1
 TEST_RTPS_TRCH_MAILBOX 		= 1
@@ -86,6 +90,7 @@ OBJS = \
        drivers/dma.o \
        drivers/wdt.o \
        drivers/smc.o \
+       systick.o \
        watchdog.o \
        reset.o \
        boot.o \
@@ -107,6 +112,9 @@ OBJS += dmas.o
 endif
 ifeq ($(strip $(TEST_FLOAT)),1)
 OBJS += test-float.o
+endif
+ifeq ($(strip $(TEST_SYSTICK_STANDALONE)),1)
+OBJS += test-systick.o
 endif
 ifeq ($(if $(filter-out 0,$(strip \
 	$(TEST_HPPS_TRCH_MAILBOX) \

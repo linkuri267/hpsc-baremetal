@@ -158,6 +158,7 @@ isr = {
  0: None,
  1: "reset",
 11: "svc",
+15: "systick",
 }
 
 f = open(args.out_asm, "w")
@@ -205,6 +206,25 @@ svc:
     mov r0, #0
     sub r0, #7 // 0xfffffff9: priveledged Thread mode with main stack
     bx r0
+
+.thumb_func
+systick:
+    push {r0, r1, lr}
+
+    bl systick_isr
+
+    /* Clear Pending flag */
+    ldrh r0, icsr_addr
+    mov r1, #1
+    lsl r1, #25 /* PENDSTCLR */
+    strh r1, [r0]
+
+    pop {r0, r1, pc}
+
+    .align 2
+
+icsr_addr: /* re-useable by across exc handlers */
+    .word 0xe000ed04
 
 .thumb_func
 hang:   b .

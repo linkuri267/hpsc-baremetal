@@ -17,6 +17,7 @@
 #include "dmas.h"
 #include "boot.h"
 #include "smc.h"
+#include "systick.h"
 #include "test.h"
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
@@ -42,6 +43,11 @@ int main ( void )
     asm("svc #0");
 
     nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
+
+#if TEST_SYSTICK_STANDALONE
+    if (test_systick())
+        panic("TRCH systick test");
+#endif // TEST_SYSTICK_STANDALONE
 
 #if TEST_TRCH_WDT_STANDALONE
     if (test_trch_wdt())
@@ -161,6 +167,11 @@ int main ( void )
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
+
+#if TEST_SYSTICK
+    systick_config(5000000 /* @ ~1Mhz = 5sec */, /* callback */ NULL, NULL);
+    systick_enable();
+#endif // TEST_SYSTICK
 
 #if TEST_RTPS_WDT
     watchdog_rtps_init();
