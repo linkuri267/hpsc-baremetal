@@ -39,6 +39,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
     switch (cpuid) {
         case CPUID_TRCH:
             ASSERT(stage == 0); // no last stage interrupt, because wired to hw reset
+#if !TEST_SYSTICK // If SysTick is enabled, it will kick
             // Note: main loop will return from WFI/WFE and kick too, but in case we
             // are busy with a long-running operation (e.g. loading data from SMC), then
             // main loop won't get a chance to run, so we kick it from here.
@@ -50,6 +51,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
             // WDT would then be monitoring the scheduler, not whether any task
             // is stuck.
             wdt_kick(wdt);
+#endif // !TEST_SYSTICK
             break;
         case CPUID_RTPS + 0:
         case CPUID_RTPS + 1:

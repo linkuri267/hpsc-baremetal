@@ -34,6 +34,20 @@ struct endpoint endpoints[] = {
 };
 #endif // SERVER
 
+#if TEST_SYSTICK
+static void systick_tick(void *arg)
+{
+    printf("systick: tick\r\n");
+
+    // Note: we kick here in the ISR instead of relying on the main loop
+    // wakeing up from WFE as a result of ISR, because the main loop might not
+    // be sleeping but might be performing a long operation, in which case it
+    // might not get to the kick statement at the beginning of the main loop in
+    // time.
+    watchdog_trch_kick();
+}
+#endif // TEST_SYSTICK
+
 int main ( void )
 {
     cdns_uart_startup(); // init UART peripheral
@@ -169,7 +183,7 @@ int main ( void )
 #endif // TEST_RTPS_TRCH_MAILBOX
 
 #if TEST_SYSTICK
-    systick_config(5000000 /* @ ~1Mhz = 5sec */, /* callback */ NULL, NULL);
+    systick_config(5000000 /* @ ~1Mhz = 5sec */, systick_tick, NULL);
     systick_enable();
 #endif // TEST_SYSTICK
 
@@ -235,7 +249,7 @@ int main ( void )
     while (1) {
         printf("TRCH: main loop\r\n");
 
-#if TEST_TRCH_WDT
+#if TEST_TRCH_WDT && !TEST_SYSTICK // with SysTick, we kick from ISR
         // Kicking from here is insufficient, because we sleep. There are two
         // ways to complete: (A) have TRCH disable the watchdog in response to
         // the WFI output signal from the core, and/or (B) have a scheduler
@@ -244,7 +258,7 @@ int main ( void )
         // with (C): kick on return from WFI/WFI as a result of first stage
         // timeout IRQ.
         watchdog_trch_kick();
-#endif // TEST_TRCH_WDT
+#endif // TEST_TRCH_WDT && !TEST_SYSTICK
 
         //printf("main\r\n");
 
