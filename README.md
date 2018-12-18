@@ -9,6 +9,9 @@ Common code includes drivers and some common library code.
 
 Drivers:
 
+* Driver for Cadence UART
+* Driver for ARM GIC-500
+* Driver for ARM NVIC
 * Driver for ARM MMU-500
 * Driver for ARM DMA-330 (credit: based on Linux driver)
 * Driver for HPSC Mailbox
