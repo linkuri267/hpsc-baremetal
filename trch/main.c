@@ -41,7 +41,7 @@ int main ( void )
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");
 
-    nvic_init((volatile uint32_t *)TRCH_NVIC_BASE);
+    nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
 
 #if TEST_TRCH_WDT_STANDALONE
     if (test_trch_wdt())

@@ -73,8 +73,8 @@ static const struct intc_ops nvic_ops = {
     .int_type = nvic_op_int_type,
 };
 
-void nvic_init(volatile uint32_t *base)
+void nvic_init(volatile uint32_t *scs_base)
 {
-    nvic.base = base;
+    nvic.base = scs_base;
     intc_register(&nvic_ops);
 }
