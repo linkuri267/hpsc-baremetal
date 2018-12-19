@@ -9,7 +9,11 @@
 
 #include "test.h"
 
-#define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
+#define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // our choice for the test
+
+#define INTERVAL_SEC        3 // shortest with sleep timer ticks at 1 sec
+#define INTERVAL_WDT_CYCLES (INTERVAL_SEC * WDT_FREQ_HZ)
+
 #define NUM_STAGES 2
 
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
@@ -57,6 +61,11 @@ static bool check_disabled(struct wdt *wdt)
 #if TEST_TRCH_WDT_STANDALONE
 int test_trch_wdt()
 {
+    unsigned interval_slp_cycles = INTERVAL_SEC * sleep_get_clock();
+
+    // We want to do our checks after t+epsion, set epsilon to +25%
+    interval_slp_cycles += interval_slp_cycles / 4;
+
     volatile unsigned expired_stage;
     trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
                                   wdt_tick, (void *)&expired_stage);
@@ -64,8 +73,8 @@ int test_trch_wdt()
     if (!trch_wdt)
         return 1;
 
-    uint64_t timeouts[] = { INTERVAL, INTERVAL };
-    int rc = wdt_configure(trch_wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
+    uint64_t timeouts[] = { INTERVAL_WDT_CYCLES, INTERVAL_WDT_CYCLES };
+    int rc = wdt_configure(trch_wdt, WDT_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(trch_wdt);
         return rc;
@@ -79,7 +88,7 @@ int test_trch_wdt()
     printf("wdt test: (1) without kicking...\r\n");
     expired_stage = 0;
     wdt_enable(trch_wdt);
-    delay(INTERVAL);
+    sleep(interval_slp_cycles);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
  
@@ -92,9 +101,10 @@ int test_trch_wdt()
     unsigned runtime = 0, total_timeout = 0;
     for (unsigned i = 0; i < NUM_STAGES; ++i)
         total_timeout += timeouts[i];
-    unsigned kick_interval = INTERVAL / 4;
+    total_timeout = total_timeout * sleep_get_clock() / WDT_FREQ_HZ;
+    unsigned kick_interval = interval_slp_cycles / 4;
     while (runtime < total_timeout) {
-        delay(kick_interval);
+        sleep(kick_interval);
         if (!check_expiration(expired_stage, 0)) goto cleanup;
         if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
         wdt_kick(trch_wdt);
@@ -109,15 +119,15 @@ int test_trch_wdt()
 
     printf("wdt test: (3) without kicking, pause resume...\r\n");
     wdt_enable(trch_wdt);
-    delay(INTERVAL / 2);
+    sleep(interval_slp_cycles / 2);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup;
     wdt_disable(trch_wdt); // pause
-    delay(INTERVAL);
+    sleep(interval_slp_cycles);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
     if (!check_disabled(trch_wdt)) goto cleanup;
     wdt_enable(trch_wdt); // resume
-    delay(INTERVAL / 2); // second half should be enough for 1st stage to expire
+    sleep(interval_slp_cycles / 2); // second half should be enough for 1st stage to expire
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup;
 
@@ -127,11 +137,11 @@ int test_trch_wdt()
     // Without kicking, but disabled -- expect no expiration
     printf("wdt test: (4) without kicking, disabled timer...\r\n");
     wdt_enable(trch_wdt);
-    delay(INTERVAL / 2);
+    sleep(interval_slp_cycles / 2);
     wdt_disable(trch_wdt);
-    delay(INTERVAL);
+    sleep(interval_slp_cycles);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
-    delay(INTERVAL);
+    sleep(interval_slp_cycles);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
 
     // NOTE: can't test Stage 2 expiration, because it's not wired to an IRQ
@@ -141,6 +151,7 @@ int test_trch_wdt()
 cleanup:
     wdt_disable(trch_wdt);
     // TODO: order is important since ISR might run while destroying
+    printf("disable int\r\n");
     nvic_int_disable(TRCH_IRQ__WDT_TRCH_ST1);
     wdt_destroy(trch_wdt);
     return rc;
@@ -152,16 +163,20 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
              volatile uint32_t *base, unsigned irq)
 {
     int rc = 1;
+    const unsigned interval_slp_cycles = INTERVAL_SEC * sleep_get_clock();
+
+    // We want to do our checks after t+epsion, set epsilon to +25%
+    interval_slp_cycles += interval_slp_cycles / 4;
 
     volatile unsigned expired_stage;
-    uint64_t timeouts[] = { INTERVAL, INTERVAL };
+    uint64_t timeouts[] = { INTERVAL_WDT_CYCLES, INTERVAL_WDT_CYCLES };
     struct wdt *wdt = wdt_create_monitor(name, base,
                     wdt_tick, (void *)&expired_stage);
     if (!wdt)
         return 1;
     *wdt_ptr = wdt; // for ISR
 
-    rc = wdt_configure(wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
+    rc = wdt_configure(wdt, WDT_FREQ_HZ, NUM_STAGES, timeouts);
     if (rc) {
 	wdt_destroy(wdt);
 	return rc;
@@ -175,7 +190,7 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
     expired_stage = 0;
     wdt_enable(wdt);
     if (!check_enabled(wdt)) goto cleanup;
-    delay(INTERVAL * 2);
+    sleep(interval_slp_cycles * 2);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
     if (!check_disabled(wdt)) goto cleanup;
 
