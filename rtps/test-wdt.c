@@ -3,8 +3,9 @@
 #include "hwinfo.h"
 #include "sleep.h"
 #include "watchdog.h"
-
 #include "wdt.h"
+
+#include "test.h"
 
 #define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
 #define NUM_STAGES 2
