@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define SYSTICK_CLK_HZ 1000000 // appears to be fixed in Qemu model
+
 typedef void (systick_cb_t)(void *arg);
 
 void systick_config(uint32_t interval, systick_cb_t *cb, void *cb_arg);
