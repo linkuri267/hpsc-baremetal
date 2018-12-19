@@ -6,9 +6,7 @@
 
 #include "test.h"
 
-#define INTERVAL 2000000 // @ ~1Mhz = 2s
-
-#define INTERVAL_CPU_CYCLES (INTERVAL * 2) // conv factor is by trial and error
+#define INTERVAL_MS 2000
 
 static void systick_tick(void *arg)
 {
@@ -32,18 +30,19 @@ int test_systick()
 {
     int rc = 1;
     unsigned ticks = 0;
-    systick_config(INTERVAL, /* callback */ systick_tick, &ticks);
+
+    systick_config(INTERVAL_MS * (SYSTICK_CLK_HZ / 1000), systick_tick, &ticks);
 
     systick_enable();
-    delay(INTERVAL_CPU_CYCLES);
+    mdelay(INTERVAL_MS);
     if (!check_ticks(ticks, 1)) goto cleanup;
-    delay(INTERVAL_CPU_CYCLES);
+    mdelay(INTERVAL_MS);
     if (!check_ticks(ticks, 2)) goto cleanup;
 
     systick_disable();
-    delay(INTERVAL_CPU_CYCLES);
+    mdelay(INTERVAL_MS);
     if (!check_ticks(ticks, 2)) goto cleanup;
-    delay(INTERVAL_CPU_CYCLES);
+    mdelay(INTERVAL_MS);
     if (!check_ticks(ticks, 2)) goto cleanup;
 
     return 0;

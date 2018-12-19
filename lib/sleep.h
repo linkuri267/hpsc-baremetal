@@ -1,19 +1,21 @@
 #ifndef SLEEP_H
 #define SLEEP_H
 
-void delay(unsigned iters);
+void mdelay(unsigned ms); // busyloop
+
+void sleep_set_clock(unsigned t);
 
 #if TEST_SLEEP_TIMER
-void sleep(unsigned t); // units defined by clock (see below)
-
-// These define the unit of the time passed to sleep
-void sleep_set_clock(unsigned t);
-unsigned sleep_get_clock();
+void msleep(unsigned ms);
 
 // Call this from a timer ISR
 void sleep_tick(unsigned delta);
 #else // !TEST_SLEEP_TIMER
-#define sleep(t) delay(t)
+#define msleep(t) mdelay(t)
 #endif // !TEST_SLEEP_TIMER
+
+// TODO: remove
+#define delay(iters) mdelay((iters) * 10000)
+#define sleep(s) msleep((s) * 1000)
 
 #endif // SLEEP_H

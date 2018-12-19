@@ -12,6 +12,8 @@
 #define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // our choice for the test
 
 #define INTERVAL_SEC        3 // shortest with sleep timer ticks at 1 sec
+#define INTERVAL_MS         (INTERVAL_SEC * 1000)
+#define CHECK_INTERVAL_MS   (INTERVAL_MS + INTERVAL_MS / 4) // we want a check slightly later
 #define INTERVAL_WDT_CYCLES (INTERVAL_SEC * WDT_FREQ_HZ)
 
 #define NUM_STAGES 2
@@ -61,11 +63,6 @@ static bool check_disabled(struct wdt *wdt)
 #if TEST_TRCH_WDT_STANDALONE
 int test_trch_wdt()
 {
-    unsigned interval_slp_cycles = INTERVAL_SEC * sleep_get_clock();
-
-    // We want to do our checks after t+epsion, set epsilon to +25%
-    interval_slp_cycles += interval_slp_cycles / 4;
-
     volatile unsigned expired_stage;
     trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
                                   wdt_tick, (void *)&expired_stage);
@@ -88,7 +85,7 @@ int test_trch_wdt()
     printf("wdt test: (1) without kicking...\r\n");
     expired_stage = 0;
     wdt_enable(trch_wdt);
-    sleep(interval_slp_cycles);
+    msleep(CHECK_INTERVAL_MS);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
  
@@ -101,10 +98,10 @@ int test_trch_wdt()
     unsigned runtime = 0, total_timeout = 0;
     for (unsigned i = 0; i < NUM_STAGES; ++i)
         total_timeout += timeouts[i];
-    total_timeout = total_timeout * sleep_get_clock() / WDT_FREQ_HZ;
-    unsigned kick_interval = interval_slp_cycles / 4;
+    total_timeout = total_timeout / (WDT_FREQ_HZ / 1000); // cycles to ms
+    unsigned kick_interval = CHECK_INTERVAL_MS / 4;
     while (runtime < total_timeout) {
-        sleep(kick_interval);
+        msleep(kick_interval);
         if (!check_expiration(expired_stage, 0)) goto cleanup;
         if (!check_enabled(trch_wdt)) goto cleanup; // should stay enabled
         wdt_kick(trch_wdt);
@@ -119,15 +116,15 @@ int test_trch_wdt()
 
     printf("wdt test: (3) without kicking, pause resume...\r\n");
     wdt_enable(trch_wdt);
-    sleep(interval_slp_cycles / 2);
+    msleep(CHECK_INTERVAL_MS / 2);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup;
     wdt_disable(trch_wdt); // pause
-    sleep(interval_slp_cycles);
+    msleep(CHECK_INTERVAL_MS);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
     if (!check_disabled(trch_wdt)) goto cleanup;
     wdt_enable(trch_wdt); // resume
-    sleep(interval_slp_cycles / 2); // second half should be enough for 1st stage to expire
+    msleep(CHECK_INTERVAL_MS / 2); // second half should be enough for 1st stage to expire
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     if (!check_enabled(trch_wdt)) goto cleanup;
 
@@ -137,11 +134,11 @@ int test_trch_wdt()
     // Without kicking, but disabled -- expect no expiration
     printf("wdt test: (4) without kicking, disabled timer...\r\n");
     wdt_enable(trch_wdt);
-    sleep(interval_slp_cycles / 2);
+    msleep(CHECK_INTERVAL_MS / 2);
     wdt_disable(trch_wdt);
-    sleep(interval_slp_cycles);
+    msleep(CHECK_INTERVAL_MS);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
-    sleep(interval_slp_cycles);
+    msleep(CHECK_INTERVAL_MS);
     if (!check_expiration(expired_stage, 0)) goto cleanup;
 
     // NOTE: can't test Stage 2 expiration, because it's not wired to an IRQ
@@ -163,10 +160,6 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
              volatile uint32_t *base, unsigned irq)
 {
     int rc = 1;
-    const unsigned interval_slp_cycles = INTERVAL_SEC * sleep_get_clock();
-
-    // We want to do our checks after t+epsion, set epsilon to +25%
-    interval_slp_cycles += interval_slp_cycles / 4;
 
     volatile unsigned expired_stage;
     uint64_t timeouts[] = { INTERVAL_WDT_CYCLES, INTERVAL_WDT_CYCLES };
@@ -190,7 +183,7 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
     expired_stage = 0;
     wdt_enable(wdt);
     if (!check_enabled(wdt)) goto cleanup;
-    sleep(interval_slp_cycles * 2);
+    msleep(CHECK_INTERVAL_MS * 2);
     if (!check_expiration(expired_stage, 2)) goto cleanup;
     if (!check_disabled(wdt)) goto cleanup;
 
