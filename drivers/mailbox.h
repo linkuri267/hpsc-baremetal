@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <unistd.h>
 
 #include "intc.h"
 
@@ -11,7 +10,7 @@
 
 #define HPSC_MBOX_DATA_REGS 16
 
-typedef void (*rcv_cb_t)(void *arg, uint32_t *msg, size_t size);
+typedef void (*rcv_cb_t)(void *arg, uint32_t *msg, unsigned size);
 typedef void (*ack_cb_t)(void *arg);
 
 enum mbox_dir {
@@ -31,7 +30,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
                         uint32_t owner, uint32_t src, uint32_t dest,
                         enum mbox_dir dir, union mbox_cb cb, void *cb_arg);
 int mbox_release(struct mbox *m);
-int mbox_send(struct mbox *m, uint32_t *msg, size_t len);
+int mbox_send(struct mbox *m, uint32_t *msg, unsigned len);
 
 void mbox_rcv_isr(unsigned int_idx);
 void mbox_ack_isr(unsigned int_idx);

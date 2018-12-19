@@ -201,7 +201,7 @@ int mbox_release(struct mbox *m)
     return 0;
 }
 
-int mbox_send(struct mbox *m, uint32_t *msg, size_t len)
+int mbox_send(struct mbox *m, uint32_t *msg, unsigned len)
 {
     unsigned i;
 
