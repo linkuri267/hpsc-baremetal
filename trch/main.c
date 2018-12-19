@@ -39,12 +39,14 @@ static void systick_tick(void *arg)
 {
     printf("systick: tick\r\n");
 
+#if TEST_TRCH_WDT
     // Note: we kick here in the ISR instead of relying on the main loop
     // wakeing up from WFE as a result of ISR, because the main loop might not
     // be sleeping but might be performing a long operation, in which case it
     // might not get to the kick statement at the beginning of the main loop in
     // time.
     watchdog_trch_kick();
+#endif // TEST_TRCH_WDT
 }
 #endif // TEST_SYSTICK
 
