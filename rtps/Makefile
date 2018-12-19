@@ -89,7 +89,7 @@ endif
 ifeq ($(strip $(TEST_GTIMER)),1)
 OBJS += test-gtimer.o
 endif
-ifeq ($(strip $(TEST_WDT)),1)
+ifeq ($(strip $(TEST_WDT_STANDALONE)),1)
 OBJS += test-wdt.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
