@@ -6,6 +6,7 @@ TEST_FLAGS = \
 	TEST_FLOAT \
 	TEST_SYSTICK \
 	TEST_SYSTICK_STANDALONE \
+	TEST_SLEEP_TIMER \
 	TEST_HPPS_TRCH_MAILBOX \
 	TEST_HPPS_TRCH_MAILBOX_SSW \
 	TEST_RTPS_TRCH_MAILBOX \
@@ -28,6 +29,7 @@ TEST_IPI 			= 0
 TEST_FLOAT 			= 1
 TEST_SYSTICK			= 1
 TEST_SYSTICK_STANDALONE		= 0
+TEST_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 TEST_HPPS_TRCH_MAILBOX 		= 1
 TEST_HPPS_TRCH_MAILBOX_SSW 	= 1
 TEST_RTPS_TRCH_MAILBOX 		= 1
@@ -44,6 +46,12 @@ TEST_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 TEST_RT_MMU_STANDALONE		= 1
 TEST_BOOT_RTPS 			= 1
 TEST_BOOT_HPPS 			= 1
+
+ifeq ($(strip $(TEST_SLEEP_TIMER)),1)
+ifneq ($(strip $(TEST_SYSTICK)),1)
+$(error TEST_SLEEP_TIMER requires a timer to be enabled)
+endif
+endif
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -75,7 +83,7 @@ OBJS = \
        lib/sha256.o \
        lib/mem.o \
        lib/str.o \
-       lib/delay.o \
+       lib/sleep.o \
        lib/object.o \
        lib/balloc.o \
        lib/printf.o \

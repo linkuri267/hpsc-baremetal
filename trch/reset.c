@@ -4,7 +4,7 @@
 #include "printf.h"
 #include "regops.h"
 #include "subsys.h"
-#include "delay.h"
+#include "sleep.h"
 
 #include "reset.h"
 

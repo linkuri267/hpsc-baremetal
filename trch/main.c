@@ -18,7 +18,10 @@
 #include "boot.h"
 #include "smc.h"
 #include "systick.h"
+#include "sleep.h"
 #include "test.h"
+
+#define SYSTICK_INTERVAL 1000000 // @ ~1Mhz = 1sec
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
 
@@ -47,6 +50,10 @@ static void systick_tick(void *arg)
     // time.
     watchdog_trch_kick();
 #endif // TEST_TRCH_WDT
+
+#if TEST_SLEEP_TIMER
+    sleep_tick(SYSTICK_INTERVAL);
+#endif // TEST_SLEEP_TIMER
 }
 #endif // TEST_SYSTICK
 
@@ -64,6 +71,15 @@ int main ( void )
     if (test_systick())
         panic("TRCH systick test");
 #endif // TEST_SYSTICK_STANDALONE
+
+#if TEST_SYSTICK
+    systick_config(SYSTICK_INTERVAL, systick_tick, NULL);
+    systick_enable();
+
+#if TEST_SLEEP_TIMER
+    sleep_set_clock(SYSTICK_CLK_HZ);
+#endif // TEST_SLEEP_TIMER
+#endif // TEST_SYSTICK
 
 #if TEST_TRCH_WDT_STANDALONE
     if (test_trch_wdt())
@@ -183,11 +199,6 @@ int main ( void )
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // TEST_RTPS_TRCH_MAILBOX
-
-#if TEST_SYSTICK
-    systick_config(5000000 /* @ ~1Mhz = 5sec */, systick_tick, NULL);
-    systick_enable();
-#endif // TEST_SYSTICK
 
 #if TEST_RTPS_WDT
     watchdog_rtps_init();

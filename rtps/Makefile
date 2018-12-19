@@ -16,6 +16,7 @@ TEST_FLAGS = \
 	TEST_FLOAT \
 	TEST_SORT \
 	TEST_GTIMER \
+	TEST_SLEEP_TIMER \
 	TEST_WDT \
 	TEST_WDT_STANDALONE \
 	TEST_RTPS_TRCH_MAILBOX \
@@ -30,6 +31,7 @@ TEST_FLAGS = \
 TEST_FLOAT 			= 1
 TEST_SORT 			= 1
 TEST_GTIMER 			= 0
+TEST_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 TEST_WDT 			= 1
 TEST_WDT_STANDALONE		= 0
 TEST_RTPS_TRCH_MAILBOX  	= 1
@@ -39,6 +41,12 @@ TEST_RTPS_MMU 			= 1
 TEST_RTPS_DMA 			= 1
 TEST_RTPS_DMA_CB 		= 1
 TEST_SOFT_RESET 		= 0
+
+ifeq ($(strip $(TEST_SLEEP_TIMER)),1)
+ifneq ($(strip $(TEST_GTIMER)),1)
+$(error TEST_SLEEP_TIMER requires a timer to be enabled)
+endif
+endif
 
 TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
 
@@ -62,7 +70,7 @@ OBJS = \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
-	lib/delay.o \
+	lib/sleep.o \
 	lib/object.o \
 	lib/intc.o \
 	lib/mailbox-link.o \

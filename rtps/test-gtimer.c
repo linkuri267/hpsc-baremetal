@@ -3,7 +3,7 @@
 #include "printf.h"
 #include "hwinfo.h"
 #include "gic.h"
-#include "delay.h"
+#include "sleep.h"
 #include "gtimer.h"
 
 #define FREQ_HZ 20000 // this value has no meaning, HW just stores it

@@ -1,7 +1,7 @@
 #include "printf.h"
 #include "gic.h"
 #include "hwinfo.h"
-#include "delay.h"
+#include "sleep.h"
 #include "watchdog.h"
 
 #include "wdt.h"
