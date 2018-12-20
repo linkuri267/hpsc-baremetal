@@ -23,7 +23,7 @@
 #include "sleep.h"
 #include "test.h"
 
-#define SYSTICK_INTERVAL_MS     1000
+#define SYSTICK_INTERVAL_MS     500
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
 #define MAIN_LOOP_SILENT_ITERS 16
 
