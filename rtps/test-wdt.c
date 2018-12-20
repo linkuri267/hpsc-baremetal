@@ -10,6 +10,10 @@
 #define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
 #define NUM_STAGES 2
 
+#define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // this has to match choice in TRCH
+
+#define WDT_CYCLES_TO_MS(c) ((c) / (WDT_FREQ_HZ / 1000))
+
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 {
     volatile unsigned *expired = arg;
@@ -46,20 +50,20 @@ int test_wdt()
 
     gic_int_enable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
 
-    unsigned total_timeout = 0;
     unsigned timeouts[] = { wdt_timeout(wdt, 0), wdt_timeout(wdt, 1) };
-    total_timeout += timeouts[0] + timeouts[1];
 
-    delay(timeouts[0]);
+    msleep(WDT_CYCLES_TO_MS(timeouts[0]));
     if (!check_expiration(expired_stage, 1)) goto cleanup;
 
     expired_stage = 0;
 
-    unsigned kick_interval = timeouts[0] / 2;
+    unsigned total_timeout =
+        WDT_CYCLES_TO_MS(timeouts[0]) + WDT_CYCLES_TO_MS(timeouts[1]);
+    unsigned kick_interval = WDT_CYCLES_TO_MS(timeouts[0]) / 2;
     unsigned runtime = 0;
     while (runtime < total_timeout) {
         wdt_kick(wdt);
-        delay(kick_interval);
+        msleep(kick_interval);
         if (!check_expiration(expired_stage, 0)) goto cleanup;
         runtime += kick_interval;
     }
