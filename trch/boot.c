@@ -80,8 +80,10 @@ void boot_request_reboot(subsys_t subsys)
 int boot_perform_reboots()
 {
     int rc = 0;
+    int reqs = 0;
     while (reboot_requests) {
         printf("BOOT: performing requested reboots...\r\n");
+        reqs++;
 
         int b = 0;
         while (b < NUM_SUBSYSS && !(reboot_requests & (1 << b)))
@@ -96,5 +98,7 @@ int boot_perform_reboots()
             reboot_requests &= ~comp;
         }
    }
+   if (reqs)
+       printf("BOOT: completed %u boot requests: rc %u\r\n", reqs, rc);
    return rc;
 }
