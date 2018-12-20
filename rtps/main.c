@@ -93,11 +93,6 @@ int main(void)
 #endif // TEST_SLEEP_TIMER
 #endif // TEST_GTIMER
 
-#if TEST_WDT_STANDALONE
-    if (test_wdt())
-        panic("wdt test");
-#endif // TEST_WDT_STANDALONE
-
 #if TEST_FLOAT
     if (test_float())
         panic("float test");
@@ -155,6 +150,12 @@ int main(void)
     soft_reset();
     printf("ERROR: reached unrechable code: soft reset failed\r\n");
 #endif // TEST_SOFT_RESET
+
+#if TEST_WDT_STANDALONE
+    if (test_wdt())
+        panic("wdt test");
+    // NOTE: watchdog remains enabled after this test, not allowed to disable
+#endif // TEST_WDT_STANDALONE
 
 #if TEST_WDT
     watchdog_init();

@@ -75,5 +75,6 @@ cleanup:
     gic_int_disable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
     wdt = NULL;
+    // NOTE: timer is still running! target subsystem not allowed to disable it
     return rc;
 }
