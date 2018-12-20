@@ -187,7 +187,7 @@ void watchdog_trch_kick() {
 
 int watchdog_rtps_init() {
     int i;
-    uint64_t timeouts[] = { 10000000, 50000000 }; // about 1 sec, 5 sec
+    uint64_t timeouts[] = { 4000000, 4000000 }; // about second for each
 
     static const char * const rtps_wdt_names[RTPS_NUM_CORES] = {
 	"RTPS0", /* "RTPS1" */ // TODO: when we have both cores
