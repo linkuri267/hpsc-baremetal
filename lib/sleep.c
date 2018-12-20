@@ -3,17 +3,28 @@
 
 #include "sleep.h"
 
-static volatile unsigned time = 0; // cycles @ clk Hz
-static volatile unsigned clk = 0;
-
 #define MAX_TIME ~0
 
-void sleep_set_clock(unsigned f)
+static volatile unsigned busyloop_factor = 0;
+
+#if TEST_SLEEP_TIMER
+static volatile unsigned time = 0; // cycles @ clk Hz
+static volatile unsigned clk = 0;
+#endif // TEST_SLEEP_TIMER
+
+void sleep_set_busyloop_factor(unsigned f)
 {
-    clk = f;
+    printf("SLEEP: busyloop factor <- %u\r\n", f);
+    busyloop_factor = f;
 }
 
 #if TEST_SLEEP_TIMER
+void sleep_set_clock(unsigned f)
+{
+    printf("SLEEP: clock <- %u Hz\r\n", f);
+    clk = f;
+}
+
 // Call this from a timer ISR
 void sleep_tick(unsigned delta_cycles)
 {
@@ -46,9 +57,7 @@ void mdelay(unsigned ms)
 {
     // WARNING: don't add any printf statements into this functions, they
     // interfere with the timing, despite being outside of the busyloop itself.
-
-    // treat iters as "cycles", use clock "frequency" to customize per CPU
-    unsigned iters = ms * (clk / 1000);
+    unsigned iters = ms * busyloop_factor;
 
     if (iters == 0)
         return;
