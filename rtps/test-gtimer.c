@@ -6,10 +6,12 @@
 #include "sleep.h"
 #include "gtimer.h"
 
-#define FREQ_HZ 20000 // this value has no meaning, HW just stores it
+#define FREQ_HZ 1000000
 
 #define TICKS_TO_TEST 3
-#define INTERVAL 80000000 // cycles (about a second wall-clock in Qemu)
+
+#define INTERVAL_MS 2000
+#define INTERVAL_CYCLES (INTERVAL_MS * (FREQ_HZ / 1000))
 
 struct context {
     enum gtimer timer;
@@ -26,13 +28,25 @@ static void timer_tick(void *arg)
            ctx->timer, (uint32_t)(pctval>>32), (uint32_t)(pctval & 0xffffff),
            ctx->ticks, tval);
     if (ctx->ticks < TICKS_TO_TEST)
-        gtimer_set_tval(ctx->timer, INTERVAL); // schedule the next tick
+        gtimer_set_tval(ctx->timer, INTERVAL_CYCLES); // schedule the next tick
     else
         gtimer_stop(ctx->timer);
 }
 
+static bool check_ticks(unsigned ticks, unsigned expected)
+{
+    if (ticks < expected) {
+        printf("ERROR: TEST: gtimer: unexpected ticks: %u < %u\r\n",
+                ticks, expected);
+        return false;
+    }
+    printf("TEST: gtimer: correct ticks: %u >= %u\r\n", ticks, expected);
+    return true;
+}
+
 int test_gtimer()
 {
+    int rc = 0;
     uint32_t frq = gtimer_get_frq();
 
 #if 0 // only allowed from EL2
@@ -70,7 +84,7 @@ int test_gtimer()
             return 1;
         }
 
-        gtimer_set_tval(timer, INTERVAL); // schedule a tick
+        gtimer_set_tval(timer, INTERVAL_CYCLES); // schedule a tick
 
         struct context ctx = {
                 .timer = timer,
@@ -78,17 +92,34 @@ int test_gtimer()
         };
 
         gtimer_subscribe(timer, timer_tick, &ctx);
-        printf("Waiting for tick...\r\n");
+
         gtimer_start(timer);
-        while (ctx.ticks < TICKS_TO_TEST);
+        mdelay(INTERVAL_MS);
+        if (!check_ticks(ctx.ticks, 1)) goto cleanup_running;
+        mdelay(INTERVAL_MS);
+        if (!check_ticks(ctx.ticks, 2)) goto cleanup_running;
+
         gtimer_stop(timer);
-        printf("Ticked %u times\r\n", ctx.ticks);
+        mdelay(INTERVAL_MS);
+        if (!check_ticks(ctx.ticks, 2)) goto cleanup;
+        mdelay(INTERVAL_MS);
+        if (!check_ticks(ctx.ticks, 2)) goto cleanup;
+
+        printf("TEST gtimer %u: Ticked %u times\r\n", timer, ctx.ticks);
         gtimer_unsubscribe(timer);
+        continue;
+
+cleanup_running:
+	gtimer_stop(timer);
+cleanup:
+        gtimer_unsubscribe(timer);
+	rc = 1;
+	break;
    }
 
     gic_int_disable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI);
     gic_int_disable(PPI_IRQ__TIMER_VIRT, GIC_IRQ_TYPE_PPI);
     // gic_int_disable(PPI_IRQ__TIMER_HYP, GIC_IRQ_TYPE_PPI); // from EL2 only
 
-    return 0;
+    return rc;
 }
