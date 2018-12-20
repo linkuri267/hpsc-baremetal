@@ -23,7 +23,8 @@
 #include "sleep.h"
 #include "test.h"
 
-#define SYSTICK_INTERVAL 1000000 // @ ~1Mhz = 1sec
+#define SYSTICK_INTERVAL_MS     1000
+#define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
 #define MAIN_LOOP_SILENT_ITERS 16
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
@@ -55,7 +56,7 @@ static void systick_tick(void *arg)
 #endif // TEST_TRCH_WDT
 
 #if TEST_SLEEP_TIMER
-    sleep_tick(SYSTICK_INTERVAL);
+    sleep_tick(SYSTICK_INTERVAL_CYCLES);
 #endif // TEST_SLEEP_TIMER
 }
 #endif // TEST_SYSTICK
@@ -78,7 +79,7 @@ int main ( void )
 #endif // TEST_SYSTICK_STANDALONE
 
 #if TEST_SYSTICK
-    systick_config(SYSTICK_INTERVAL, systick_tick, NULL);
+    systick_config(SYSTICK_INTERVAL_CYCLES, systick_tick, NULL);
     systick_enable();
 
 #if TEST_SLEEP_TIMER
