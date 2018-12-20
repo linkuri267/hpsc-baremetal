@@ -44,8 +44,24 @@ void msleep(unsigned ms)
 
 void mdelay(unsigned ms)
 {
-#define MS_TO_ITERS 150 // empirical (and depends on load on virtual CPUs)
-    volatile unsigned work = 0;
-    for (int i = 0; i < ms * MS_TO_ITERS; ++i)
-        work++;
+    // WARNING: don't add any printf statements into this functions, they
+    // interfere with the timing, despite being outside of the busyloop itself.
+
+    // treat iters as "cycles", use clock "frequency" to customize per CPU
+    unsigned iters = ms * (clk / 1000);
+
+    if (iters == 0)
+        return;
+
+    // Inline assembly, to avoid non-determinism (or total brakage) by
+    // compiler optimizations. This asm is portable across armv7 and
+    // aarch32, but won't necessary take the same time, so each CPU will
+    // need its own calibration factor anyway (see above).
+    asm (
+     "delayloop:\n"
+     "  nop\n"
+     "  sub %0, #1\n"
+     "  cmp %0, #0\n"
+     "  bne delayloop\n"
+     : : "r" (iters) :);
 }

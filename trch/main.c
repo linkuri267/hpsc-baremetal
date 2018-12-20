@@ -68,6 +68,7 @@ int main ( void )
     nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
 
 #if TEST_SYSTICK_STANDALONE
+    sleep_set_clock(4000000); // empirically determined busyloop calibration
     if (test_systick())
         panic("TRCH systick test");
 #endif // TEST_SYSTICK_STANDALONE

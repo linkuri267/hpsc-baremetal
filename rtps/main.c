@@ -70,6 +70,7 @@ int main(void)
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
 #if TEST_GTIMER_STANDALONE
+    sleep_set_clock(40000000); // empirically determined busyloop calibration
     if (test_gtimer())
         panic("gtimer test");
 #endif // TEST_GTIMER_STANDALONE
