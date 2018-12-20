@@ -63,6 +63,8 @@ static bool check_disabled(struct wdt *wdt)
 #if TEST_TRCH_WDT_STANDALONE
 int test_trch_wdt()
 {
+    printf("TEST WDT: TRCH: interval %u ms\r\n", INTERVAL_MS);
+
     volatile unsigned expired_stage;
     trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
                                   wdt_tick, (void *)&expired_stage);
@@ -159,6 +161,8 @@ cleanup:
 int test_wdt(struct wdt **wdt_ptr, const char *name,
              volatile uint32_t *base, unsigned irq)
 {
+    printf("TEST WDT: %s: interval %u ms\r\n", name, INTERVAL_MS);
+
     int rc = 1;
 
     volatile unsigned expired_stage;

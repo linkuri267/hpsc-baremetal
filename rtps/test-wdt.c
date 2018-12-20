@@ -50,15 +50,17 @@ int test_wdt()
     gic_int_enable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
 
     unsigned timeouts[] = { wdt_timeout(wdt, 0), wdt_timeout(wdt, 1) };
+    unsigned interval = WDT_CYCLES_TO_MS(timeouts[0]);
+    printf("TEST WDT: interval %u ms\r\n", interval);
 
-    msleep(WDT_CYCLES_TO_MS(timeouts[0]));
+    msleep(interval);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
 
     expired_stage = 0;
 
     unsigned total_timeout =
         WDT_CYCLES_TO_MS(timeouts[0]) + WDT_CYCLES_TO_MS(timeouts[1]);
-    unsigned kick_interval = WDT_CYCLES_TO_MS(timeouts[0]) / 2;
+    unsigned kick_interval = interval / 2;
     unsigned runtime = 0;
     while (runtime < total_timeout) {
         wdt_kick(wdt);
