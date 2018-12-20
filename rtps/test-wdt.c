@@ -7,7 +7,6 @@
 
 #include "test.h"
 
-#define INTERVAL 5000000 // cycles (about 2 sec wall-clock in Qemu)
 #define NUM_STAGES 2
 
 #define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // this has to match choice in TRCH
