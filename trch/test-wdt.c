@@ -11,10 +11,9 @@
 
 #define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // our choice for the test
 
-#define INTERVAL_SEC        3 // shortest with sleep timer ticks at 1 sec
-#define INTERVAL_MS         (INTERVAL_SEC * 1000)
+#define INTERVAL_MS         3000 // shortest with sleep timer ticks at 1 sec
 #define CHECK_INTERVAL_MS   (INTERVAL_MS + INTERVAL_MS / 4) // we want a check slightly later
-#define INTERVAL_WDT_CYCLES (INTERVAL_SEC * WDT_FREQ_HZ)
+#define INTERVAL_WDT_CYCLES (INTERVAL_MS * (WDT_FREQ_HZ / 1000))
 
 #define NUM_STAGES 2
 
