@@ -98,7 +98,7 @@ OBJS = \
        drivers/dma.o \
        drivers/wdt.o \
        drivers/smc.o \
-       systick.o \
+       drivers/systick.o \
        watchdog.o \
        reset.o \
        boot.o \
