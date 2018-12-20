@@ -223,7 +223,7 @@ int main ( void )
 #define RTPS_BOOT_SMP 0x00000002
 
     uint32_t split_mode = *((uint32_t *) RTPS_BOOT_MODE_ADDR);
-    printf("RTPS boot mode = %d\n", split_mode);
+    printf("RTPS boot mode = %d\r\n", split_mode);
     switch (split_mode) {
         case RTPS_BOOT_SPLIT:
             boot_request_reboot(SUBSYS_RTPS_SPLIT_0);
