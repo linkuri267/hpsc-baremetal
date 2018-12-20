@@ -55,6 +55,7 @@ int test_wdt()
 
     msleep(interval);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
+    wdt_kick(wdt);
 
     expired_stage = 0;
 
