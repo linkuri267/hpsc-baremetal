@@ -79,7 +79,7 @@ int reset_release(subsys_t subsys)
             REGB_SET32(RPU_CTRL, RPU_CTRL__BASE, RPU_CTRL__BASE_SPLIT);
             REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
-            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
             break;
         case SUBSYS_RTPS_SPLIT_1:
@@ -87,21 +87,21 @@ int reset_release(subsys_t subsys)
             REGB_SET32(RPU_CTRL, RPU_CTRL__BASE, RPU_CTRL__BASE_SPLIT);
             REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R51_RESET);
-            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
             break;
         case SUBSYS_RTPS:
             printf("RESET: release: RTPS_LOCKSTEP: release CPU0\r\n");
             REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__RPU_R50_RESET);
-            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
             REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
             break;
         case SUBSYS_HPPS:
             printf("RESET: release: HPPS: release CPU0\r\n");
             REGB_CLEAR32(APU, APU__PWRCTL, APU__PWRCTL__CPU0PWRDWNREQ);
             REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__GIC_RESET);
-            delay(5); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
+            mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
             REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__ACPU0_RESET);
             break;
         default:
