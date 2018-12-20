@@ -169,12 +169,18 @@ int main(void)
 
 #if TEST_WDT
         // Kicking from here is insufficient, because we sleep. There are two
-        // ways to complete: (A) have TRCH disable the watchdog in response to
-        // the WFI output signal from the core, and/or (B) have a scheduler
-        // (with a tick interval shorter than the watchdog timeout interval)
-        // and kick from the scheuduler tick. As a temporary stop-gap, we go
-        // with (C): kick on return from WFI/WFI as a result of first stage
-        // timeout IRQ.
+        // ways to complete:
+        //     (A) have TRCH disable the watchdog in response to the WFI output
+        //     signal from the core,
+        //     (B) have a scheduler (with a tick interval shorter than the
+        //     watchdog timeout interval) and kick from the scheuduler tick, or
+        //     (C) kick on return from WFI/WFI (which could be as a result of
+        //     either first stage timeout IRQ or the system timer tick IRQ).
+        // At this time, we can do either (B) or (C): (B) has the disadvantage
+        // that what is being monitored is the systick ISR, and not the main
+        // loop proper (so if any ISRs starve the main loop, that won't be
+        // detected), and (C) has the disadvantage that if the main loop
+        // performs long actions, those actions need to kick. We go with (C).
         watchdog_kick();
 #endif // TEST_WDT
 
