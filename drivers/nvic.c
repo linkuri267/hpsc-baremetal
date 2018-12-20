@@ -9,6 +9,7 @@
 
 #define NVIC_ISER0 0x100
 #define NVIC_ICER0 0x180
+#define NVIC_ICPR0 0x280
 
 #define MAX_IRQS 240
 
