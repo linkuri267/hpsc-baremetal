@@ -24,6 +24,10 @@ extern unsigned char _bss_end;
 extern void enable_caches(void);
 extern void compare_sorts(void);
 
+#define SYS_TICK_INTERVAL_MS 1000
+static enum gtimer sys_timer = GTIMER_PHYS;
+static uint32_t sys_timer_interval; // in cycles
+
 void enable_interrupts (void)
 {
 	unsigned long temp;
@@ -42,6 +46,14 @@ void soft_reset (void)
 			     "mcr p15, 4, r1, c12, c0, 2\n"); 
 }
 
+#if TEST_GTIMER
+static void sys_tick(void *arg)
+{
+    int32_t tval = gtimer_get_tval(sys_timer); // negative value, time since last tick
+    gtimer_set_tval(sys_timer, sys_timer_interval); // schedule the next tick
+}
+#endif // TEST_GTIMER
+
 int main(void)
 {
     cdns_uart_startup();
@@ -51,6 +63,19 @@ int main(void)
     enable_interrupts();
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
+
+#if TEST_GTIMER_STANDALONE
+    if (test_gtimer())
+        panic("gtimer test");
+#endif // TEST_GTIMER_STANDALONE
+
+#if TEST_GTIMER
+    sys_timer_interval = SYS_TICK_INTERVAL_MS * (gtimer_get_frq() / 1000);
+    gtimer_set_tval(sys_timer, sys_timer_interval);
+    gtimer_subscribe(sys_timer, sys_tick, NULL);
+    gic_int_enable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
+    gtimer_start(sys_timer);
+#endif // TEST_GTIMER
 
 #if TEST_WDT_STANDALONE
     if (test_wdt())
@@ -66,11 +91,6 @@ int main(void)
     if (test_sort())
         panic("sort test");
 #endif // TEST_SORT
-
-#if TEST_GTIMER
-    if (test_gtimer())
-        panic("gtimer test");
-#endif // TEST_GTIMER
 
 #if TEST_RT_MMU
     if (test_rt_mmu())
@@ -163,7 +183,7 @@ void irq_handler(unsigned intid) {
     } else if (intid < GIC_INTERNAL) { // PPI
         unsigned ppi = intid - GIC_NR_SGIS;
         switch (ppi) {
-#if TEST_GTIMER
+#if TEST_GTIMER_STANDALONE || TEST_GTIMER
             case PPI_IRQ__TIMER_HYP:
                     gtimer_isr(GTIMER_HYP);
                     break;
@@ -173,7 +193,7 @@ void irq_handler(unsigned intid) {
             case PPI_IRQ__TIMER_VIRT:
                     gtimer_isr(GTIMER_VIRT);
                     break;
-#endif // TEST_GTIMER
+#endif // TEST_GTIMER_STANDALONE || TEST_GTIMER
 #if TEST_WDT
             case PPI_IRQ__WDT:
                 wdt_isr(wdt, /* stage */ 0);

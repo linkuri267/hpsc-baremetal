@@ -16,6 +16,7 @@ TEST_FLAGS = \
 	TEST_FLOAT \
 	TEST_SORT \
 	TEST_GTIMER \
+	TEST_GTIMER_STANDALONE \
 	TEST_SLEEP_TIMER \
 	TEST_WDT \
 	TEST_WDT_STANDALONE \
@@ -30,7 +31,8 @@ TEST_FLAGS = \
 # Enable disable tests here:
 TEST_FLOAT 			= 1
 TEST_SORT 			= 1
-TEST_GTIMER 			= 0
+TEST_GTIMER 			= 1
+TEST_GTIMER_STANDALONE		= 0
 TEST_SLEEP_TIMER 		= 0 # implement sleep() using a timer
 TEST_WDT 			= 1
 TEST_WDT_STANDALONE		= 0
@@ -86,7 +88,7 @@ endif
 ifeq ($(strip $(TEST_SORT)),1)
 OBJS += test-sort.o
 endif
-ifeq ($(strip $(TEST_GTIMER)),1)
+ifeq ($(strip $(TEST_GTIMER_STANDALONE)),1)
 OBJS += test-gtimer.o
 endif
 ifeq ($(strip $(TEST_WDT_STANDALONE)),1)
