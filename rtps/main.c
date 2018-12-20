@@ -1,3 +1,5 @@
+#define DEBUG 0
+
 #include "printf.h"
 #include "uart.h"
 #include "float.h"
@@ -26,6 +28,8 @@ extern void enable_caches(void);
 extern void compare_sorts(void);
 
 #define SYS_TICK_INTERVAL_MS 1000
+#define MAIN_LOOP_SILENT_ITERS 16
+
 static enum gtimer sys_timer = GTIMER_PHYS;
 static uint32_t sys_timer_interval; // in cycles
 
@@ -156,9 +160,11 @@ int main(void)
     watchdog_init();
 #endif // TEST_WDT
 
-    unsigned iter = 0; // just to make output that changes to see it
+    unsigned iter = 0;
     while (1) {
-        printf("RTPS: main loop\r\n");
+        bool verbose = ++iter % MAIN_LOOP_SILENT_ITERS == 0;
+        if (verbose)
+            printf("RTPS: main loop\r\n");
 
 #if TEST_WDT
         // Kicking from here is insufficient, because we sleep. There are two
@@ -177,7 +183,8 @@ int main(void)
             cmd_handle(&cmd);
 #endif // TEST_HPPS_RTPS_MAILBOX
 
-        printf("[%u] Waiting for interrupt...\r\n", iter++);
+        if (verbose)
+            printf("[%u] Waiting for interrupt...\r\n", iter);
         asm("wfi");
     }
     
@@ -185,7 +192,7 @@ int main(void)
 }
 
 void irq_handler(unsigned intid) {
-    printf("INTID #%u\r\n", intid);
+    DPRINTF("INTID #%u\r\n", intid);
     if (intid < GIC_NR_SGIS) { // SGI
         unsigned sgi = intid;
         switch (sgi) {
@@ -216,7 +223,7 @@ void irq_handler(unsigned intid) {
         }
     } else { // SPI
         unsigned irq = intid - GIC_INTERNAL;
-        printf("IRQ #%u\r\n", irq);
+        DPRINTF("IRQ #%u\r\n", irq);
         switch (irq) {
             // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
             // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs

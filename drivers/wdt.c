@@ -1,3 +1,5 @@
+#define DEBUG 0
+
 #include <stdint.h>
 
 #include "object.h"
@@ -109,7 +111,7 @@ static void exec_global_cmd(struct wdt *wdt, enum cmd cmd)
 }
 static void exec_stage_cmd(struct wdt *wdt, enum stage_cmd scmd, unsigned stage)
 {
-    printf("WDT %s: stage %u: exec stage cmd: %u\r\n", wdt->name, stage, scmd);
+    DPRINTF("WDT %s: stage %u: exec stage cmd: %u\r\n", wdt->name, stage, scmd);
     ASSERT(stage < MAX_STAGES);
     ASSERT(scmd < NUM_SCMDS);
     exec_cmd(wdt, &stage_cmd_codes[stage][scmd]);
@@ -243,7 +245,7 @@ void wdt_disable(struct wdt *wdt)
 void wdt_kick(struct wdt *wdt)
 {
     ASSERT(wdt);
-    printf("WDT %s: kick\r\n", wdt->name);
+    DPRINTF("WDT %s: kick\r\n", wdt->name);
     // In Concept A variant, there is only a clear for stage 0.  In Concept B
     // variant, there's a clear for each stage, but it is suffient to clear the
     // first stage, because that action has to stop the timers for downstream

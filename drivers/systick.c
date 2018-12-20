@@ -1,6 +1,9 @@
+#define DEBUG 0
+
 #include "hwinfo.h"
 #include "regops.h"
 #include "printf.h"
+#include "panic.h"
 
 #include "systick.h"
 
@@ -23,6 +26,7 @@ static struct systick systick;
 
 void systick_config(uint32_t interval, systick_cb_t *cb, void *cb_arg)
 {
+    printf("SYSTICK: config: interval %u\r\n", interval);
     systick.cb = cb;
     systick.cb_arg = cb_arg;
     REGB_WRITE32(TRCH_SCS_BASE, REG__STRVR, interval);
@@ -32,6 +36,7 @@ void systick_config(uint32_t interval, systick_cb_t *cb, void *cb_arg)
 
 void systick_clear()
 {
+    printf("SYSTICK: clear\r\n");
     REGB_WRITE32(TRCH_SCS_BASE, REG__STCVR, 0);
 }
 
@@ -42,17 +47,19 @@ uint32_t systick_count()
 
 void systick_enable()
 {
+    printf("SYSTICK: enable\r\n");
     REGB_SET32(TRCH_SCS_BASE, REG__STCSR, REG__STCSR__ENABLE);
 }
 
 void systick_disable()
 {
+    printf("SYSTICK: disable\r\n");
     REGB_CLEAR32(TRCH_SCS_BASE, REG__STCSR, REG__STCSR__ENABLE);
 }
 
 void systick_isr()
 {
-    printf("SYSTICK: ISR\r\n");
+    DPRINTF("SYSTICK: ISR\r\n");
     if (systick.cb)
         systick.cb(systick.cb_arg);
 }

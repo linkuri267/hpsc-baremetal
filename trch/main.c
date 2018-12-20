@@ -1,3 +1,5 @@
+#define DEBUG 0
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -22,6 +24,7 @@
 #include "test.h"
 
 #define SYSTICK_INTERVAL 1000000 // @ ~1Mhz = 1sec
+#define MAIN_LOOP_SILENT_ITERS 16
 
 #define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
 
@@ -40,7 +43,7 @@ struct endpoint endpoints[] = {
 #if TEST_SYSTICK
 static void systick_tick(void *arg)
 {
-    printf("systick: tick\r\n");
+    DPRINTF("MAIN: sys tick\r\n");
 
 #if TEST_TRCH_WDT
     // Note: we kick here in the ISR instead of relying on the main loop
@@ -260,9 +263,11 @@ int main ( void )
     watchdog_trch_start();
 #endif // TEST_RTPS_WDT
 
-    unsigned iter = 0; // just to make output that changes to see it
+    unsigned iter = 0;
     while (1) {
-        printf("TRCH: main loop\r\n");
+        bool verbose = ++iter % MAIN_LOOP_SILENT_ITERS == 0;
+        if (verbose)
+            printf("TRCH: main loop\r\n");
 
 #if TEST_TRCH_WDT && !TEST_SYSTICK // with SysTick, we kick from ISR
         // Kicking from here is insufficient, because we sleep. There are two
@@ -285,7 +290,8 @@ int main ( void )
 
         boot_perform_reboots();
 
-        printf("[%u] Waiting for interrupt...\r\n", ++iter);
+        if (verbose)
+            printf("[%u] Waiting for interrupt...\r\n", iter);
         asm("wfi");
     }
 }

@@ -1,3 +1,5 @@
+#define DEBUG 0
+
 #include "printf.h"
 #include "panic.h"
 
@@ -29,7 +31,7 @@ void sleep_set_clock(unsigned f)
 void sleep_tick(unsigned delta_cycles)
 {
     time += delta_cycles;
-    printf("SLEEP: time += %u -> %u\r\n", delta_cycles, time);
+    DPRINTF("SLEEP: time += %u -> %u\r\n", delta_cycles, time);
 }
 void msleep(unsigned ms)
 {
@@ -38,18 +40,18 @@ void msleep(unsigned ms)
     unsigned c = ms * (clk / 1000); // msec to cycles
 
     unsigned wakeup = time + c; // % MAX_TIME implicitly
-    printf("time %u, wakeup %u\r\n", time, wakeup);
+    DPRINTF("time %u, wakeup %u\r\n", time, wakeup);
     int remaining = wakeup >= time ? wakeup - time : (MAX_TIME - time) + wakeup;
     unsigned last_tick = time;
     while (remaining > 0) {
-	printf("SLEEP: sleeping for %u cycles...\r\n", remaining);
+	DPRINTF("SLEEP: sleeping for %u cycles...\r\n", remaining);
         asm("wfi"); // TODO: change to WFE and add SEV to sleep_tick
 
 	unsigned elapsed = time >= last_tick ? time - last_tick : (MAX_TIME - last_tick) + time;
         last_tick = time;
         remaining -= elapsed;
     }
-    printf("SLEEP: awake\r\n");
+    DPRINTF("SLEEP: awake\r\n");
 }
 #endif // TEST_SLEEP_TIMER
 

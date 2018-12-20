@@ -1,6 +1,8 @@
-#include <stdint.h>
+#define DEBUG 0
 
+#include <stdint.h>
 #include "printf.h"
+#include "panic.h"
 
 #include "gtimer.h"
 
@@ -67,7 +69,7 @@ uint32_t gtimer_get_frq()
 {
     uint32_t frq;
     asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r" (frq));
-    printf("GTIMER: frq -> %u\r\n", frq);
+    DPRINTF("GTIMER: frq -> %u\r\n", frq);
     return frq;
 }
 
@@ -92,7 +94,7 @@ uint64_t gtimer_get_pct(enum gtimer timer)
             break;
     }
     uint64_t val = ((uint64_t)valhi << 32) | vallo;
-    printf("GTIMER %u: pct -> 0x%08x%08x\r\n", timer,
+    DPRINTF("GTIMER %u: pct -> 0x%08x%08x\r\n", timer,
            (uint32_t)(val>>32), (uint32_t)(val & 0xffffffff));
     return val;
 }
@@ -112,13 +114,13 @@ int32_t gtimer_get_tval(enum gtimer timer)
             asm volatile("mrc p15, 4, %0, c14, c2, 0" : "=r" (val));
             break;
     }
-    printf("GTIMER %u: tval -> %d (0x%x)\r\n", timer, val);
+    DPRINTF("GTIMER %u: tval -> %d (0x%x)\r\n", timer, val);
     return val;
 }
 
 void gtimer_set_tval(enum gtimer timer, int32_t val)
 {
-    printf("GTIMER %u: tval <- %d\r\n", timer, val);
+    DPRINTF("GTIMER %u: tval <- %d\r\n", timer, val);
     switch (timer) {
         case GTIMER_PHYS:
             asm volatile("mcr p15, 0, %0, c14, c2, 0" : : "r" (val));
@@ -148,7 +150,7 @@ uint64_t gtimer_get_cval(enum gtimer timer)
             break;
     }
     uint64_t val = ((uint64_t)valhi << 32) | vallo;
-    printf("GTIMER %u: cval -> %08x%08x\r\n", timer, valhi, vallo);
+    DPRINTF("GTIMER %u: cval -> %08x%08x\r\n", timer, valhi, vallo);
     return val;
 }
 
@@ -156,7 +158,7 @@ void gtimer_set_cval(enum gtimer timer, uint64_t val)
 {
     uint32_t valhi = val >> 32;
     uint32_t vallo = val & 0xffffffff;
-    printf("GTIMER %u: cval <- %08x%08x\r\n", timer, valhi, vallo);
+    DPRINTF("GTIMER %u: cval <- %08x%08x\r\n", timer, valhi, vallo);
     switch (timer) {
         case GTIMER_PHYS:
             asm volatile("mcrr p15, 2, %0, %1, c14" : : "r" (vallo), "r" (valhi));
@@ -189,7 +191,7 @@ void gtimer_stop(enum gtimer timer)
 void gtimer_isr(enum gtimer timer)
 {
     uint32_t ctrl = ctrl_read(timer);
-    printf("GTIMER %u: isr: ctlr %x\r\n", timer, ctrl);
+    DPRINTF("GTIMER %u: isr: ctlr %x\r\n", timer, ctrl);
 
     // shouldn't get the ISR, but this check exists in Linux
     if (!(ctrl & REG_CTRL__IT_STAT))
