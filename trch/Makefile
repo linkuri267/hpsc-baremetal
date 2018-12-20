@@ -106,7 +106,7 @@ OBJS = \
        main.o \
 
 
-ifeq ($(strip $(TEST_TRCH_DMA)),1)
+ifeq ($(strip $(TEST_TRCH_DMA_STANDALONE)),1)
 OBJS += test-dma.o
 endif
 ifeq ($(strip $(TEST_RT_MMU_STANDALONE)),1)
