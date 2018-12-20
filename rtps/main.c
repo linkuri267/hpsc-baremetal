@@ -12,6 +12,7 @@
 #include "gic.h"
 #include "gtimer.h"
 #include "watchdog.h"
+#include "sleep.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -51,6 +52,10 @@ static void sys_tick(void *arg)
 {
     int32_t tval = gtimer_get_tval(sys_timer); // negative value, time since last tick
     gtimer_set_tval(sys_timer, sys_timer_interval); // schedule the next tick
+
+#if TEST_SLEEP_TIMER
+    sleep_tick(sys_timer_interval + (-tval));
+#endif // TEST_SLEEP_TIMER
 }
 #endif // TEST_GTIMER
 
@@ -70,11 +75,16 @@ int main(void)
 #endif // TEST_GTIMER_STANDALONE
 
 #if TEST_GTIMER
-    sys_timer_interval = SYS_TICK_INTERVAL_MS * (gtimer_get_frq() / 1000);
+    uint32_t sys_timer_clk = gtimer_get_frq();
+    sys_timer_interval = SYS_TICK_INTERVAL_MS * (sys_timer_clk / 1000);
     gtimer_set_tval(sys_timer, sys_timer_interval);
     gtimer_subscribe(sys_timer, sys_tick, NULL);
     gic_int_enable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
     gtimer_start(sys_timer);
+
+#if TEST_SLEEP_TIMER
+    sleep_set_clock(sys_timer_clk);
+#endif // TEST_SLEEP_TIMER
 #endif // TEST_GTIMER
 
 #if TEST_WDT_STANDALONE
