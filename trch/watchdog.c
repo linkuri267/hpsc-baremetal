@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "wdt.h"
 #include "nvic.h"
@@ -13,6 +14,9 @@
 struct wdt *trch_wdt = NULL;
 struct wdt *rtps_wdts[RTPS_NUM_CORES] = {0};
 struct wdt *hpps_wdts[HPPS_NUM_CORES] = {0};
+
+// To allow watchdog_trch_kick method to be called anytime
+static bool trch_wdt_started = false;
 
 // TODO: launch both timers, when we have both cores running and kicking
 #undef RTPS_NUM_CORES
@@ -166,16 +170,19 @@ int watchdog_trch_start() {
     if (!trch_wdt)
 	return 1;
     wdt_enable(trch_wdt); // TRCH is the monitored target, so it enables
+    trch_wdt_started = true;
     return 0;
 }
 
 void watchdog_trch_stop() {
+    trch_wdt_started = false;
     destroy_wdt(trch_wdt, TRCH_IRQ__WDT_TRCH_ST1);
     trch_wdt = NULL;
 }
 
 void watchdog_trch_kick() {
-    wdt_kick(trch_wdt);
+    if (trch_wdt_started)
+        wdt_kick(trch_wdt);
 }
 
 int watchdog_rtps_init() {
