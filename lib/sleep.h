@@ -14,8 +14,4 @@ void sleep_tick(unsigned delta);
 #define msleep(t) mdelay(t)
 #endif // !TEST_SLEEP_TIMER
 
-// TODO: remove
-#define delay(iters) mdelay((iters) * 10000)
-#define sleep(s) msleep((s) * 1000)
-
 #endif // SLEEP_H
