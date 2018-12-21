@@ -100,7 +100,7 @@ int test_trch_wdt()
     for (unsigned i = 0; i < NUM_STAGES; ++i)
         total_timeout += timeouts[i];
     total_timeout = total_timeout / (WDT_FREQ_HZ / 1000); // cycles to ms
-    unsigned kick_interval = CHECK_INTERVAL_MS / 4;
+    unsigned kick_interval = INTERVAL_MS / 4;
     while (runtime < total_timeout) {
         msleep(kick_interval);
         if (!check_expiration(expired_stage, 0)) goto cleanup;
