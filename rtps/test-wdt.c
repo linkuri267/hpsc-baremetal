@@ -53,7 +53,7 @@ int test_wdt()
     unsigned interval = WDT_CYCLES_TO_MS(timeouts[0]);
     printf("TEST WDT: interval %u ms\r\n", interval);
 
-    msleep(interval);
+    msleep(interval + interval / 4);
     if (!check_expiration(expired_stage, 1)) goto cleanup;
     wdt_kick(wdt);
 
