@@ -10,6 +10,21 @@
 
 #include "watchdog.h"
 
+#define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // our choice
+
+// Units: ms
+
+#define TIMEOUT_TRCH_ST1    1000
+#define TIMEOUT_TRCH_ST2    1000
+
+#define TIMEOUT_RTPS_ST1    1000
+#define TIMEOUT_RTPS_ST2    1000
+
+#define TIMEOUT_HPPS_ST1    5000
+#define TIMEOUT_HPPS_ST2   30000
+
+#define MS_TO_WDT_CYCLES(ms) ((ms) * (WDT_FREQ_HZ / 1000))
+
 // Must be global for the standalone tests for WDTs in test-wdt.c
 struct wdt *trch_wdt = NULL;
 struct wdt *rtps_wdts[RTPS_NUM_CORES] = {0};
@@ -126,7 +141,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 }
 
 static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
-			      unsigned irq, uint64_t *timeouts, unsigned cpuid)
+			      unsigned irq, unsigned *timeouts, unsigned cpuid)
 {
     struct wdt *wdt = wdt_create_monitor(name, base,
 				         handle_timeout, (void *)cpuid);
@@ -142,7 +157,15 @@ static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
     if (enabled)
         wdt_disable(wdt);
 
-    int rc = wdt_configure(wdt, WDT_MIN_FREQ_HZ, NUM_STAGES, timeouts);
+    uint64_t timeouts_cycles[NUM_STAGES];
+    printf("WATCHDOG: create: timeouts ");
+    for (int i = 0; i < NUM_STAGES; ++i) {
+        timeouts_cycles[i] = MS_TO_WDT_CYCLES(timeouts[i]);
+        printf("%u ms (%u cyc) ", timeouts[i], timeouts_cycles[i]);
+    }
+    printf("\r\n");
+
+    int rc = wdt_configure(wdt, WDT_FREQ_HZ, NUM_STAGES, timeouts_cycles);
     if (rc) {
 	wdt_destroy(wdt);
 	return NULL;
@@ -164,7 +187,7 @@ static void destroy_wdt(struct wdt *wdt, unsigned irq)
 }
 
 int watchdog_trch_start() {
-    uint64_t timeouts[] = { 50000000, 100000000 }; // about 10 sec for ST1 in wall-clock in Qemu
+    unsigned timeouts[] = { TIMEOUT_TRCH_ST1, TIMEOUT_TRCH_ST2};
     trch_wdt = create_wdt("TRCH", WDT_TRCH_BASE, TRCH_IRQ__WDT_TRCH_ST1,
 		      timeouts, CPUID_TRCH);
     if (!trch_wdt)
@@ -187,7 +210,7 @@ void watchdog_trch_kick() {
 
 int watchdog_rtps_init() {
     int i;
-    uint64_t timeouts[] = { 4000000, 4000000 }; // about second for each
+    unsigned timeouts[] = { TIMEOUT_RTPS_ST1, TIMEOUT_RTPS_ST2 };
 
     static const char * const rtps_wdt_names[RTPS_NUM_CORES] = {
 	"RTPS0", /* "RTPS1" */ // TODO: when we have both cores
@@ -221,7 +244,7 @@ void watchdog_rtps_deinit() {
 
 int watchdog_hpps_init() {
     int i;
-    uint64_t timeouts[] = { 100000000, 200000000 };
+    unsigned timeouts[] = { TIMEOUT_HPPS_ST1, TIMEOUT_HPPS_ST2 };
 
     static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
 	"HPPS0", "HPPS1", "HPPS2", "HPPS3",
