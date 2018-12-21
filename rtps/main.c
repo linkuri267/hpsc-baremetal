@@ -194,11 +194,11 @@ void irq_handler(unsigned intid) {
                     gtimer_isr(GTIMER_VIRT);
                     break;
 #endif // TEST_GTIMER_STANDALONE || TEST_GTIMER
-#if TEST_WDT
+#if TEST_WDT_STANDALONE || TEST_WDT
             case PPI_IRQ__WDT:
                 wdt_isr(wdt, /* stage */ 0);
                 break;
-#endif // TEST_WDT
+#endif // TEST_WDT_STANDALONE || TEST_WDT
             default:
                 printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
         }
