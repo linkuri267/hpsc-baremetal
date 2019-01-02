@@ -285,8 +285,10 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
-        while (!cmd_dequeue(&cmd))
+        while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
+            verbose = true; // to end log with 'waiting' msg
+        }
 #endif // SERVER
 
         boot_perform_reboots();

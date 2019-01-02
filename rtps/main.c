@@ -186,8 +186,10 @@ int main(void)
 
 #if TEST_HPPS_RTPS_MAILBOX
         struct cmd cmd;
-        while (!cmd_dequeue(&cmd))
+        while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
+            verbose = true; // to end log with 'waiting' msg
+        }
 #endif // TEST_HPPS_RTPS_MAILBOX
 
         if (verbose)
