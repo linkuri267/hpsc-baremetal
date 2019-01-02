@@ -26,5 +26,6 @@ void cmd_handle(struct cmd *cmd);
 
 int cmd_enqueue(struct cmd *cmd);
 int cmd_dequeue(struct cmd *cmd);
+bool cmd_pending();
 
 #endif // COMMAND_H

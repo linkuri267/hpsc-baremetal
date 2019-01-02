@@ -56,6 +56,11 @@ int cmd_dequeue(struct cmd *cmd)
     return 0;
 }
 
+bool cmd_pending()
+{
+    return !(cmdq_head == cmdq_tail);
+}
+
 void cmd_handle(struct cmd *cmd)
 {
     uint32_t reply[REPLY_SIZE];
