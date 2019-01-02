@@ -19,5 +19,5 @@ for fname in files:
     for s in ef.iter_sections():
         if s.name in SECTIONS:
             # data_size not yet available in pyelftools 0.22
-            print("%10s: %4u KB" % (s.name, len(s.data()) / 1024))
+            print("%10s: %4.3f KB" % (s.name, len(s.data()) / 1024))
     print
