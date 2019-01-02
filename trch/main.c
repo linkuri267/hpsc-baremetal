@@ -228,14 +228,14 @@ int main ( void )
     printf("RTPS boot mode = %d\r\n", split_mode);
     switch (split_mode) {
         case RTPS_BOOT_SPLIT:
-            boot_request_reboot(SUBSYS_RTPS_SPLIT_0);
-            boot_request_reboot(SUBSYS_RTPS_SPLIT_1);
+            boot_request(SUBSYS_RTPS_SPLIT_0);
+            boot_request(SUBSYS_RTPS_SPLIT_1);
             break;
         case RTPS_BOOT_LOCKSTEP:
-            boot_request_reboot(SUBSYS_RTPS);
+            boot_request(SUBSYS_RTPS);
             break;
         case RTPS_BOOT_SMP:
-            boot_request_reboot(SUBSYS_RTPS_SMP);
+            boot_request(SUBSYS_RTPS_SMP);
             break;
         default:
             break;
@@ -243,7 +243,7 @@ int main ( void )
 #endif // TEST_BOOT_RTPS
 
 #if TEST_BOOT_HPPS
-    boot_request_reboot(SUBSYS_HPPS);
+    boot_request(SUBSYS_HPPS);
 #endif // TEST_BOOT_HPPS
 
 #if TEST_IPI
@@ -284,6 +284,12 @@ int main ( void )
 
         //printf("main\r\n");
 
+        subsys_t subsys;
+        while (!boot_handle(&subsys)) {
+            boot_reboot(subsys);
+            verbose = true; // to end log with 'waiting' msg
+        }
+
 #if SERVER
         struct cmd cmd;
         int_disable(); // check cmd queue and WFI must be atomic
@@ -295,8 +301,6 @@ int main ( void )
         }
         int_enable();
 #endif // SERVER
-
-        boot_perform_reboots();
 
         if (verbose)
             printf("[%u] Waiting for interrupt...\r\n", iter);

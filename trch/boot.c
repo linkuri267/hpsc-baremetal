@@ -70,35 +70,38 @@ int boot_config()
 }
 
 
-void boot_request_reboot(subsys_t subsys)
+void boot_request(subsys_t subsys)
 {
     printf("BOOT: accepted reboot request for subsystem %u\r\n", subsys);
     reboot_requests |= subsys; // coallesce requests
     // TODO: SEV (to prevent race between requests check and WFE in main loop)
 }
 
-int boot_perform_reboots()
+bool boot_pending()
+{
+    return !!reboot_requests;
+}
+
+int boot_handle(subsys_t *subsys)
+{
+    int b = 0;
+    while (b < NUM_SUBSYSS && !(reboot_requests & (1 << b)))
+        b++;
+    if (b == NUM_SUBSYSS)
+        return 1;
+    *subsys = (subsys_t)(1 << b);
+    return 0;
+}
+
+int boot_reboot(subsys_t subsys)
 {
     int rc = 0;
-    int reqs = 0;
-    while (reboot_requests) {
-        printf("BOOT: performing requested reboots...\r\n");
-        reqs++;
+    printf("BOOT: rebooting subsys %u...\r\n", subsys);
 
-        int b = 0;
-        while (b < NUM_SUBSYSS && !(reboot_requests & (1 << b)))
-            b++;
+    rc |= boot_load(subsys);
+    rc |= reset_release(subsys);
 
-        if (reboot_requests & (1 << b)) {
-            subsys_t comp = (subsys_t)(1 << b);
-
-            rc |= boot_load(comp);
-            rc |= reset_release(comp);
-
-            reboot_requests &= ~comp;
-        }
-   }
-   if (reqs)
-       printf("BOOT: completed %u boot requests: rc %u\r\n", reqs, rc);
+    reboot_requests &= ~subsys;
+    printf("BOOT: rebooted subsys %u: rc %u\r\n", subsys, rc);
    return rc;
 }

@@ -136,7 +136,7 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         // Enqueue the request for the main loop
         // Note: we cannot use the command queue because we want all ISRs
         // in a sequence to collectively generate one request (see above).
-        boot_request_reboot(subsys);
+        boot_request(subsys);
     }
 }
 

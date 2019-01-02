@@ -69,7 +69,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_RESET_HPPS:
             printf("RESET_HPPS ...\r\n");
-            boot_request_reboot(SUBSYS_HPPS);
+            boot_request(SUBSYS_HPPS);
             reply[0] = 0;
             return 1;
         case CMD_MBOX_LINK_CONNECT: {
