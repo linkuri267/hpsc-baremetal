@@ -292,18 +292,18 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
-        int_disable(); // check cmd queue and WFI must be atomic
         while (!cmd_dequeue(&cmd)) {
-            int_enable();
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
-            int_disable();
         }
-        int_enable();
 #endif // SERVER
 
-        if (verbose)
-            printf("[%u] Waiting for interrupt...\r\n", iter);
-        asm("wfi");
+        int_disable(); // the check and the WFI must be atomic
+        if (!cmd_pending() && !boot_pending()) {
+            if (verbose)
+                printf("[%u] Waiting for interrupt...\r\n", iter);
+            asm("wfi"); // ignores PRIMASK set by int_disable
+        }
+        int_enable();
     }
 }

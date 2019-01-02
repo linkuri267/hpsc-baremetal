@@ -15,6 +15,7 @@
 #include "gtimer.h"
 #include "watchdog.h"
 #include "sleep.h"
+#include "arm.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -192,9 +193,13 @@ int main(void)
         }
 #endif // TEST_HPPS_RTPS_MAILBOX
 
-        if (verbose)
-            printf("[%u] Waiting for interrupt...\r\n", iter);
-        asm("wfi");
+        int_disable(); // the check and the WFI must be atomic
+        if (!cmd_pending()) {
+            if (verbose)
+                printf("[%u] Waiting for interrupt...\r\n", iter);
+            asm("wfi"); // ignores PRIMASK set by int_disable
+        }
+        int_enable();
     }
     
     return 0;
