@@ -163,7 +163,7 @@ int main(void)
 
     unsigned iter = 0;
     while (1) {
-        bool verbose = ++iter % MAIN_LOOP_SILENT_ITERS == 0;
+        bool verbose = iter++ % MAIN_LOOP_SILENT_ITERS == 0;
         if (verbose)
             printf("RTPS: main loop\r\n");
 
