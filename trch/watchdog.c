@@ -21,7 +21,7 @@
 #define TIMEOUT_RTPS_ST2    1000
 
 #define TIMEOUT_HPPS_ST1    5000
-#define TIMEOUT_HPPS_ST2   30000
+#define TIMEOUT_HPPS_ST2   45000
 
 #define MS_TO_WDT_CYCLES(ms) ((ms) * (WDT_FREQ_HZ / 1000))
 
