@@ -21,6 +21,7 @@
 #include "smc.h"
 #include "systick.h"
 #include "sleep.h"
+#include "arm.h"
 #include "test.h"
 
 #define SYSTICK_INTERVAL_MS     500
@@ -285,10 +286,14 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
+        int_disable(); // check cmd queue and WFI must be atomic
         while (!cmd_dequeue(&cmd)) {
+            int_enable();
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
+            int_disable();
         }
+        int_enable();
 #endif // SERVER
 
         boot_perform_reboots();
