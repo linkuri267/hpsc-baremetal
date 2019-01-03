@@ -145,10 +145,12 @@ clean:
 	rm -rf $(BLDDIR) vectors.s isr.c
 
 isrs: irqmap genisr.py Makefile
-	./genisr.py -v $(INC_FLAGS) $(TEST_ARGS) --irqmap $< vectors.s isr.c
+	./genisr.py -v $(INC_FLAGS) $(TEST_ARGS) --irqmap $< vectors.s.gen isr.c.gen
 .INTERMEDIATE: isrs
-vectors.s: isrs
-isr.c: isrs
+vectors.s: vectors.s.gen isrs
+	cp $< $@
+isr.c: isr.c.gen isrs
+	cp $< $@
 
 $(BLDDIR)/%.o : %.s | dirs
 	$(ARM_NONE_EABI)-as $(AOPS) $< -o $@
