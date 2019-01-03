@@ -247,7 +247,7 @@ EL2_Reset_Handler:
 
         // Region 1 - Data: .data and .bss (assumed juxtaposed)
         LDR     r1, =__data_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c8, 4                   // write HPRBAR1
         LDR     r1, =__bss_end__
@@ -259,7 +259,7 @@ EL2_Reset_Handler:
 
         // Region 2 - Stack-Heap
         LDR     r1, =__stack_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c9, 0                   // write HPRBAR2
         LDR     r1, =__stack_end__
@@ -271,7 +271,7 @@ EL2_Reset_Handler:
 
         // Region 3 - HPPS DDR LOW
         LDR     r1, =__hpps_ddr_low_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c9, 4                   // write HPRBAR3
         LDR     r1, =__hpps_ddr_low_end__
@@ -283,7 +283,7 @@ EL2_Reset_Handler:
 
         // Region 4 - WINDOW
         LDR     r1, =__window_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c10, 0                   // write HPRBAR4
         LDR     r1, =__window_end__
@@ -295,7 +295,7 @@ EL2_Reset_Handler:
 
         // Region 7 - Peripherals
         LDR     r1, =__periph_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c11, 4                   // write HPRBAR7
         LDR     r1, =__periph_end__
@@ -319,7 +319,7 @@ EL2_Reset_Handler:
 
         // Region 9 - HPPS Mailbox
         LDR     r1, =__hpps_mbox_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c12, 4                   // write HPRBAR9
         LDR     r1, =__hpps_mbox_end__
@@ -570,15 +570,6 @@ Finished:
 // * Any address range not covered by an enabled region will abort
 // * The region at 0x0 over the Vector table is needed to support semihosting
 
-// Region 0: Code          Base = See scatter file  Limit = Based on usage   Normal  Non-shared  Read-only    Executable
-// Region 1: Data          Base = See scatter file  Limit = Based on usage   Normal  Non-shared  Full access  Not Executable
-// Region 2: Stack/Heap    Base = See scatter file  Limit = Based on usage   Normal  Non-shared  Full access  Not Executable
-// Region 3: Peripherals   Base = 0x9A000000        Limit = 0xAFFFFFC0       Device              Full access  Not Executable
-// Region 4: ATCM          Base = Configurable      Limit = Based on usage   Normal  Non-shared  Full access  Executable
-// Region 5: BTCM          Base = Configurable      Limit = Based on usage   Normal  Non-shared  Full access  Executable
-// Region 6: CTCM          Base = Configurable      Limit = Based on usage   Normal  Non-shared  Full access  Executable
-// DK: Region 7: Peripherals Base = 0x30000000      Limit = 0xFFFFFFFF	     Device              Full access  Executable
-
         LDR     r0, =64
         // Region 0 - Code
         LDR     r1, =__text_start__
@@ -594,7 +585,7 @@ Finished:
 
         // Region 1 - Data: .data and .bss (assumed juxtaposed)
         LDR     r1, =__data_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c8, 4                   // write PRBAR1
         LDR     r1, =__bss_end__
@@ -606,7 +597,7 @@ Finished:
 
         // Region 2 - Stack-Heap
         LDR     r1, =__stack_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c9, 0                   // write PRBAR2
         LDR     r1, =__stack_end__
@@ -618,7 +609,7 @@ Finished:
 
         // Region 3 - WINDOW from 32-bit address space to 40-bit (HPPS)
         LDR     r1, =__window_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c9, 4                   // write PRBAR3
         LDR     r1, =__window_end__
@@ -670,7 +661,7 @@ Finished:
 
         // Region 6 - HPPS DDR LOW
 	LDR	r1, =__hpps_ddr_low_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c11, 0                  // write PRBAR6
 	LDR	r1, =__hpps_ddr_low_end__
@@ -682,7 +673,7 @@ Finished:
 
         // Region 7 - Peripherals
         LDR     r1, =__periph_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c11, 4                   // write PRBAR7
         LDR     r1, =__periph_end__
@@ -706,7 +697,7 @@ Finished:
 
         // Region 9 - HPPS Mailbox
         LDR     r1, =__hpps_mbox_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c12, 4                   // write PRBAR9
         LDR     r1, =__hpps_mbox_end__
