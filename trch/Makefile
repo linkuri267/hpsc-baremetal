@@ -142,11 +142,13 @@ TARGET=trch
 .DEFAULT_GOAL := $(BLDDIR)/$(TARGET).bin
 
 clean:
-	rm -rf $(BLDDIR) vectors.s isr.c
+	rm -rf $(BLDDIR) vectors.s vectors.s.gen isr.c isr.c.gen
 
 isrs: irqmap genisr.py Makefile
 	./genisr.py -v $(INC_FLAGS) $(TEST_ARGS) --irqmap $< vectors.s.gen isr.c.gen
 .INTERMEDIATE: isrs
+vectors.s.gen: isrs
+isr.c.gen: isrs
 vectors.s: vectors.s.gen isrs
 	cp $< $@
 isr.c: isr.c.gen isrs
