@@ -226,17 +226,6 @@ int main ( void )
     boot_request(SUBSYS_HPPS);
 #endif // CONFIG_BOOT_HPPS
 
-#if TEST_IPI
-    printf("Testing IPI...\r\n");
-    // uint32_t * addr = (unsigned int *) 0xff310000; /* IPI_TRIG */
-    uint32_t val = (1 << 8); 	/* RPU0 */
-    * ((uint32_t *) 0xff300000)= val;
-    * ((uint32_t *) 0xff310000)= val;
-    * ((uint32_t *) 0xff320000)= val;
-    * ((uint32_t *) 0xff380000)= val;
-    printf("M4: after trigger interrupt to R52\r\n");
-#endif // TEST_IPI
-
 #if SERVER
     server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
 #endif // SERVER

@@ -2,7 +2,6 @@ include ../Makefile.common
 
 # List all possible test flags here
 CONFIG_FLAGS = \
-	TEST_IPI \
 	TEST_FLOAT \
 	TEST_SYSTICK \
 	TEST_TRCH_WDT \
@@ -25,7 +24,6 @@ CONFIG_FLAGS = \
 	CONFIG_BOOT_HPPS \
 
 # Enable/disable standalone tests here:
-TEST_IPI 			= 0
 TEST_FLOAT 			= 1
 TEST_SYSTICK			= 1
 TEST_TRCH_WDT 			= 1
