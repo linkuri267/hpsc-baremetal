@@ -52,17 +52,17 @@ void soft_reset (void)
 			     "mcr p15, 4, r1, c12, c0, 2\n"); 
 }
 
-#if TEST_GTIMER
+#if CONFIG_GTIMER
 static void sys_tick(void *arg)
 {
     int32_t tval = gtimer_get_tval(sys_timer); // negative value, time since last tick
     gtimer_set_tval(sys_timer, sys_timer_interval); // schedule the next tick
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
     sleep_tick(sys_timer_interval + (-tval));
-#endif // TEST_SLEEP_TIMER
+#endif // CONFIG_SLEEP_TIMER
 }
-#endif // TEST_GTIMER
+#endif // CONFIG_GTIMER
 
 int main(void)
 {
@@ -76,12 +76,12 @@ int main(void)
 
     sleep_set_busyloop_factor(100000); // empirically calibrarted
 
-#if TEST_GTIMER_STANDALONE
+#if TEST_GTIMER
     if (test_gtimer())
         panic("gtimer test");
-#endif // TEST_GTIMER_STANDALONE
+#endif // TEST_GTIMER
 
-#if TEST_GTIMER
+#if CONFIG_GTIMER
     uint32_t sys_timer_clk = gtimer_get_frq();
     sys_timer_interval = SYS_TICK_INTERVAL_MS * (sys_timer_clk / 1000);
     gtimer_set_tval(sys_timer, sys_timer_interval);
@@ -89,10 +89,10 @@ int main(void)
     gic_int_enable(PPI_IRQ__TIMER_PHYS, GIC_IRQ_TYPE_PPI, GIC_IRQ_CFG_LEVEL);
     gtimer_start(sys_timer);
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
     sleep_set_clock(sys_timer_clk);
-#endif // TEST_SLEEP_TIMER
-#endif // TEST_GTIMER
+#endif // CONFIG_SLEEP_TIMER
+#endif // CONFIG_GTIMER
 
 #if TEST_FLOAT
     if (test_float())
@@ -124,7 +124,7 @@ int main(void)
         panic("RTPS->TRCH mailbox");
 #endif // TEST_RTPS_TRCH_MAILBOX
 
-#if TEST_HPPS_RTPS_MAILBOX
+#if CONFIG_HPPS_RTPS_MAILBOX
 #define HPPS_RCV_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_RCV_INT
 #define HPPS_ACK_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_ACK_INT
     struct irq *hpps_rcv_irq =
@@ -143,7 +143,7 @@ int main(void)
     if (!hpps_link)
         panic("HPPS link");
     // Never release the link, because we listen on it in main loop
-#endif // TEST_HPPS_RTPS_MAILBOX
+#endif // CONFIG_HPPS_RTPS_MAILBOX
 
 #if TEST_SOFT_RESET
     printf("Resetting...\r\n");
@@ -152,15 +152,15 @@ int main(void)
     printf("ERROR: reached unrechable code: soft reset failed\r\n");
 #endif // TEST_SOFT_RESET
 
-#if TEST_WDT_STANDALONE
+#if TEST_WDT
     if (test_wdt())
         panic("wdt test");
     // NOTE: watchdog remains enabled after this test, not allowed to disable
-#endif // TEST_WDT_STANDALONE
-
-#if TEST_WDT
-    watchdog_init();
 #endif // TEST_WDT
+
+#if CONFIG_WDT
+    watchdog_init();
+#endif // CONFIG_WDT
 
     unsigned iter = 0;
     while (1) {
@@ -168,7 +168,7 @@ int main(void)
         if (verbose)
             printf("RTPS: main loop\r\n");
 
-#if TEST_WDT
+#if CONFIG_WDT
         // Kicking from here is insufficient, because we sleep. There are two
         // ways to complete:
         //     (A) have TRCH disable the watchdog in response to the WFI output
@@ -183,15 +183,15 @@ int main(void)
         // detected), and (C) has the disadvantage that if the main loop
         // performs long actions, those actions need to kick. We go with (C).
         watchdog_kick();
-#endif // TEST_WDT
+#endif // CONFIG_WDT
 
-#if TEST_HPPS_RTPS_MAILBOX
+#if CONFIG_HPPS_RTPS_MAILBOX
         struct cmd cmd;
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
         }
-#endif // TEST_HPPS_RTPS_MAILBOX
+#endif // CONFIG_HPPS_RTPS_MAILBOX
 
         int_disable(); // the check and the WFI must be atomic
         if (!cmd_pending()) {
@@ -216,7 +216,7 @@ void irq_handler(unsigned intid) {
     } else if (intid < GIC_INTERNAL) { // PPI
         unsigned ppi = intid - GIC_NR_SGIS;
         switch (ppi) {
-#if TEST_GTIMER_STANDALONE || TEST_GTIMER
+#if TEST_GTIMER || CONFIG_GTIMER
             case PPI_IRQ__TIMER_HYP:
                     gtimer_isr(GTIMER_HYP);
                     break;
@@ -226,12 +226,12 @@ void irq_handler(unsigned intid) {
             case PPI_IRQ__TIMER_VIRT:
                     gtimer_isr(GTIMER_VIRT);
                     break;
-#endif // TEST_GTIMER_STANDALONE || TEST_GTIMER
-#if TEST_WDT_STANDALONE || TEST_WDT
+#endif // TEST_GTIMER || CONFIG_GTIMER
+#if TEST_WDT || CONFIG_WDT
             case PPI_IRQ__WDT:
                 wdt_isr(wdt, /* stage */ 0);
                 break;
-#endif // TEST_WDT_STANDALONE || TEST_WDT
+#endif // TEST_WDT || CONFIG_WDT
             default:
                 printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
         }
@@ -241,14 +241,14 @@ void irq_handler(unsigned intid) {
         switch (irq) {
             // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
             // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
-#if TEST_HPPS_RTPS_MAILBOX
+#if CONFIG_HPPS_RTPS_MAILBOX
             case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
                     break;
             case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
                     break;
-#endif // TEST_HPPS_RTPS_MAILBOX
+#endif // CONFIG_HPPS_RTPS_MAILBOX
 #if TEST_RTPS_TRCH_MAILBOX
             case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);

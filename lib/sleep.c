@@ -9,10 +9,10 @@
 
 static volatile unsigned busyloop_factor = 0;
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
 static volatile unsigned time = 0; // cycles @ clk Hz
 static volatile unsigned clk = 0;
-#endif // TEST_SLEEP_TIMER
+#endif // CONFIG_SLEEP_TIMER
 
 void sleep_set_busyloop_factor(unsigned f)
 {
@@ -20,7 +20,7 @@ void sleep_set_busyloop_factor(unsigned f)
     busyloop_factor = f;
 }
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
 void sleep_set_clock(unsigned f)
 {
     printf("SLEEP: clock <- %u Hz\r\n", f);
@@ -53,7 +53,7 @@ void msleep(unsigned ms)
     }
     DPRINTF("SLEEP: awake\r\n");
 }
-#endif // TEST_SLEEP_TIMER
+#endif // CONFIG_SLEEP_TIMER
 
 void mdelay(unsigned ms)
 {

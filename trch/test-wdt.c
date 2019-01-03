@@ -59,7 +59,7 @@ static bool check_disabled(struct wdt *wdt)
     return true;
 }
 
-#if TEST_TRCH_WDT_STANDALONE
+#if TEST_TRCH_WDT
 int test_trch_wdt()
 {
     printf("TEST WDT: TRCH: interval %u ms\r\n", INTERVAL_MS);
@@ -154,9 +154,9 @@ cleanup:
     wdt_destroy(trch_wdt);
     return rc;
 }
-#endif // TEST_TRCH_WDT_STANDALONE
+#endif // TEST_TRCH_WDT
 
-#if TEST_RTPS_WDT_STANDALONE || TEST_HPPS_WDT_STANDALONE
+#if TEST_RTPS_WDT || TEST_HPPS_WDT
 int test_wdt(struct wdt **wdt_ptr, const char *name,
              volatile uint32_t *base, unsigned irq)
 {
@@ -204,9 +204,9 @@ cleanup:
     wdt_destroy(wdt);
     return rc;
 }
-#endif // TEST_RTPS_WDT_STANDALONE || TEST_HPPS_WDT_STANDALONE
+#endif // TEST_RTPS_WDT || TEST_HPPS_WDT
 
-#if TEST_RTPS_WDT_STANDALONE
+#if TEST_RTPS_WDT
 int test_rtps_wdt()
 {
      static const char * const rtps_wdt_names[HPPS_NUM_CORES] = {
@@ -222,9 +222,9 @@ int test_rtps_wdt()
      }
      return 0;
 }
-#endif // TEST_RTPS_WDT_STANDALONE
+#endif // TEST_RTPS_WDT
 
-#if TEST_HPPS_WDT_STANDALONE
+#if TEST_HPPS_WDT
 int test_hpps_wdt()
 {
      static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
@@ -241,4 +241,4 @@ int test_hpps_wdt()
      }
      return 0;
 }
-#endif // TEST_HPPS_WDT_STANDALONE
+#endif // TEST_HPPS_WDT

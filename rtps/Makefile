@@ -11,46 +11,48 @@
 
 include ../Makefile.common
 
-# List all possible test flags here
-TEST_FLAGS = \
+# List all possible test and config flags here
+CONFIG_FLAGS = \
 	TEST_FLOAT \
 	TEST_SORT \
 	TEST_GTIMER \
-	TEST_GTIMER_STANDALONE \
-	TEST_SLEEP_TIMER \
 	TEST_WDT \
-	TEST_WDT_STANDALONE \
 	TEST_RTPS_TRCH_MAILBOX \
-	TEST_HPPS_RTPS_MAILBOX \
 	TEST_RT_MMU \
 	TEST_RTPS_MMU \
 	TEST_RTPS_DMA \
 	TEST_RTPS_DMA_CB \
 	TEST_SOFT_RESET \
+	CONFIG_GTIMER \
+	CONFIG_SLEEP_TIMER \
+	CONFIG_WDT \
+	CONFIG_HPPS_RTPS_MAILBOX \
 
 # Enable disable tests here:
 TEST_FLOAT 			= 1
 TEST_SORT 			= 1
-TEST_GTIMER 			= 1
-TEST_GTIMER_STANDALONE		= 1
-TEST_SLEEP_TIMER 		= 1 # implement sleep() using a timer
-TEST_WDT 			= 1
-TEST_WDT_STANDALONE		= 1
+TEST_GTIMER			= 1
+TEST_WDT			= 1
 TEST_RTPS_TRCH_MAILBOX  	= 1
-TEST_HPPS_RTPS_MAILBOX  	= 1
-TEST_RT_MMU 			= 1
-TEST_RTPS_MMU 			= 1
 TEST_RTPS_DMA 			= 1
 TEST_RTPS_DMA_CB 		= 1
+TEST_RTPS_MMU 			= 1
+TEST_RT_MMU 			= 1
 TEST_SOFT_RESET 		= 0
 
-ifeq ($(strip $(TEST_SLEEP_TIMER)),1)
-ifneq ($(strip $(TEST_GTIMER)),1)
-$(error TEST_SLEEP_TIMER requires a timer to be enabled)
+# Set build configuration here
+CONFIG_GTIMER 			= 1
+CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
+CONFIG_WDT 			= 1
+CONFIG_HPPS_RTPS_MAILBOX  	= 1
+
+ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
+ifneq ($(strip $(CONFIG_GTIMER)),1)
+$(error CONFIG_SLEEP_TIMER requires a timer to be enabled)
 endif
 endif
 
-TEST_ARGS = $(foreach m,$(TEST_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 
 VPATH = ..
 
@@ -78,9 +80,15 @@ OBJS = \
 	lib/mailbox-link.o \
 	lib/balloc.o \
 	lib/command.o \
-	watchdog.o \
-	server.o \
 	main.o \
+
+ifeq ($(strip $(CONFIG_WDT)),1)
+OBJS += watchdog.o
+endif
+
+ifeq ($(strip $(CONFIG_HPPS_RTPS_MAILBOX)),1)
+OBJS += server.o
+endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)
 OBJS += test-float.o
@@ -88,10 +96,10 @@ endif
 ifeq ($(strip $(TEST_SORT)),1)
 OBJS += test-sort.o
 endif
-ifeq ($(strip $(TEST_GTIMER_STANDALONE)),1)
+ifeq ($(strip $(TEST_GTIMER)),1)
 OBJS += test-gtimer.o
 endif
-ifeq ($(strip $(TEST_WDT_STANDALONE)),1)
+ifeq ($(strip $(TEST_WDT)),1)
 OBJS += test-wdt.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
@@ -124,7 +132,7 @@ CCOPT = \
 	-DPRINTF_SUPPORT_LONG_LONG \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
-	$(TEST_ARGS) \
+	$(CONFIG_ARGS) \
 	$(foreach d,$(SUBDIRS),-I../$(d)) \
 
 # Enable use of TCM in assembler code with -DTCM

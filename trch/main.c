@@ -28,7 +28,7 @@
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
 #define MAIN_LOOP_SILENT_ITERS 16
 
-#define SERVER (TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX)
+#define SERVER (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
 
 #if SERVER
 typedef enum {
@@ -42,25 +42,25 @@ struct endpoint endpoints[] = {
 };
 #endif // SERVER
 
-#if TEST_SYSTICK
+#if CONFIG_SYSTICK
 static void systick_tick(void *arg)
 {
     DPRINTF("MAIN: sys tick\r\n");
 
-#if TEST_TRCH_WDT
+#if CONFIG_TRCH_WDT
     // Note: we kick here in the ISR instead of relying on the main loop
     // wakeing up from WFE as a result of ISR, because the main loop might not
     // be sleeping but might be performing a long operation, in which case it
     // might not get to the kick statement at the beginning of the main loop in
     // time.
     watchdog_trch_kick();
-#endif // TEST_TRCH_WDT
+#endif // CONFIG_TRCH_WDT
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
     sleep_tick(SYSTICK_INTERVAL_CYCLES);
-#endif // TEST_SLEEP_TIMER
+#endif // CONFIG_SLEEP_TIMER
 }
-#endif // TEST_SYSTICK
+#endif // CONFIG_SYSTICK
 
 int main ( void )
 {
@@ -74,75 +74,75 @@ int main ( void )
 
     sleep_set_busyloop_factor(800000); // empirically calibrarted
 
-#if TEST_SYSTICK_STANDALONE
+#if TEST_SYSTICK
     if (test_systick())
         panic("TRCH systick test");
-#endif // TEST_SYSTICK_STANDALONE
+#endif // TEST_SYSTICK
 
-#if TEST_SYSTICK
+#if CONFIG_SYSTICK
     systick_config(SYSTICK_INTERVAL_CYCLES, systick_tick, NULL);
     systick_enable();
 
-#if TEST_SLEEP_TIMER
+#if CONFIG_SLEEP_TIMER
     sleep_set_clock(SYSTICK_CLK_HZ);
-#endif // TEST_SLEEP_TIMER
-#endif // TEST_SYSTICK
+#endif // CONFIG_SLEEP_TIMER
+#endif // CONFIG_SYSTICK
 
-#if TEST_TRCH_WDT_STANDALONE
+#if TEST_TRCH_WDT
     if (test_trch_wdt())
         panic("TRCH WDT test");
-#endif // TEST_TRCH_WDT_STANDALONE
+#endif // TEST_TRCH_WDT
 
-#if TEST_RTPS_WDT_STANDALONE
+#if TEST_RTPS_WDT
     if (test_rtps_wdt())
         panic("RTPS WDT test");
-#endif // TEST_RTPS_WDT_STANDALONE
+#endif // TEST_RTPS_WDT
 
-#if TEST_HPPS_WDT_STANDALONE
+#if TEST_HPPS_WDT
     if (test_hpps_wdt())
         panic("HPPS WDT test");
-#endif // TEST_HPPS_WDT_STANDALONE
+#endif // TEST_HPPS_WDT
 
 #if TEST_FLOAT
     if (test_float())
         panic("float test");
 #endif // TEST_FLOAT
 
-#if TEST_TRCH_DMA_STANDALONE
+#if TEST_TRCH_DMA
     if (test_trch_dma())
         panic("TRCH DMA test");
-#endif // TEST_TRCH_DMA_STANDALONE
+#endif // TEST_TRCH_DMA
 
-#if TEST_TRCH_DMA
+#if CONFIG_TRCH_DMA
     struct dma *trch_dma = trch_dma_init();
     if (!trch_dma)
         panic("TRCH DMA");
     // never destroy, it is used by drivers
-#else // !TEST_TRCH_DMA
+#else // !CONFIG_TRCH_DMA
     struct dma *trch_dma = NULL;
-#endif // !TEST_TRCH_DMA
+#endif // !CONFIG_TRCH_DMA
 
     if (smc_init(trch_dma))
         panic("SMC init");
 
-#if TEST_RT_MMU
+#if CONFIG_RT_MMU
     if (rt_mmu_init())
         panic("RTPS/TRCH-HPPS MMU setup");
     // Never de-init since need some of the mappings while running. We could
     // remove mappings for loading the boot image binaries, but we don't
     // bother, since then would have to recreate them when reseting HPPS/RTPS.
-#endif // TEST_RT_MMU
+#endif // CONFIG_RT_MMU
 
-#if TEST_RT_MMU_STANDALONE
+#if TEST_RT_MMU
     if (test_rt_mmu())
         panic("RTPS/TRCH-HPPS MMU test");
-#endif // TEST_RT_MMU_STANDALONE
+#endif // TEST_RT_MMU
 
 #if SERVER
     struct endpoint *endpoint;
 #endif // SERVER
 
-#if TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX
+#if CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 #define HPPS_RCV_IRQ_IDX MBOX_HPPS_TRCH__TRCH_RCV_INT
 #define HPPS_ACK_IRQ_IDX MBOX_HPPS_TRCH__TRCH_ACK_INT
     struct irq *hpps_rcv_irq =
@@ -155,9 +155,9 @@ int main ( void )
      endpoint->rcv_int_idx = HPPS_RCV_IRQ_IDX;
      endpoint->ack_irq = hpps_ack_irq;
      endpoint->ack_int_idx = HPPS_ACK_IRQ_IDX;
-#endif // TEST_HPPS_TRCH_MAILBOX_SSW || TEST_HPPS_TRCH_MAILBOX
+#endif // CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 
-#if TEST_HPPS_TRCH_MAILBOX_SSW
+#if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct mbox_link *hpps_link_ssw = mbox_link_connect(MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
                     hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
@@ -170,7 +170,7 @@ int main ( void )
     // Never release the link, because we listen on it in main loop
 #endif
 
-#if TEST_HPPS_TRCH_MAILBOX
+#if CONFIG_HPPS_TRCH_MAILBOX
     struct mbox_link *hpps_link = mbox_link_connect( MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
                     hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
@@ -183,7 +183,7 @@ int main ( void )
     // Never release the link, because we listen on it in main loop
 #endif
 
-#if TEST_RTPS_TRCH_MAILBOX
+#if CONFIG_RTPS_TRCH_MAILBOX
 #define LSIO_RCV_IRQ_IDX MBOX_LSIO__TRCH_RCV_INT
 #define LSIO_ACK_IRQ_IDX MBOX_LSIO__TRCH_ACK_INT
      struct irq *lsio_rcv_irq = nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
@@ -205,26 +205,26 @@ int main ( void )
         panic("RTPS link");
 
     // Never disconnect the link, because we listen on it in main loop
-#endif // TEST_RTPS_TRCH_MAILBOX
+#endif // CONFIG_RTPS_TRCH_MAILBOX
 
-#if TEST_RTPS_WDT
+#if CONFIG_RTPS_WDT
     watchdog_rtps_init();
-#endif // TEST_RTPS_WDT
+#endif // CONFIG_RTPS_WDT
 
-#if TEST_HPPS_WDT
+#if CONFIG_HPPS_WDT
     watchdog_hpps_init();
-#endif // TEST_HPPS_WDT
+#endif // CONFIG_HPPS_WDT
 
     if (boot_config())
         panic("BOOT CFG");
 
-#if TEST_BOOT_RTPS
+#if CONFIG_BOOT_RTPS
     boot_request(SUBSYS_RTPS);
-#endif // TEST_BOOT_RTPS
+#endif // CONFIG_BOOT_RTPS
 
-#if TEST_BOOT_HPPS
+#if CONFIG_BOOT_HPPS
     boot_request(SUBSYS_HPPS);
-#endif // TEST_BOOT_HPPS
+#endif // CONFIG_BOOT_HPPS
 
 #if TEST_IPI
     printf("Testing IPI...\r\n");
@@ -241,9 +241,9 @@ int main ( void )
     server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
 #endif // SERVER
 
-#if TEST_TRCH_WDT
+#if CONFIG_TRCH_WDT
     watchdog_trch_start();
-#endif // TEST_RTPS_WDT
+#endif // CONFIG_RTPS_WDT
 
     unsigned iter = 0;
     while (1) {
@@ -251,7 +251,7 @@ int main ( void )
         if (verbose)
             printf("TRCH: main loop\r\n");
 
-#if TEST_TRCH_WDT && !TEST_SYSTICK // with SysTick, we kick from ISR
+#if CONFIG_TRCH_WDT && !CONFIG_SYSTICK // with SysTick, we kick from ISR
         // Kicking from here is insufficient, because we sleep. There are two
         // ways to complete: (A) have TRCH disable the watchdog in response to
         // the WFI output signal from the core, and/or (B) have a scheduler
@@ -260,7 +260,7 @@ int main ( void )
         // with (C): kick on return from WFI/WFI as a result of first stage
         // timeout IRQ.
         watchdog_trch_kick();
-#endif // TEST_TRCH_WDT && !TEST_SYSTICK
+#endif // CONFIG_TRCH_WDT && !CONFIG_SYSTICK
 
         //printf("main\r\n");
 
