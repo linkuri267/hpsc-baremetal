@@ -13,6 +13,18 @@ static size_t cmdq_head = 0;
 static size_t cmdq_tail = 0;
 static struct cmd cmdq[CMD_QUEUE_LEN];
 
+static cmd_handler_t *cmd_handler = NULL;
+
+void cmd_handler_register(cmd_handler_t cb)
+{
+    cmd_handler = cb;
+}
+
+void cmd_handler_unregister()
+{
+    cmd_handler = NULL;
+}
+
 int cmd_enqueue(struct cmd *cmd)
 {
     size_t i;
@@ -68,7 +80,12 @@ void cmd_handle(struct cmd *cmd)
 
     printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[1]);
 
-    reply_len = server_process(cmd, &reply[0], REPLY_SIZE - 1); // 1 word for header
+    if (!cmd_handler) {
+        printf("CMD: no handler registered\r\n");
+        return;
+    }
+
+    reply_len = cmd_handler(cmd, &reply[0], REPLY_SIZE - 1); // 1 word for header
 
     if (reply_len < 0) {
         printf("ERROR: failed to process request: server error\r\n");

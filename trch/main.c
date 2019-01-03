@@ -228,6 +228,7 @@ int main ( void )
 
 #if SERVER
     server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
+    cmd_handler_register(server_process);
 #endif // SERVER
 
 #if CONFIG_TRCH_WDT

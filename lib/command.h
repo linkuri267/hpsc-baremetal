@@ -2,6 +2,7 @@
 #define COMMAND_H
 
 #include <stdbool.h>
+#include <unistd.h>
 #include "mailbox.h"
 
 #define CMD_MSG_LEN 16
@@ -21,6 +22,11 @@ struct cmd {
     struct mbox *reply_mbox;
     volatile bool *reply_acked;
 };
+
+typedef int (cmd_handler_t)(struct cmd *cmd, uint32_t *reply, size_t reply_size);
+
+void cmd_handler_register(cmd_handler_t *cb);
+void cmd_handler_unregister();
 
 void cmd_handle(struct cmd *cmd);
 
