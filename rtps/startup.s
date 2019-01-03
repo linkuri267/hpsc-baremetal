@@ -329,6 +329,18 @@ EL2_Reset_Handler:
         ORR     r1, r1, r2
         MCR     p15, 4, r1, c6, c12, 5                   // write HPRLAR9
 
+        // Region 10 - HSIO
+        LDR     r1, =__hsio_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c13, 0                   // write HPRBAR10
+        LDR     r1, =__hsio_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 4, r1, c6, c13, 1                   // write HPRLAR10
+
         LDR r0, =0x30C5180d             // DK's test. Enable EL2 MPU. 
         MCR p15, 4, r0, c1, c0, 0       // Write to HSCTLR
 
@@ -706,6 +718,18 @@ Finished:
         LDR     r2, =((AttrIndx0<<1) | (ENable))
         ORR     r1, r1, r2
         MCR     p15, 0, r1, c6, c12, 5                   // write PRLAR9
+
+        // Region 10 - HSIO
+        LDR     r1, =__hsio_start__
+        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c13, 0                   // write PRBAR10
+        LDR     r1, =__hsio_end__
+        ADD     r1, r1, #63
+        BFC     r1, #0, #6                              // align Limit to 64bytes
+        LDR     r2, =((AttrIndx0<<1) | (ENable))
+        ORR     r1, r1, r2
+        MCR     p15, 0, r1, c6, c13, 1                   // write PRLAR10
 
     // MAIR0 configuration
         MRC p15, 0, r0, c10, c2, 0      // Read MAIR0 into r0
