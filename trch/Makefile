@@ -119,7 +119,7 @@ endif
 ifeq ($(strip $(CONFIG_RT_MMU)),1)
 OBJS += mmus.o
 endif
-ifeq ($(strip $(CONFIG_TRCH_DMA)),1)
+ifeq ($(call cfg-or,$(CONFIG_TRCH_DMA) $(TEST_TRCH_DMA)),1)
 OBJS += dmas.o
 endif
 ifeq ($(call cfg-or,\

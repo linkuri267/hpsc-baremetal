@@ -5,7 +5,8 @@
 
 #include "dmas.h"
 
-static struct dma *trch_dma;
+// Global because standalone test also needs to set it, but ISR is here
+struct dma *trch_dma;
 
 static uint8_t trch_dma_mcode[256]; // store in TRCH SRAM
 
@@ -28,3 +29,12 @@ void trch_dma_deinit()
 
     dma_destroy(trch_dma);
 }
+
+#define DMA_EV_ISR(dma, ev) \
+	void dma_ ## dma ## _event_ ## ev ## _isr() { dma_event_isr(dma, ev); }
+
+void dma_trch_dma_abort_isr() {
+    dma_abort_isr(trch_dma);
+}
+
+DMA_EV_ISR(trch_dma, 0);
