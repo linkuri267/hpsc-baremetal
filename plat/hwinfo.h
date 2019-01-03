@@ -39,6 +39,11 @@
 #define WDT_HPPS_RTPS_BASE      ((volatile uint32_t *)0xfff70000)
 #define WDT_HPPS_SIZE           0x10000
 
+#define APU       ((volatile uint8_t *)0xfd5c0000)
+#define CRF       ((volatile uint8_t *)0xfd1a0000)
+#define CRL       ((volatile uint8_t *)0xff5e0000)
+#define RPU_CTRL  ((volatile uint8_t *)0xff9a0000)
+
 #define SMC_SRAM_BASE           0x28000000
 #define SMC_SRAM_SIZE            0x8000000
 

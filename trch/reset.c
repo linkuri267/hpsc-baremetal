@@ -1,17 +1,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "hwinfo.h"
 #include "printf.h"
 #include "regops.h"
 #include "subsys.h"
 #include "sleep.h"
 
 #include "reset.h"
-
-#define APU       ((volatile uint8_t *)0xfd5c0000)
-#define CRF       ((volatile uint8_t *)0xfd1a0000)
-#define CRL       ((volatile uint8_t *)0xff5e0000)
-#define RPU_CTRL  ((volatile uint8_t *)0xff9a0000)
 
 #define APU__PWRCTL 0x90
 #define APU__PWRCTL__CPUxPWRDWNREQ 0xff
