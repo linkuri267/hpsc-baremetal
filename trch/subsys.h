@@ -1,6 +1,7 @@
 #ifndef SUBSYS_H
 #define SUBSYS_H
 
+// Note: when changing, remember to change name array in subsys.c
 typedef enum { // bitmask
     SUBSYS_INVALID = 0,
     SUBSYS_RTPS    = 0x1,
@@ -31,5 +32,7 @@ typedef enum { // bitmask
 #define COMP_CPUS_HPPS \
         (COMP_CPU_HPPS_0 | COMP_CPU_HPPS_1 |  COMP_CPU_HPPS_2 | COMP_CPU_HPPS_3 | \
          COMP_CPU_HPPS_4 | COMP_CPU_HPPS_5 |  COMP_CPU_HPPS_6 | COMP_CPU_HPPS_7)
+
+const char *subsys_name(subsys_t subsys);
 
 #endif // SUBSYS_H

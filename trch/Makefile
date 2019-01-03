@@ -99,6 +99,7 @@ OBJS = \
        drivers/wdt.o \
        drivers/smc.o \
        drivers/systick.o \
+       subsys.o \
        watchdog.o \
        reset.o \
        boot.o \

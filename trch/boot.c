@@ -130,7 +130,8 @@ int boot_config()
 
 void boot_request(subsys_t subsys)
 {
-    printf("BOOT: accepted reboot request for subsystem %u\r\n", subsys);
+    printf("BOOT: accepted reboot request for subsystems %s\r\n",
+           subsys_name(subsys));
     reboot_requests |= subsys; // coallesce requests
     // TODO: SEV (to prevent race between requests check and WFE in main loop)
 }
@@ -154,12 +155,12 @@ int boot_handle(subsys_t *subsys)
 int boot_reboot(subsys_t subsys)
 {
     int rc = 0;
-    printf("BOOT: rebooting subsys %u...\r\n", subsys);
+    printf("BOOT: rebooting subsys %s...\r\n", subsys_name(subsys));
 
     rc |= boot_load(subsys);
     rc |= boot_reset(subsys);
 
     reboot_requests &= ~subsys;
-    printf("BOOT: rebooted subsys %u: rc %u\r\n", subsys, rc);
+    printf("BOOT: rebooted subsys %s: rc %u\r\n", subsys_name(subsys), rc);
    return rc;
 }
