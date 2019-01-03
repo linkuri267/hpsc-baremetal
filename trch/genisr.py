@@ -214,10 +214,10 @@ systick:
     bl systick_isr
 
     /* Clear Pending flag */
-    ldrh r0, icsr_addr
+    ldr r0, icsr_addr
     mov r1, #1
     lsl r1, #25 /* PENDSTCLR */
-    strh r1, [r0]
+    str r1, [r0]
 
     pop {r0, r1, pc}
 
@@ -268,16 +268,16 @@ isr%u:
     push {r0, r1, lr}
 
     mov r1, #%u
-    ldrh r0, isr%u_fmt_str_addr
+    ldr r0, isr%u_fmt_str_addr
     bl printf
 
     bl %s
 
     /* Clear Pending flag */
-    ldrh r0, isr%u_icpr_addr
+    ldr r0, isr%u_icpr_addr
     mov r1, #1
     lsl r1, #%u
-    strh r1, [r0]
+    str r1, [r0]
 
     pop {r0, r1, pc}
 
