@@ -21,6 +21,25 @@ struct config {
 
 static struct config cfg;
 
+static const char *boot_mode_name(unsigned m)
+{
+    switch (m) {
+        case CFG__BOOT_MODE__SRAM: return "SRAM";
+        case CFG__BOOT_MODE__DRAM: return "DRAM";
+        default:                   return "?";
+    };
+}
+
+static const char *rtps_mode_name(unsigned m)
+{
+    switch (m) {
+        case CFG__RTPS_MODE__SPLIT:    return "SPLIT";
+        case CFG__RTPS_MODE__LOCKSTEP: return "LOCKSTEP";
+        case CFG__RTPS_MODE__SMP:      return "SMP";
+        default:                       return "?";
+    };
+}
+
 static int boot_load(subsys_t subsys)
 {
     if (cfg.boot_mode == CFG__BOOT_MODE__DRAM) {
@@ -35,11 +54,21 @@ static int boot_load(subsys_t subsys)
 
     switch (subsys) {
         case SUBSYS_RTPS:
-            printf("BOOT: load RTPS\r\n");
-            if (smc_sram_load("rtps-bl"))
-                return 1;
-            if (smc_sram_load("rtps-os"))
-                return 1;
+            printf("BOOT: load RTPS mode %s\r\n", rtps_mode_name(cfg.rtps_mode));
+            switch (cfg.rtps_mode) {
+                case CFG__RTPS_MODE__SPLIT: // TODO
+                    printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
+                    break;
+                case CFG__RTPS_MODE__LOCKSTEP:
+                    if (smc_sram_load("rtps-bl"))
+                        return 1;
+                    if (smc_sram_load("rtps-os"))
+                        return 1;
+                    break;
+                case CFG__RTPS_MODE__SMP: // TODO
+                    printf("TODO: NOT IMPLEMENTED: loading for SMP mode");
+                    break;
+            }
             break;
         case SUBSYS_HPPS:
             printf("BOOT: load HPPS\r\n");
@@ -59,13 +88,42 @@ static int boot_load(subsys_t subsys)
     return 0;
 }
 
+static int boot_reset(subsys_t subsys)
+{
+    int rc = 0;
+    switch (subsys) {
+        case SUBSYS_RTPS:
+            switch (cfg.rtps_mode) {
+                case CFG__RTPS_MODE__SPLIT:
+                    rc |= reset_release(COMP_CPUS_RTPS);
+                    break;
+                case CFG__RTPS_MODE__LOCKSTEP:
+                case CFG__RTPS_MODE__SMP:
+                    rc = reset_release(COMP_CPU_RTPS_0);
+                    break;
+                default:
+                    printf("BOOT: ERROR: unknown RTPS boot mode: %s\r\n",
+                           rtps_mode_name(cfg.rtps_mode));
+                    return 1;
+            }
+            break;
+        case SUBSYS_HPPS:
+            rc = reset_release(COMP_CPU_HPPS_0);
+            break;
+        case SUBSYS_INVALID:
+            printf("BOOT: ERROR: invalid subsystem\r\n");
+            rc = 1;
+    }
+    return rc;
+}
+
 int boot_config()
 {
     cfg.boot_mode = *(uint32_t *)TRCH_BOOT_CFG__BOOT_MODE;
     cfg.rtps_mode = *(uint32_t *)TRCH_BOOT_CFG__RTPS_MODE;
 
-    printf("BOOT: cfg: boot mode %u rtps mode %u\r\n",
-           cfg.boot_mode, cfg.rtps_mode);
+    printf("BOOT: cfg: boot mode %s rtps mode %s\r\n",
+           boot_mode_name(cfg.boot_mode), rtps_mode_name(cfg.rtps_mode));
     return 0;
 }
 
@@ -99,7 +157,7 @@ int boot_reboot(subsys_t subsys)
     printf("BOOT: rebooting subsys %u...\r\n", subsys);
 
     rc |= boot_load(subsys);
-    rc |= reset_release(subsys);
+    rc |= boot_reset(subsys);
 
     reboot_requests &= ~subsys;
     printf("BOOT: rebooted subsys %u: rc %u\r\n", subsys, rc);

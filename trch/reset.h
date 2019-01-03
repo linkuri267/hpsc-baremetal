@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "subsys.h"
 
-int reset_assert(subsys_t subsys);
-int reset_release(subsys_t subsys);
+int reset_assert(comp_t comps);
+int reset_release(comp_t comps);
 
 #endif // RESET_H

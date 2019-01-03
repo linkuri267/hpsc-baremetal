@@ -219,27 +219,7 @@ int main ( void )
         panic("BOOT CFG");
 
 #if TEST_BOOT_RTPS
-#define RTPS_BOOT_MODE_ADDR 0xff004
-#define RTPS_BOOT_SPLIT 0x00000000
-#define RTPS_BOOT_LOCKSTEP 0x00000001
-#define RTPS_BOOT_SMP 0x00000002
-
-    uint32_t split_mode = *((uint32_t *) RTPS_BOOT_MODE_ADDR);
-    printf("RTPS boot mode = %d\r\n", split_mode);
-    switch (split_mode) {
-        case RTPS_BOOT_SPLIT:
-            boot_request(SUBSYS_RTPS_SPLIT_0);
-            boot_request(SUBSYS_RTPS_SPLIT_1);
-            break;
-        case RTPS_BOOT_LOCKSTEP:
-            boot_request(SUBSYS_RTPS);
-            break;
-        case RTPS_BOOT_SMP:
-            boot_request(SUBSYS_RTPS_SMP);
-            break;
-        default:
-            break;
-    }
+    boot_request(SUBSYS_RTPS);
 #endif // TEST_BOOT_RTPS
 
 #if TEST_BOOT_HPPS
