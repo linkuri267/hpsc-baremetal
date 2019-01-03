@@ -67,7 +67,7 @@ CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
 AOPS = --warn --fatal-warnings $(CPU_FLAGS) $(FLOAT_FLAG)
-INC_FLAGS = $(foreach d,$(SUBDIRS),-I../$(d)) \
+INC_FLAGS = -I. -Itests $(foreach d,$(SUBDIRS),-I../$(d)) \
 
 COPS = \
 	-Wall -Werror \
@@ -130,19 +130,19 @@ OBJS += mailbox-isr.o server.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)
-OBJS += test-float.o
+OBJS += tests/float.o
 endif
 ifeq ($(strip $(TEST_SYSTICK)),1)
-OBJS += test-systick.o
+OBJS += tests/systick.o
 endif
 ifeq ($(strip $(TEST_TRCH_DMA)),1)
-OBJS += test-dma.o
+OBJS += tests/dma.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
-OBJS += test-mmu.o
+OBJS += tests/mmu.o
 endif
 ifeq ($(call cfg-or,$(TEST_TRCH_WDT) $(TEST_RTPS_WDT) $(TEST_HPPS_WDT)),1)
-OBJS += test-wdt.o
+OBJS += tests/wdt.o
 endif
 
 TARGET=trch

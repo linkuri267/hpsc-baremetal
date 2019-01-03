@@ -91,28 +91,28 @@ OBJS += server.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)
-OBJS += test-float.o
+OBJS += tests/float.o
 endif
 ifeq ($(strip $(TEST_SORT)),1)
-OBJS += test-sort.o
+OBJS += tests/sort.o
 endif
 ifeq ($(strip $(TEST_GTIMER)),1)
-OBJS += test-gtimer.o
+OBJS += tests/gtimer.o
 endif
 ifeq ($(strip $(TEST_WDT)),1)
-OBJS += test-wdt.o
+OBJS += tests/wdt.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
-OBJS += test-rt-mmu.o
+OBJS += tests/rt-mmu.o
 endif
 ifeq ($(strip $(TEST_RTPS_MMU)),1)
-OBJS += test-rtps-mmu.o
+OBJS += tests/rtps-mmu.o
 endif
 ifeq ($(strip $(TEST_RTPS_TRCH_MAILBOX)),1)
-OBJS += test-mailbox.o
+OBJS += tests/mailbox.o
 endif
 ifeq ($(strip $(TEST_RTPS_DMA)),1)
-OBJS += test-dma.o
+OBJS += tests/dma.o
 endif
 
 TARGET=rtps
@@ -133,7 +133,7 @@ CCOPT = \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
 	$(CONFIG_ARGS) \
-	$(foreach d,$(SUBDIRS),-I../$(d)) \
+	-I. -Itests $(foreach d,$(SUBDIRS),-I../$(d)) \
 
 # Enable use of TCM in assembler code with -DTCM
 
