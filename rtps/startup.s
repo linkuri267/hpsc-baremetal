@@ -50,6 +50,11 @@
 #define Outer_Shareable 0x10
 #define Inner_Shareable 0b11
 
+#define ATTR_Non_Shareable (Non_Shareable << 3)
+#define ATTR_RO_Access     (RO_Access     << 1)
+#define ATTR_RW_Access     (RW_Access     << 1)
+#define ATTR_Execute_Never (Execute_Never << 0)
+
 // Protection Limit Address Register
 #define ENable 0b1                // Bit 0
 #define AttrIndx0 0b000           // AttrIndx[2:0]
@@ -233,113 +238,24 @@ EL2_Reset_Handler:
 
 	/* DK's test for EL2 MPU */
 
-        // Region 0 - Code
-        LDR     r1, =__text_start__
-        LDR     r2, =((Non_Shareable<<3) | (RO_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c8, 0                   // write HPRBAR0
-        LDR     r1, =__text_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c8, 1                   // write HPRLAR0
+        MPU_REGION(__text_start__, __text_end__,        4, c8, 0, 1, ATTR_Non_Shareable | ATTR_RO_Access)
+        MPU_REGION(__data_start__, __bss_end__,         4, c8, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never) // .data and .bss (assumed juxtaposed)
+        MPU_REGION(__stack_start__, __stack_end__,      4, c9, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__window_start__, __window_end__,    4, c9, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
-        // Region 1 - Data: .data and .bss (assumed juxtaposed)
-        LDR     r1, =__data_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c8, 4                   // write HPRBAR1
-        LDR     r1, =__bss_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c8, 5                   // write HPRLAR1
+#ifdef TCM
+        MPU_REGION(__tcm_a_start__, __tcm_a_end__,      4, c10, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
+        MPU_REGION(__tcm_b_start__, __tcm_b_end__,      4, c10, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access)
+#if 0 // Disabling CTCM because not in device tree
+        MPU_REGION(__tcm_c_start__, __tcm_c_end__,      4, ?, ?, ?, ATTR_Non_Shareable | ATTR_RW_Access)
+#endif // CTCM
+#endif // TCM
 
-        // Region 2 - Stack-Heap
-        LDR     r1, =__stack_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c9, 0                   // write HPRBAR2
-        LDR     r1, =__stack_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c9, 1                   // write HPRLAR2
-
-        // Region 3 - HPPS DDR LOW
-        LDR     r1, =__hpps_ddr_low_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c9, 4                   // write HPRBAR3
-        LDR     r1, =__hpps_ddr_low_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c9, 5                   // write HPRLAR3
-
-        // Region 4 - WINDOW
-        LDR     r1, =__window_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c10, 0                   // write HPRBAR4
-        LDR     r1, =__window_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c10, 1                   // write HPRLAR4
-
-        // Region 7 - Peripherals
-        LDR     r1, =__periph_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c11, 4                   // write HPRBAR7
-        LDR     r1, =__periph_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c11, 5                   // write HPRLAR7
-
-        // Region 8 - RTPS DDR LOW 0 (first of two halves)
-        LDR     r1, =__rtps_ddr_low_0_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c12, 0                   // write HPRBAR8
-        LDR     r1, =__rtps_ddr_low_0_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c12, 1                   // write HPRLAR8
-
-        // Region 9 - HPPS Mailbox
-        LDR     r1, =__hpps_mbox_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c12, 4                   // write HPRBAR9
-        LDR     r1, =__hpps_mbox_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c12, 5                   // write HPRLAR9
-
-        // Region 10 - HSIO
-        LDR     r1, =__hsio_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c13, 0                   // write HPRBAR10
-        LDR     r1, =__hsio_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 4, r1, c6, c13, 1                   // write HPRLAR10
+        MPU_REGION(__hpps_ddr_low_start__, __hpps_ddr_low_end__,     4, c11, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__periph_start__, __periph_end__,                 4, c11, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__rtps_ddr_low_0_start__, __rtps_ddr_low_0_end__, 4, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
+        MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           4, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__hsio_start__, __hsio_end__,                     4, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
         LDR r0, =0x30C5180d             // DK's test. Enable EL2 MPU. 
         MCR p15, 4, r0, c1, c0, 0       // Write to HSCTLR
@@ -583,153 +499,38 @@ Finished:
 // * The region at 0x0 over the Vector table is needed to support semihosting
 
         LDR     r0, =64
-        // Region 0 - Code
-        LDR     r1, =__text_start__
-        LDR     r2, =((Non_Shareable<<3) | (RO_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c8, 0                   // write PRBAR0
-        LDR     r1, =__text_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c8, 1                   // write PRLAR0
 
-        // Region 1 - Data: .data and .bss (assumed juxtaposed)
-        LDR     r1, =__data_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c8, 4                   // write PRBAR1
-        LDR     r1, =__bss_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c8, 5                   // write PRLAR1
+// Write PRBARx, PRLARx, align limit to 64 bytes
+#define MPU_REGION(_start, _end, _op1, _CRm, _op2_b, _op2_l, _attrs) \
+        LDR     r1, =_start; \
+        LDR     r2, =(_attrs); \
+        ORR     r1, r1, r2; \
+        MCR     p15, _op1, r1, c6, _CRm, _op2_b; \
+        LDR     r1, =_end; \
+        ADD     r1, r1, #63; \
+        BFC     r1, #0, #6; \
+        LDR     r2, =((AttrIndx0<<1) | (ENable)); \
+        ORR     r1, r1, r2; \
+        MCR     p15, _op1, r1, c6, _CRm, _op2_l; \
 
-        // Region 2 - Stack-Heap
-        LDR     r1, =__stack_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c9, 0                   // write PRBAR2
-        LDR     r1, =__stack_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c9, 1                   // write PRLAR2
-
-        // Region 3 - WINDOW from 32-bit address space to 40-bit (HPPS)
-        LDR     r1, =__window_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c9, 4                   // write PRBAR3
-        LDR     r1, =__window_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c9, 5                   // write PRLAR3
+        MPU_REGION(__text_start__, __text_end__,        0, c8, 0, 1, ATTR_Non_Shareable | ATTR_RO_Access)
+        MPU_REGION(__data_start__, __bss_end__,         0, c8, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never) // .data and .bss (assumed juxtaposed)
+        MPU_REGION(__stack_start__, __stack_end__,      0, c9, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__window_start__, __window_end__,    0, c9, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
 #ifdef TCM
-        // Region 4 - ATCM
-	LDR	r1, =__tcm_a_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c10, 0                  // write PRBAR4
-	LDR	r1, =__tcm_a_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx1<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c10, 1                  // write PRLAR4
-
-        // Region 5 - BTCM
-	LDR	r1, =__tcm_b_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c10, 4                  // write PRBAR5
-	LDR	r1, =__tcm_b_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c10, 5                  // write PRLAR5
-
+        MPU_REGION(__tcm_a_start__, __tcm_a_end__,      0, c10, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
+        MPU_REGION(__tcm_b_start__, __tcm_b_end__,      0, c10, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access)
 #if 0 // Disabling CTCM because not in device tree
-        // Region ? - CTCM
-	LDR	r1, =__tcm_c_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, ?, ?                  // write PRBAR?
-	LDR	r1, =__tcm_c_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, ?, ?                  // write PRLAR?
+        MPU_REGION(__tcm_c_start__, __tcm_c_end__,      0, ?, ?, ?, ATTR_Non_Shareable | ATTR_RW_Access)
 #endif // CTCM
 #endif // TCM
 
-        // Region 6 - HPPS DDR LOW
-	LDR	r1, =__hpps_ddr_low_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 0                  // write PRBAR6
-	LDR	r1, =__hpps_ddr_low_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 1                  // write PRLAR6
-
-        // Region 7 - Peripherals
-        LDR     r1, =__periph_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 4                   // write PRBAR7
-        LDR     r1, =__periph_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c11, 5                   // write PRLAR7
-
-        // Region 8 - RTPS DDR LOW (first of 2 halves)
-        LDR     r1, =__rtps_ddr_low_0_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c12, 0                   // write PRBAR8
-        LDR     r1, =__rtps_ddr_low_0_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c12, 1                   // write PRLAR8
-
-        // Region 9 - HPPS Mailbox
-        LDR     r1, =__hpps_mbox_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c12, 4                   // write PRBAR9
-        LDR     r1, =__hpps_mbox_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c12, 5                   // write PRLAR9
-
-        // Region 10 - HSIO
-        LDR     r1, =__hsio_start__
-        LDR     r2, =((Non_Shareable<<3) | (RW_Access<<1) | Execute_Never)
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c13, 0                   // write PRBAR10
-        LDR     r1, =__hsio_end__
-        ADD     r1, r1, #63
-        BFC     r1, #0, #6                              // align Limit to 64bytes
-        LDR     r2, =((AttrIndx0<<1) | (ENable))
-        ORR     r1, r1, r2
-        MCR     p15, 0, r1, c6, c13, 1                   // write PRLAR10
+        MPU_REGION(__hpps_ddr_low_start__, __hpps_ddr_low_end__,     0, c11, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__periph_start__, __periph_end__,                 0, c11, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__rtps_ddr_low_0_start__, __rtps_ddr_low_0_end__, 0, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
+        MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           0, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__hsio_start__, __hsio_end__,                     0, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
     // MAIR0 configuration
         MRC p15, 0, r0, c10, c2, 0      // Read MAIR0 into r0
