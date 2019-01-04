@@ -51,6 +51,11 @@ int rt_mmu_init()
 			  (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
         goto cleanup_rtps_mailbox;
 
+    if (mmu_map(trch_ctx, (uint32_t)HSIO_BASE, (uint32_t)HSIO_BASE, HSIO_SIZE))
+        goto cleanup_trch_hsio;
+    if (mmu_map(rtps_ctx, (uint32_t)HSIO_BASE, (uint32_t)HSIO_BASE, HSIO_SIZE))
+        goto cleanup_rtps_hsio;
+
     if (mmu_map(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_ADDR,
                           HPPS_DDR_LOW_SIZE))
         goto cleanup_hpps_ddr_low;
@@ -84,6 +89,10 @@ cleanup_hi1_win:
     mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
 #endif // TEST_RT_MMU
 cleanup_hpps_ddr_low:
+    mmu_unmap(rtps_ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
+cleanup_rtps_hsio:
+    mmu_unmap(trch_ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
+cleanup_trch_hsio:
     mmu_unmap(rtps_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_rtps_mailbox:
     mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
