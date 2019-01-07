@@ -70,6 +70,9 @@ static int boot_load(subsys_t subsys)
                     break;
             }
             break;
+        case SUBSYS_RTPS_A53:
+            printf("BOOT: load RTPS_A53 \r\n");
+            break;
         case SUBSYS_HPPS:
             printf("BOOT: load HPPS\r\n");
             if (smc_sram_load("hpps-fw"))
@@ -95,7 +98,7 @@ static int boot_reset(subsys_t subsys)
         case SUBSYS_RTPS:
             switch (cfg.rtps_mode) {
                 case CFG__RTPS_MODE__SPLIT:
-                    rc |= reset_release(COMP_CPUS_RTPS);
+                    rc |= reset_release(COMP_CPUS_RTPS_R52);
                     break;
                 case CFG__RTPS_MODE__LOCKSTEP:
                 case CFG__RTPS_MODE__SMP:
@@ -107,10 +110,14 @@ static int boot_reset(subsys_t subsys)
                     return 1;
             }
             break;
+        case SUBSYS_RTPS_A53:
+            rc = reset_release(COMP_CPUS_RTPS_A53);
+            break;
         case SUBSYS_HPPS:
             rc = reset_release(COMP_CPU_HPPS_0);
             break;
         case SUBSYS_INVALID:
+        case NUM_SUBSYSS:
             printf("BOOT: ERROR: invalid subsystem\r\n");
             rc = 1;
     }

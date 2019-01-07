@@ -222,6 +222,10 @@ int main ( void )
     boot_request(SUBSYS_RTPS);
 #endif // CONFIG_BOOT_RTPS
 
+#if CONFIG_BOOT_RTPS_A53
+    boot_request(SUBSYS_RTPS_A53);
+#endif // CONFIG_BOOT_RTPS_A53
+
 #if CONFIG_BOOT_HPPS
     boot_request(SUBSYS_HPPS);
 #endif // CONFIG_BOOT_HPPS
