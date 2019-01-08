@@ -53,6 +53,11 @@
 #define SMC_SRAM_SIZE            0x8000000
 
 // See props in Qemu device tree node (or real HW characteristics)
+#define ETIMER_NOMINAL_FREQ_HZ 1000000000
+#define ETIMER_CLK_FREQ_HZ      125000000
+#define ETIMER_MAX_DIVIDER             32
+#define ETIMER_MIN_CLK_FREQ_HZ (ETIMER_CLK_FREQ_HZ / ETIMER_MAX_DIVIDER)
+
 #define WDT_CLK_FREQ_HZ         125000000
 #define WDT_MAX_DIVIDER                32
 #define WDT_MIN_FREQ_HZ (WDT_CLK_FREQ_HZ / WDT_MAX_DIVIDER)

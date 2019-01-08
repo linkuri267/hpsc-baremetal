@@ -44,3 +44,7 @@ TRCH_IRQ__WDT_HPPS5_ST2: wdt_hpps5_st2_isr
 TRCH_IRQ__WDT_HPPS6_ST2: wdt_hpps6_st2_isr
 TRCH_IRQ__WDT_HPPS7_ST2: wdt_hpps7_st2_isr
 #endif
+
+#if TEST_ETIMER
+TRCH_IRQ__ELAPSED_TIMER: etimer_isr
+#endif

@@ -8,5 +8,6 @@ int test_systick();
 int test_trch_wdt();
 int test_rtps_wdt();
 int test_hpps_wdt();
+int test_etimer();
 
 #endif // TEST_H

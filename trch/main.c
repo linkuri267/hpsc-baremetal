@@ -88,6 +88,11 @@ int main ( void )
 #endif // CONFIG_SLEEP_TIMER
 #endif // CONFIG_SYSTICK
 
+#if TEST_ETIMER
+    if (test_etimer())
+        panic("Elapsed Timer test");
+#endif // TEST_ETIMER
+
 #if TEST_TRCH_WDT
     if (test_trch_wdt())
         panic("TRCH WDT test");
