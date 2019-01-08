@@ -150,7 +150,6 @@ int test_trch_wdt()
 cleanup:
     wdt_disable(trch_wdt);
     // TODO: order is important since ISR might run while destroying
-    printf("disable int\r\n");
     nvic_int_disable(TRCH_IRQ__WDT_TRCH_ST1);
     wdt_destroy(trch_wdt);
     return rc;
