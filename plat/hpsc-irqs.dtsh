@@ -81,6 +81,7 @@
 #define TRCH_IRQ__TRCH_DMA_EV7                  70
 
 #define TRCH_IRQ__TRCH_SMC                      71
+#define TRCH_IRQ__ELAPSED_TIMER                 72
 
 
 // ******** RTPS interrupt controller inputs **************

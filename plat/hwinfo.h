@@ -23,6 +23,8 @@
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
 
+#define ETIMER__BASE    ((volatile uint32_t *)0x21090000)
+
 #define HPSC_MBOX_NUM_BLOCKS 3
 
 #define MBOX_LSIO__BASE           ((volatile uint32_t *)0x3000a000)
