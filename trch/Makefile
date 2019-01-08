@@ -92,6 +92,7 @@ OBJS = \
        lib/sha256.o \
        lib/mem.o \
        lib/str.o \
+       lib/bit.o \
        lib/sleep.o \
        lib/object.o \
        lib/balloc.o \
