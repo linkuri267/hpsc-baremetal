@@ -66,7 +66,8 @@ int test_trch_wdt()
 
     volatile unsigned expired_stage;
     trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
-                                  wdt_tick, (void *)&expired_stage);
+                                  wdt_tick, (void *)&expired_stage,
+                                  WDT_CLK_FREQ_HZ, WDT_MAX_DIVIDER);
 
     if (!trch_wdt)
         return 1;
@@ -167,7 +168,8 @@ int test_wdt(struct wdt **wdt_ptr, const char *name,
     volatile unsigned expired_stage;
     uint64_t timeouts[] = { INTERVAL_WDT_CYCLES, INTERVAL_WDT_CYCLES };
     struct wdt *wdt = wdt_create_monitor(name, base,
-                    wdt_tick, (void *)&expired_stage);
+                    wdt_tick, (void *)&expired_stage,
+                    WDT_CLK_FREQ_HZ, WDT_MAX_DIVIDER);
     if (!wdt)
         return 1;
     *wdt_ptr = wdt; // for ISR

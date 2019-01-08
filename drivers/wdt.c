@@ -6,6 +6,7 @@
 #include "regops.h"
 #include "panic.h"
 #include "printf.h"
+#include "bit.h"
 
 #include "wdt.h"
 
@@ -27,8 +28,6 @@
 #define REG__CONFIG__EN      0x1
 #define REG__CONFIG__TICKDIV__SHIFT 2
 #define REG__STATUS__TIMEOUT__SHIFT 0
-
-#define HPSC_WDT_COUNTER_WIDTH (64 - (NUM_STAGES - 1)) // see comments in Qemu model
 
 #define STAGE_REGS_SIZE (NUM_STAGES * STAGE_REG_SIZE) // register space size per stage
 #define STAGE_REG(reg, stage) ((STAGE_REGS_SIZE * stage) + reg)
@@ -90,6 +89,9 @@ struct wdt {
     void *cb_arg;
     unsigned num_stages;
     bool monitor; // only the monitor can configure the timer
+    uint32_t clk_freq_hz;
+    unsigned max_div;
+    unsigned counter_width;
 };
 
 #define MAX_WDTS 16
@@ -129,13 +131,16 @@ static struct wdt *wdt_create(const char *name, volatile uint32_t *base,
     wdt->monitor = false;
     wdt->cb = cb;
     wdt->cb_arg = cb_arg;
-
     return wdt;
 }
 struct wdt *wdt_create_monitor(const char *name, volatile uint32_t *base,
-                       wdt_cb_t cb, void *cb_arg)
+                       wdt_cb_t cb, void *cb_arg,
+                       uint32_t clk_freq_hz, unsigned max_div)
 {
     struct wdt *wdt = wdt_create(name, base, cb, cb_arg);
+    wdt->clk_freq_hz = clk_freq_hz;
+    wdt->max_div = max_div;
+    wdt->counter_width = (64 - log2_of_pow2(wdt->max_div) - 1);
     wdt->monitor = true;
     return wdt;
 }
@@ -158,15 +163,15 @@ int wdt_configure(struct wdt *wdt, unsigned freq,
                num_stages, MAX_STAGES);
         return 1;
     }
-    if (!(WDT_MIN_FREQ_HZ <= freq && freq <= WDT_MAX_FREQ_HZ && freq % WDT_MIN_FREQ_HZ == 0)) {
-        printf("ERROR: WDT: freq is out of range: %u not a multiple of %u in [%u, %u]\r\n",
-               WDT_MIN_FREQ_HZ, freq, WDT_MIN_FREQ_HZ, WDT_MAX_FREQ_HZ);
+    if (!(freq <= wdt->clk_freq_hz && wdt->clk_freq_hz % freq == 0)) {
+        printf("ERROR: WDT: freq is larger than or not a divisor of clk freq: %u > %u\r\n",
+               freq, wdt->clk_freq_hz);
         return 1;
     }
     for (unsigned stage = 0; stage < num_stages; ++stage) {
-        if (timeouts[stage] & (~0ULL << HPSC_WDT_COUNTER_WIDTH)) {
+        if (timeouts[stage] & (~0ULL << wdt->counter_width)) {
                 printf("ERROR: WDT: timeout for stage %u exceeds counter width (%u bits): %08x%08x\r\n",
-                       stage, HPSC_WDT_COUNTER_WIDTH,
+                       stage, wdt->counter_width,
                       (uint32_t)(timeouts[stage] >> 32), (uint32_t)(timeouts[stage] & 0xffffffff));
                 return 2;
         }
@@ -175,8 +180,14 @@ int wdt_configure(struct wdt *wdt, unsigned freq,
     wdt->num_stages = num_stages;
 
     // Set divider and zero other fields
-    ASSERT(freq % WDT_MIN_FREQ_HZ == 0);
-    unsigned div = WDT_MAX_FREQ_HZ / freq;
+    ASSERT(wdt->clk_freq_hz % freq == 0);
+    unsigned div = wdt->clk_freq_hz / freq;
+    if (div > wdt->max_div) {
+        printf("ERROR: WDT: divider too large: %u > %u\r\n",
+               div, wdt->max_div);
+        return 1;
+    }
+
     printf("WDT %s: set divider to %u\r\n", wdt->name, div);
     REGB_WRITE32(wdt->base, REG__CONFIG, div << REG__CONFIG__TICKDIV__SHIFT);
 

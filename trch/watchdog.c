@@ -144,7 +144,8 @@ static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
 			      unsigned irq, unsigned *timeouts, unsigned cpuid)
 {
     struct wdt *wdt = wdt_create_monitor(name, base,
-				         handle_timeout, (void *)cpuid);
+                                         handle_timeout, (void *)cpuid,
+                                         WDT_CLK_FREQ_HZ, WDT_MAX_DIVIDER);
     if (!wdt)
         return NULL;
 

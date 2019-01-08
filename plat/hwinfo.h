@@ -50,4 +50,9 @@
 #define SMC_SRAM_BASE           0x28000000
 #define SMC_SRAM_SIZE            0x8000000
 
+// See props in Qemu device tree node (or real HW characteristics)
+#define WDT_CLK_FREQ_HZ         125000000
+#define WDT_MAX_DIVIDER                32
+#define WDT_MIN_FREQ_HZ (WDT_CLK_FREQ_HZ / WDT_MAX_DIVIDER)
+
 #endif // HWINFO_H
