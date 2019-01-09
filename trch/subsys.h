@@ -42,6 +42,32 @@ typedef enum { // bitmask
         (COMP_CPU_HPPS_0 | COMP_CPU_HPPS_1 |  COMP_CPU_HPPS_2 | COMP_CPU_HPPS_3 | \
          COMP_CPU_HPPS_4 | COMP_CPU_HPPS_5 |  COMP_CPU_HPPS_6 | COMP_CPU_HPPS_7)
 
+#define TRCH_NUM_CORES     1
+#define RTPS_R52_NUM_CORES 2
+#define RTPS_A53_NUM_CORES 1
+#define HPPS_NUM_CORES     8
+
+#define NUM_CORES \
+      (TRCH_NUM_CORES + RTPS_R52_NUM_CORES + RTPS_A53_NUM_CORES + HPPS_NUM_CORES)
+
+struct cpu_group {
+    subsys_t subsys;
+    comp_t cpu_set;
+    unsigned num_cores;
+};
+
+enum cpu_group_id {
+   CPU_GROUP_TRCH = 0,
+   CPU_GROUP_RTPS_R52,
+   CPU_GROUP_RTPS_R52_0,
+   CPU_GROUP_RTPS_R52_1,
+   CPU_GROUP_RTPS_A53,
+   CPU_GROUP_HPPS,
+   NUM_CPU_GROUPS,
+};
+
+const struct cpu_group *subsys_cpu_group(enum cpu_group_id gid);
+
 const char *subsys_name(subsys_t subsys);
 
 #endif // SUBSYS_H
