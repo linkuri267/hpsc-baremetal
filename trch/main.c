@@ -42,6 +42,8 @@ struct endpoint endpoints[] = {
 };
 #endif // SERVER
 
+static bool trch_wdt_started = false;
+
 #if CONFIG_SYSTICK
 static void systick_tick(void *arg)
 {
@@ -53,7 +55,8 @@ static void systick_tick(void *arg)
     // be sleeping but might be performing a long operation, in which case it
     // might not get to the kick statement at the beginning of the main loop in
     // time.
-    watchdog_trch_kick();
+    if (trch_wdt_started)
+        watchdog_kick(COMP_CPU_TRCH);
 #endif // CONFIG_TRCH_WDT
 
 #if CONFIG_SLEEP_TIMER
@@ -93,20 +96,10 @@ int main ( void )
         panic("Elapsed Timer test");
 #endif // TEST_ETIMER
 
-#if TEST_TRCH_WDT
-    if (test_trch_wdt())
-        panic("TRCH WDT test");
-#endif // TEST_TRCH_WDT
-
-#if TEST_RTPS_WDT
-    if (test_rtps_wdt())
-        panic("RTPS WDT test");
-#endif // TEST_RTPS_WDT
-
-#if TEST_HPPS_WDT
-    if (test_hpps_wdt())
-        panic("HPPS WDT test");
-#endif // TEST_HPPS_WDT
+#if TEST_WDTS
+    if (test_wdts())
+        panic("WDT test");
+#endif // TEST_WDTS
 
 #if TEST_FLOAT
     if (test_float())
@@ -212,14 +205,6 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
-#if CONFIG_RTPS_WDT
-    watchdog_rtps_init();
-#endif // CONFIG_RTPS_WDT
-
-#if CONFIG_HPPS_WDT
-    watchdog_hpps_init();
-#endif // CONFIG_HPPS_WDT
-
     if (boot_config())
         panic("BOOT CFG");
 
@@ -241,8 +226,10 @@ int main ( void )
 #endif // SERVER
 
 #if CONFIG_TRCH_WDT
-    watchdog_trch_start();
-#endif // CONFIG_RTPS_WDT
+    watchdog_init_group(CPU_GROUP_TRCH);
+    watchdog_start(COMP_CPU_TRCH);
+    trch_wdt_started = true;
+#endif // CONFIG_TRCH_WDT
 
     unsigned iter = 0;
     while (1) {
@@ -258,8 +245,8 @@ int main ( void )
         // and kick from the scheuduler tick. As a temporary stop-gap, we go
         // with (C): kick on return from WFI/WFI as a result of first stage
         // timeout IRQ.
-        watchdog_trch_kick();
-#endif // CONFIG_TRCH_WDT && !CONFIG_SYSTICK
+        watchdog_kick(COMP_CPU_TRCH);
+#endif // CONFIG_TRCH_WDT
 
         //printf("main\r\n");
 

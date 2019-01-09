@@ -17,6 +17,35 @@
 
 #define NUM_STAGES 2
 
+struct wdt_info {
+    const char *name;
+
+    // WDT instance base = group base + offset * as_size
+    // Do this math at runtime, since the expressions need casts that make
+    // them to long to write in the table
+    volatile uint32_t *base; // of the group
+    unsigned offset; // from base
+    unsigned as_size;
+
+    unsigned irq;
+};
+
+static const struct wdt_info wdt_info[] = {
+    { "TRCH",       WDT_TRCH_BASE,            0, WDT_TRCH_SIZE,     TRCH_IRQ__WDT_TRCH_ST1 },
+    { "RTPS_R52_0", WDT_RTPS_R52_0_TRCH_BASE, 0, WDT_RTPS_R52_SIZE, TRCH_IRQ__WDT_RTPS_R52_0_ST2 },
+    { "RTPS_R52_1", WDT_RTPS_R52_0_TRCH_BASE, 1, WDT_RTPS_R52_SIZE, TRCH_IRQ__WDT_RTPS_R52_1_ST2 }, /* _0_ not typo */
+    { "RTPS_A53",   WDT_RTPS_A53_TRCH_BASE,   0, WDT_RTPS_A53_SIZE, TRCH_IRQ__WDT_RTPS_A53_ST2 },
+    { "HPPS_0",     WDT_HPPS_TRCH_BASE,       0, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS0_ST2 },
+    { "HPPS_1",     WDT_HPPS_TRCH_BASE,       1, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS1_ST2 },
+    { "HPPS_2",     WDT_HPPS_TRCH_BASE,       2, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS2_ST2 },
+    { "HPPS_3",     WDT_HPPS_TRCH_BASE,       3, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS3_ST2 },
+    { "HPPS_4",     WDT_HPPS_TRCH_BASE,       4, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS4_ST2 },
+    { "HPPS_5",     WDT_HPPS_TRCH_BASE,       5, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS5_ST2 },
+    { "HPPS_6",     WDT_HPPS_TRCH_BASE,       6, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS6_ST2 },
+    { "HPPS_7",     WDT_HPPS_TRCH_BASE,       7, WDT_HPPS_SIZE,     TRCH_IRQ__WDT_HPPS7_ST2 },
+};
+#define NUM_WDTS (sizeof(wdt_info) / sizeof(wdt_info[0]))
+
 static void wdt_tick(struct wdt *wdt, unsigned stage, void *arg)
 {
     volatile unsigned *expired = arg;
@@ -59,18 +88,18 @@ static bool check_disabled(struct wdt *wdt)
     return true;
 }
 
-#if TEST_TRCH_WDT
-int test_trch_wdt()
+static int test_trch_wdt(struct wdt **trch_wdt_ptr)
 {
     printf("TEST WDT: TRCH: interval %u ms\r\n", INTERVAL_MS);
 
     volatile unsigned expired_stage;
-    trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
-                                  wdt_tick, (void *)&expired_stage,
-                                  WDT_CLK_FREQ_HZ, WDT_MAX_DIVIDER);
-
+    struct wdt *trch_wdt = wdt_create_monitor("TRCH", WDT_TRCH_BASE,
+                                   wdt_tick, (void *)&expired_stage,
+                                   WDT_CLK_FREQ_HZ, WDT_MAX_DIVIDER);
     if (!trch_wdt)
         return 1;
+
+    *trch_wdt_ptr = trch_wdt; // for ISR
 
     uint64_t timeouts[] = { INTERVAL_WDT_CYCLES, INTERVAL_WDT_CYCLES };
     int rc = wdt_configure(trch_wdt, WDT_FREQ_HZ, NUM_STAGES, timeouts);
@@ -152,12 +181,11 @@ cleanup:
     // TODO: order is important since ISR might run while destroying
     nvic_int_disable(TRCH_IRQ__WDT_TRCH_ST1);
     wdt_destroy(trch_wdt);
+    *trch_wdt_ptr = NULL;
     return rc;
 }
-#endif // TEST_TRCH_WDT
 
-#if TEST_RTPS_WDT || TEST_HPPS_WDT
-int test_wdt(struct wdt **wdt_ptr, const char *name,
+static int test_wdt(struct wdt **wdt_ptr, const char *name,
              volatile uint32_t *base, unsigned irq)
 {
     printf("TEST WDT: %s: interval %u ms\r\n", name, INTERVAL_MS);
@@ -203,43 +231,24 @@ cleanup:
     // TODO: order is important since ISR might run while destroying
     nvic_int_disable(irq);
     wdt_destroy(wdt);
+    *wdt_ptr = NULL;
     return rc;
 }
-#endif // TEST_RTPS_WDT || TEST_HPPS_WDT
 
-#if TEST_RTPS_WDT
-int test_rtps_wdt()
+int test_wdts()
 {
-     static const char * const rtps_wdt_names[HPPS_NUM_CORES] = {
-         "RTPS0", "RTPS1"
-     };
-     for (int core = 0; core < RTPS_NUM_CORES; ++core) {
-	     int rc = test_wdt(&rtps_wdts[core], rtps_wdt_names[core],
-		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
-                                                          core * WDT_RTPS_SIZE),
-		TRCH_IRQ__WDT_RTPS0_ST2 + core);
-	     if (rc)
-		return rc;
-     }
-     return 0;
-}
-#endif // TEST_RTPS_WDT
+    int rc = test_trch_wdt(&wdts[0]);
+    if (rc)
+        return rc;
 
-#if TEST_HPPS_WDT
-int test_hpps_wdt()
-{
-     static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
-         "HPPS0", "HPPS1", "HPPS2", "HPPS3",
-         "HPPS4", "HPPS5", "HPPS6", "HPPS7"
-     };
-     for (int core = 0; core < HPPS_NUM_CORES; ++core) {
-	     int rc = test_wdt(&hpps_wdts[core], hpps_wdt_names[core],
-		(volatile uint32_t *)((volatile uint8_t *)WDT_HPPS_TRCH_BASE +
-                                                          core * WDT_HPPS_SIZE),
-		TRCH_IRQ__WDT_HPPS0_ST2 + core);
-	     if (rc)
-		return rc;
-     }
-     return 0;
+    for (unsigned i = 1 /* trch tested above */; i < NUM_WDTS;  ++i) {
+        const struct wdt_info *wi = &wdt_info[i];
+        rc |= test_wdt(&wdts[i] /* see ISR in watchdog.c */, wi->name,
+                (volatile uint32_t *)
+                ((volatile uint8_t *)wi->base + wi->offset * wi->as_size),
+                wi->irq);
+       if (rc)
+           return rc;
+    }
+    return 0;
 }
-#endif // TEST_HPPS_WDT

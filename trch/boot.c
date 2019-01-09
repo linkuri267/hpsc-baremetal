@@ -2,6 +2,7 @@
 #include "reset.h"
 #include "mem-map.h"
 #include "smc.h"
+#include "watchdog.h"
 
 #include "boot.h"
 
@@ -98,14 +99,24 @@ static int boot_reset(subsys_t subsys)
         case SUBSYS_RTPS_R52:
             switch (cfg.rtps_mode) {
                 case CFG__RTPS_MODE__SPLIT:
+#if CONFIG_RTPS_R52_WDT
+                    watchdog_init_group(CPU_GROUP_RTPS_R52_0);
+                    watchdog_init_group(CPU_GROUP_RTPS_R52_1);
+#endif // CONFIG_RTPS_R52_WDT
                     reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
                     rc |= reset_release(COMP_CPUS_RTPS_R52);
                     break;
                 case CFG__RTPS_MODE__LOCKSTEP:
+#if CONFIG_RTPS_R52_WDT
+                    watchdog_init_group(CPU_GROUP_RTPS_R52_0);
+#endif // CONFIG_RTPS_R52_WDT
                     reset_set_rtps_r52_mode(RTPS_R52_MODE__LOCKSTEP);
                     rc = reset_release(COMP_CPU_RTPS_R52_0);
                     break;
                 case CFG__RTPS_MODE__SMP:
+#if CONFIG_RTPS_R52_WDT
+                    watchdog_init_group(CPU_GROUP_RTPS_R52);
+#endif // CONFIG_RTPS_R52_WDT
                     reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
                     rc = reset_release(COMP_CPU_RTPS_R52_0);
                     break;
@@ -116,9 +127,15 @@ static int boot_reset(subsys_t subsys)
             }
             break;
         case SUBSYS_RTPS_A53:
+#if CONFIG_RTPS_A53_WDT
+            watchdog_init_group(CPU_GROUP_RTPS_A53);
+#endif // CONFIG_RTPS_A53_WDT
             rc = reset_release(COMP_CPUS_RTPS_A53);
             break;
         case SUBSYS_HPPS:
+#if CONFIG_HPPS_WDT
+            watchdog_init_group(CPU_GROUP_HPPS);
+#endif // CONFIG_HPPS_WDT
             rc = reset_release(COMP_CPU_HPPS_0);
             break;
         default:

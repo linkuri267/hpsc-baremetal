@@ -12,51 +12,66 @@
 
 #define WDT_FREQ_HZ WDT_MIN_FREQ_HZ // our choice
 
-// Units: ms
-
-#define TIMEOUT_TRCH_ST1    1000
-#define TIMEOUT_TRCH_ST2    1000
-
-#define TIMEOUT_RTPS_ST1    1000
-#define TIMEOUT_RTPS_ST2    1000
-
-#define TIMEOUT_HPPS_ST1    5000
-#define TIMEOUT_HPPS_ST2   45000
-
 #define MS_TO_WDT_CYCLES(ms) ((ms) * (WDT_FREQ_HZ / 1000))
 
 // Must be global for the standalone tests for WDTs in test-wdt.c
-struct wdt *trch_wdt = NULL;
-struct wdt *rtps_wdts[RTPS_NUM_CORES] = {0};
-struct wdt *hpps_wdts[HPPS_NUM_CORES] = {0};
-
-// To allow watchdog_trch_kick method to be called anytime
-static bool trch_wdt_started = false;
-
-// TODO: launch both timers, when we have both cores running and kicking
-#undef RTPS_NUM_CORES
-#define RTPS_NUM_CORES 1
+struct wdt *wdts[NUM_CORES] = {0};
 
 #define NUM_STAGES 2 // fixed in HW, but flexible in driver
 
-// IDs for CPU 0 in each subsystem (private to this file)
-#define CPUID_TRCH 0
-#define CPUID_RTPS 1
-#define CPUID_HPPS 3
+struct wdt_group {
+    unsigned index; // in wdts array
+    unsigned num; // num wdts in sequence
+    volatile uint32_t *base;
+    unsigned as_size;
+    unsigned irq_start;
+    const char *names[16];
+    unsigned timeouts[NUM_STAGES];
+};
+
+// Starting index, number given by group->num_cores
+static const struct wdt_group wdt_groups[] = {
+    [CPU_GROUP_TRCH]       = { 0, TRCH_NUM_CORES,
+                               WDT_TRCH_BASE, WDT_TRCH_SIZE,
+                               TRCH_IRQ__WDT_TRCH_ST1, { "TRCH" },
+                               /* timeouts ms */ { 1000, 1000 } },
+    [CPU_GROUP_RTPS_R52]   = { 1, RTPS_R52_NUM_CORES,
+                               WDT_RTPS_R52_0_TRCH_BASE, WDT_RTPS_R52_SIZE,
+                               TRCH_IRQ__WDT_RTPS_R52_0_ST2,
+                               { "RTPS_R52_0", "RTPS_R52_1" },
+                               /* timeouts ms */ { 1000, 1000} },
+    [CPU_GROUP_RTPS_R52_0] = { 1, /* num cores */ 1,
+                               WDT_RTPS_R52_0_TRCH_BASE, WDT_RTPS_R52_SIZE,
+                               TRCH_IRQ__WDT_RTPS_R52_0_ST2,
+                               { "RTPS_R52_0" },
+                               /* timeouts ms */ { 1000, 1000} },
+    [CPU_GROUP_RTPS_R52_1] = { 2, /* num cores */ 1,
+                               WDT_RTPS_R52_1_TRCH_BASE, WDT_RTPS_R52_SIZE,
+                               TRCH_IRQ__WDT_RTPS_R52_1_ST2,
+                               { "RTPS_R52_1" },
+                               /* timeouts ms */ { 1000, 1000} },
+    [CPU_GROUP_RTPS_A53]   = { 3, RTPS_A53_NUM_CORES,
+                               WDT_RTPS_A53_TRCH_BASE, WDT_RTPS_A53_SIZE,
+                               TRCH_IRQ__WDT_RTPS_A53_ST2,
+                               { "RTPS_A53" },
+                               /* timeouts ms */ { 1000, 1000} },
+    [CPU_GROUP_HPPS]       = { 4, HPPS_NUM_CORES,
+                               WDT_HPPS_TRCH_BASE, WDT_HPPS_SIZE,
+                               TRCH_IRQ__WDT_HPPS0_ST2,
+                               { "HPPS0", "HPPS1", "HPPS2", "HPPS3",
+                                 "HPPS4", "HPPS5", "HPPS6", "HPPS7" },
+                               /* timeouts ms */ { 5000, 45000} },
+};
 
 static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 {
-    unsigned cpuid = (unsigned)arg;
-    unsigned subsys = SUBSYS_INVALID;
-    struct wdt **wdts;
-    unsigned num_cores;
-    int rc, i;
+    enum cpu_group_id gid = (unsigned)arg;
+    const struct cpu_group *cpu_group = subsys_cpu_group(gid);
+    int rc;
 
-    printf("watchdog: cpu %u: stage %u: expired\r\n", cpuid, stage);
+    printf("watchdog: cpu %u: stage %u: expired\r\n", gid, stage);
 
-    // Expand this with appropriate responses to faults
-    switch (cpuid) {
-        case CPUID_TRCH:
+    if (gid == CPU_GROUP_TRCH) {
             ASSERT(stage == 0); // no last stage interrupt, because wired to hw reset
 #if !CONFIG_SYSTICK // If SysTick is enabled, it will kick
             // Note: main loop will return from WFI/WFE and kick too, but in case we
@@ -71,33 +86,9 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
             // is stuck.
             wdt_kick(wdt);
 #endif // !CONFIG_SYSTICK
-            break;
-        case CPUID_RTPS + 0:
-        case CPUID_RTPS + 1:
-            subsys = SUBSYS_RTPS;
-            num_cores = RTPS_NUM_CORES;
-            wdts = rtps_wdts;
-            break;
-        case CPUID_HPPS + 0:
-        case CPUID_HPPS + 1:
-        case CPUID_HPPS + 2:
-        case CPUID_HPPS + 3:
-        case CPUID_HPPS + 4:
-        case CPUID_HPPS + 5:
-        case CPUID_HPPS + 6:
-        case CPUID_HPPS + 7:
-            subsys = SUBSYS_HPPS;
-            num_cores = HPPS_NUM_CORES;
-            wdts = hpps_wdts;
-            break;
-        default:
-	    ASSERT(false && "invalid context");
-    }
-
-    if (subsys != SUBSYS_INVALID) {
+    } else {
         ASSERT(stage == NUM_STAGES - 1); // first stage is handled by the target CPU
         ASSERT(!wdt_is_enabled(wdt)); // HW disables the timer on expiration
-        wdt_kick(wdt); // to reload the timer, so that it's ready when subsystem enables it
 
         // The purpose of the following logic is to make the reset happen only
         // once, upon the expiration of any WDT timer from the set of timers of
@@ -109,39 +100,42 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
         // timers, and (2) the subsystem might be in a half-broken state where
         // it continues to kick some but not all timers.
 
-        rc = reset_assert(subsys); // will prevent all CPUs from kicking
+        rc = reset_assert(cpu_group->cpu_set); // will prevent all CPUs from kicking
         if (rc) {
-            printf("ERROR: WATCHDOG: failed to reset subsys %u\r\n",
-                   subsys);
+            printf("ERROR: WATCHDOG: failed to assert reset for cpu set: %x\r\n",
+                   cpu_group->cpu_set);
             return;
         }
 
         // Disable the WDTs for all other cores, so that they don't fire.  We
         // might still get an ISR from timers that already expired before we
         // disabled them, but that's ok: all of those ISRs (as well as the
-        // first one), will collectively enqueue only one reboot request.  The
-        // key is that by disabling all other WDTs from the first ISR, we
-        // guarantee that the extra ISRs will happen back to back, i.e.
-        // without entering the main loop, and thus without processing the
-        // reboot request. So, when the main loop does run, it is safe to
-        // initiate the reboot, since all timers will be disabled and reloaded.
-        //
-        // Note that the kick above will reload the counter of any timer that
-        // was enabled, and for timers that were never enabled, the counter
-        // does not need to be reloaded. (Instead of relying on this invariant,
-        // we could reload timers on each boot, but this is equivalent.)
-        for (i = 0; i < num_cores; ++i)
-            wdt_disable(wdts[i]);
+        // first one), will collectively enqueue only one reboot request. By
+        // deiniting the rest of the WDTs in the group, we also disable their
+        // ISRs at the NVIC level, so they won't fire. WDTs are re-initialized
+        // as part of the boot sequence.
+        watchdog_deinit_group(gid);
 
         // Enqueue the request for the main loop
         // Note: we cannot use the command queue because we want all ISRs
         // in a sequence to collectively generate one request (see above).
-        boot_request(subsys);
+        //
+        // NOTE: A potentially better alternative design is to reboot
+        // the cpu group here instead of the subsystem. Booting the subsystem
+        // means that the cpu group (i.e. subsystem's boot mode) is determined
+        // by boot config at boot time. This means that a reboot triggered
+        // by WDT would switch the mode if boot config changes between the
+        // preceding boot and the WDT triggered-reboot. We might want that.
+        // If we don't want it, then the boot interface should be changed to
+        // only allow booting cpu groups (i.e. booting an OS, i.e. booting
+        // into a mode given by the boot command instead of being pulled
+        // from the boot config) -- it's a subtle interface difference.
+        boot_request(cpu_group->subsys);
     }
 }
 
 static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
-			      unsigned irq, unsigned *timeouts, unsigned cpuid)
+			      unsigned irq, const unsigned *timeouts, unsigned cpuid)
 {
     struct wdt *wdt = wdt_create_monitor(name, base,
                                          handle_timeout, (void *)cpuid,
@@ -187,115 +181,96 @@ static void destroy_wdt(struct wdt *wdt, unsigned irq)
     wdt_destroy(wdt);
 }
 
-int watchdog_trch_start() {
-    unsigned timeouts[] = { TIMEOUT_TRCH_ST1, TIMEOUT_TRCH_ST2};
-    trch_wdt = create_wdt("TRCH", WDT_TRCH_BASE, TRCH_IRQ__WDT_TRCH_ST1,
-		      timeouts, CPUID_TRCH);
-    if (!trch_wdt)
-	return 1;
-    wdt_enable(trch_wdt); // TRCH is the monitored target, so it enables
-    trch_wdt_started = true;
-    return 0;
-}
-
-void watchdog_trch_stop() {
-    trch_wdt_started = false;
-    destroy_wdt(trch_wdt, TRCH_IRQ__WDT_TRCH_ST1);
-    trch_wdt = NULL;
-}
-
-void watchdog_trch_kick() {
-    if (trch_wdt_started)
-        wdt_kick(trch_wdt);
-}
-
-int watchdog_rtps_init() {
-    int i;
-    unsigned timeouts[] = { TIMEOUT_RTPS_ST1, TIMEOUT_RTPS_ST2 };
-
-    static const char * const rtps_wdt_names[RTPS_NUM_CORES] = {
-	"RTPS0", /* "RTPS1" */ // TODO: when we have both cores
-    };
-
-    for (i = 0; i < RTPS_NUM_CORES; ++i) {
-	ASSERT(i < sizeof(rtps_wdt_names) / sizeof(rtps_wdt_names[0]));
-	rtps_wdts[i] = create_wdt(rtps_wdt_names[i],
-		(volatile uint32_t *)((volatile uint8_t *)WDT_RTPS_TRCH_BASE +
-						          i * WDT_RTPS_SIZE),
-		TRCH_IRQ__WDT_RTPS0_ST2 + i, timeouts, CPUID_RTPS + i);
-	if (!rtps_wdts[i])
-	    goto cleanup;
-    }
-    return 0;
-
-cleanup:
-    for (--i; i >= 0; --i) {
-	destroy_wdt(rtps_wdts[i], TRCH_IRQ__WDT_RTPS0_ST2 + i);
-	rtps_wdts[i] = NULL;
-    }
-    return 1;
-}
-
-void watchdog_rtps_deinit() {
-    for (int i = 0; i < RTPS_NUM_CORES;  ++i) {
-	destroy_wdt(rtps_wdts[i], TRCH_IRQ__WDT_RTPS0_ST2 + i);
-	rtps_wdts[i] = NULL;
+void watchdog_init_group(enum cpu_group_id gid)
+{
+    const struct wdt_group *wdtg = &wdt_groups[gid];
+    for (unsigned i = 0; i < wdtg->num;  ++i) {
+        struct wdt *wdt = create_wdt(wdtg->names[i],
+                (volatile uint32_t *)((volatile uint8_t *)wdtg->base +
+                    i * wdtg->as_size),
+                wdtg->irq_start + i, wdtg->timeouts, gid);
+        wdts[wdtg->index + i] = wdt;
     }
 }
 
-int watchdog_hpps_init() {
-    int i;
-    unsigned timeouts[] = { TIMEOUT_HPPS_ST1, TIMEOUT_HPPS_ST2 };
-
-    static const char * const hpps_wdt_names[HPPS_NUM_CORES] = {
-	"HPPS0", "HPPS1", "HPPS2", "HPPS3",
-	"HPPS4", "HPPS5", "HPPS6", "HPPS7"
-    };
-
-    for (i = 0; i < HPPS_NUM_CORES;  ++i) {
-	ASSERT(i < sizeof(hpps_wdt_names) / sizeof(hpps_wdt_names[0]));
-	hpps_wdts[i] = create_wdt(hpps_wdt_names[i],
-		(volatile uint32_t *)((volatile uint8_t *)WDT_HPPS_TRCH_BASE +
-							  i * WDT_HPPS_SIZE),
-		TRCH_IRQ__WDT_HPPS0_ST2 + i, timeouts, CPUID_HPPS + i);
-	if (!hpps_wdts[i])
-	    goto cleanup;
+void watchdog_deinit_group(enum cpu_group_id gid)
+{
+    const struct wdt_group *wdtg = &wdt_groups[gid];
+    for (unsigned i = 0; i < wdtg->num;  ++i) {
+        wdt_disable(wdts[wdtg->index + i]);
+        destroy_wdt(wdts[wdtg->index + i], wdtg->irq_start + i);
+        wdts[wdtg->index + i] = NULL;
     }
-    return 0;
-
-cleanup:
-    for (--i; i >= 0; --i) {
-	destroy_wdt(hpps_wdts[i], TRCH_IRQ__WDT_HPPS0_ST2 + i);
-	hpps_wdts[i] = NULL;
-    }
-    return 1;
 }
 
-void watchdog_hpps_deinit() {
-    for (int i = 0; i < HPPS_NUM_CORES;  ++i) {
-	destroy_wdt(hpps_wdts[i], TRCH_IRQ__WDT_HPPS0_ST2 + i);
-	hpps_wdts[i] = NULL;
+static void watchdog_do(comp_t cpus, void (*do_cb)(struct wdt *))
+{
+    if (cpus & COMP_CPU_TRCH)
+        do_cb(wdts[wdt_groups[CPU_GROUP_TRCH].index]);
+
+    if (cpus & COMP_CPUS_RTPS_R52) {
+        for (unsigned i = 0; i < RTPS_R52_NUM_CORES;  ++i)
+            if (cpus & (1 << (COMP_CPUS_SHIFT_RTPS_R52 + i)))
+                do_cb(wdts[wdt_groups[CPU_GROUP_RTPS_R52].index + i]);
     }
+
+    if (cpus & COMP_CPUS_RTPS_A53) {
+        for (unsigned i = 0; i < RTPS_A53_NUM_CORES;  ++i)
+            if (cpus & (1 << (COMP_CPUS_SHIFT_RTPS_A53 + i)))
+                do_cb(wdts[wdt_groups[CPU_GROUP_RTPS_A53].index + i]);
+    }
+
+    if (cpus & COMP_CPUS_HPPS) {
+        for (unsigned i = 0; i < HPPS_NUM_CORES;  ++i)
+            if (cpus & (1 << (COMP_CPUS_SHIFT_HPPS + i)))
+                do_cb(wdts[wdt_groups[CPU_GROUP_HPPS].index + i]);
+    }
+}
+
+void watchdog_start(comp_t cpus)
+{
+    watchdog_do(cpus, wdt_enable);
+}
+void watchdog_stop(comp_t cpus)
+{
+    watchdog_do(cpus, wdt_disable);
+}
+void watchdog_kick(comp_t cpus)
+{
+    watchdog_do(cpus, wdt_kick);
+}
+void watchdog_start_group(enum cpu_group_id gid)
+{
+    watchdog_start(subsys_cpu_group(CPU_GROUP_TRCH)->cpu_set);
+}
+void watchdog_stop_group(enum cpu_group_id gid)
+{
+    watchdog_stop(subsys_cpu_group(CPU_GROUP_TRCH)->cpu_set);
+}
+void watchdog_kick_group(enum cpu_group_id gid)
+{
+    watchdog_kick(subsys_cpu_group(CPU_GROUP_TRCH)->cpu_set);
 }
 
 void wdt_trch_st1_isr()
 {
-    wdt_isr(trch_wdt, /* stage */ 0);
+    wdt_isr(wdts[wdt_groups[CPU_GROUP_TRCH].index], /* stage */ 0);
 }
 
-#define WDT_ISR(sys, wdts, idx) void wdt_ ## sys ## idx ## _st2_isr() { wdt_isr(wdts[idx], 1); }
+#define WDT_ISR(idx) void wdt_ ## idx ## _st2_isr() { wdt_isr(wdts[idx], 1); }
 
-#define WDT_RTPS_ISR(idx) WDT_ISR(rtps, rtps_wdts, idx)
-#define WDT_HPPS_ISR(idx) WDT_ISR(hpps, hpps_wdts, idx)
+WDT_ISR(1)
+WDT_ISR(2)
+WDT_ISR(3)
+WDT_ISR(4)
+WDT_ISR(5)
+WDT_ISR(6)
+WDT_ISR(7)
+WDT_ISR(8)
+WDT_ISR(9)
+WDT_ISR(10)
+WDT_ISR(11)
 
-WDT_RTPS_ISR(0)
-WDT_RTPS_ISR(1)
-
-WDT_HPPS_ISR(0)
-WDT_HPPS_ISR(1)
-WDT_HPPS_ISR(2)
-WDT_HPPS_ISR(3)
-WDT_HPPS_ISR(4)
-WDT_HPPS_ISR(5)
-WDT_HPPS_ISR(6)
-WDT_HPPS_ISR(7)
+#if 12 != NUM_CORES
+#error WDT ISRs not defined for all cores
+#endif // NUM_CORES

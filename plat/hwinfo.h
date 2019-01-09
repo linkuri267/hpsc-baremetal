@@ -7,9 +7,6 @@
 
 // This file fulfills the role of a device tree
 
-#define HPPS_NUM_CORES 8
-#define RTPS_NUM_CORES 2
-
 #define RTPS_GIC_BASE   0x30e00000
 #define TRCH_SCS_BASE   0xe000e000
 
@@ -31,15 +28,24 @@
 #define MBOX_HPPS_TRCH__BASE      ((volatile uint32_t *)0xfff50000)
 #define MBOX_HPPS_RTPS__BASE      ((volatile uint32_t *)0xfff60000)
 
-#define WDT_TRCH_BASE            ((volatile uint32_t *)0x21002000)
+#define WDT_SIZE_4KB              0x1000
+#define WDT_SIZE_64KB            0x10000
 
-#define WDT_RTPS_TRCH_BASE      ((volatile uint32_t *)0x21003000)
-#define WDT_RTPS_RTPS_BASE      ((volatile uint32_t *)0x30a0a000)
-#define WDT_RTPS_SIZE           0x1000
+#define WDT_TRCH_BASE              ((volatile uint32_t *)0x21002000)
+#define WDT_TRCH_SIZE              WDT_SIZE_4KB
 
-#define WDT_HPPS_TRCH_BASE      ((volatile uint32_t *)0x21010000)
-#define WDT_HPPS_RTPS_BASE      ((volatile uint32_t *)0xfff70000)
-#define WDT_HPPS_SIZE           0x10000
+#define WDT_RTPS_R52_0_TRCH_BASE   ((volatile uint32_t *)0x21003000)
+#define WDT_RTPS_R52_1_TRCH_BASE   ((volatile uint32_t *)0x21004000)
+#define WDT_RTPS_A53_TRCH_BASE     ((volatile uint32_t *)0x21005000)
+#define WDT_RTPS_R52_0_RTPS_BASE   ((volatile uint32_t *)0x30a0a000)
+#define WDT_RTPS_R52_1_RTPS_BASE   ((volatile uint32_t *)0x30a0b000)
+#define WDT_RTPS_R52_SIZE          WDT_SIZE_4KB
+#define WDT_RTPS_A53_RTPS_BASE     ((volatile uint32_t *)0x30a09000)
+#define WDT_RTPS_A53_SIZE          WDT_SIZE_4KB
+
+#define WDT_HPPS_TRCH_BASE         ((volatile uint32_t *)0x21010000)
+#define WDT_HPPS_RTPS_BASE         ((volatile uint32_t *)0xfff70000)
+#define WDT_HPPS_SIZE              WDT_SIZE_64KB
 
 #define APU       ((volatile uint8_t *)0xfd5c0000)
 #define CRF       ((volatile uint8_t *)0xfd1a0000)

@@ -25,24 +25,28 @@ TRCH_IRQ__TRCH_DMA_ABORT : dma_trch_dma_abort_isr
 TRCH_IRQ__TRCH_DMA_EV0 : dma_trch_dma_event_0_isr
 #endif
 
-#if CONFIG_TRCH_WDT | TEST_TRCH_WDT
+#if CONFIG_TRCH_WDT | TEST_WDTS
 TRCH_IRQ__WDT_TRCH_ST1 : wdt_trch_st1_isr
 #endif
 
-#if CONFIG_RTPS_WDT | TEST_RTPS_WDT
-TRCH_IRQ__WDT_RTPS0_ST2: wdt_rtps0_st2_isr
-TRCH_IRQ__WDT_RTPS1_ST2: wdt_rtps1_st2_isr
+#if CONFIG_RTPS_R52_WDT | TEST_WDTS
+TRCH_IRQ__WDT_RTPS_R52_0_ST2: wdt_1_st2_isr
+TRCH_IRQ__WDT_RTPS_R52_1_ST2: wdt_2_st2_isr
 #endif
 
-#if CONFIG_HPPS_WDT | TEST_HPPS_WDT
-TRCH_IRQ__WDT_HPPS0_ST2: wdt_hpps0_st2_isr
-TRCH_IRQ__WDT_HPPS1_ST2: wdt_hpps1_st2_isr
-TRCH_IRQ__WDT_HPPS2_ST2: wdt_hpps2_st2_isr
-TRCH_IRQ__WDT_HPPS3_ST2: wdt_hpps3_st2_isr
-TRCH_IRQ__WDT_HPPS4_ST2: wdt_hpps4_st2_isr
-TRCH_IRQ__WDT_HPPS5_ST2: wdt_hpps5_st2_isr
-TRCH_IRQ__WDT_HPPS6_ST2: wdt_hpps6_st2_isr
-TRCH_IRQ__WDT_HPPS7_ST2: wdt_hpps7_st2_isr
+#if CONFIG_RTPS_A53_WDT | TEST_WDTS
+TRCH_IRQ__WDT_RTPS_A53_ST2: wdt_3_st2_isr
+#endif
+
+#if CONFIG_HPPS_WDT | TEST_WDTS
+TRCH_IRQ__WDT_HPPS0_ST2: wdt_4_st2_isr
+TRCH_IRQ__WDT_HPPS1_ST2: wdt_5_st2_isr
+TRCH_IRQ__WDT_HPPS2_ST2: wdt_6_st2_isr
+TRCH_IRQ__WDT_HPPS3_ST2: wdt_7_st2_isr
+TRCH_IRQ__WDT_HPPS4_ST2: wdt_8_st2_isr
+TRCH_IRQ__WDT_HPPS5_ST2: wdt_9_st2_isr
+TRCH_IRQ__WDT_HPPS6_ST2: wdt_10_st2_isr
+TRCH_IRQ__WDT_HPPS7_ST2: wdt_11_st2_isr
 #endif
 
 #if TEST_ETIMER

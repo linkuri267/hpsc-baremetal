@@ -1,21 +1,21 @@
 #ifndef WATCHDOG_H
 #define WATCHDOG_H
 
+#include "subsys.h"
 #include "wdt.h"
 
 // Must be global for the standalone tests for WDTs in test-wdt.c
-extern struct wdt *trch_wdt;
-extern struct wdt *rtps_wdts[];
-extern struct wdt *hpps_wdts[];
+extern struct wdt *wdts[];
 
-int watchdog_trch_start();
-void watchdog_trch_stop();
-void watchdog_trch_kick();
+void watchdog_start(comp_t cpus);
+void watchdog_stop(comp_t cpus);
+void watchdog_kick(comp_t cpus);
 
-int watchdog_rtps_init();
-void watchdog_rtps_deinit();
+void watchdog_start_group(enum cpu_group_id gid);
+void watchdog_stop_group(enum cpu_group_id gid);
+void watchdog_kick_group(enum cpu_group_id gid);
 
-int watchdog_hpps_init();
-void watchdog_hpps_deinit();
+void watchdog_init_group(enum cpu_group_id gid);
+void watchdog_deinit_group(enum cpu_group_id gid);
 
 #endif // WATCHDOG_H

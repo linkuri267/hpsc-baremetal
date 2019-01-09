@@ -4,9 +4,7 @@ include ../Makefile.common
 CONFIG_FLAGS = \
 	TEST_FLOAT \
 	TEST_SYSTICK \
-	TEST_TRCH_WDT \
-	TEST_RTPS_WDT \
-	TEST_HPPS_WDT \
+	TEST_WDTS \
 	TEST_TRCH_DMA \
 	TEST_TRCH_DMA_CB \
 	TEST_RT_MMU \
@@ -17,7 +15,8 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_TRCH_MAILBOX_SSW \
 	CONFIG_RTPS_TRCH_MAILBOX \
 	CONFIG_TRCH_WDT \
-	CONFIG_RTPS_WDT \
+	CONFIG_RTPS_R52_WDT \
+	CONFIG_RTPS_A53_WDT \
 	CONFIG_HPPS_WDT \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
@@ -28,9 +27,7 @@ CONFIG_FLAGS = \
 # Enable/disable standalone tests here:
 TEST_FLOAT 			= 1
 TEST_SYSTICK			= 1
-TEST_TRCH_WDT 			= 1
-TEST_RTPS_WDT 			= 1
-TEST_HPPS_WDT 			= 1
+TEST_WDTS 			= 1
 TEST_TRCH_DMA			= 1
 TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU			= 1
@@ -43,7 +40,8 @@ CONFIG_HPPS_TRCH_MAILBOX 	= 1
 CONFIG_HPPS_TRCH_MAILBOX_SSW 	= 1
 CONFIG_RTPS_TRCH_MAILBOX 	= 1
 CONFIG_TRCH_WDT 		= 1
-CONFIG_RTPS_WDT 		= 1
+CONFIG_RTPS_R52_WDT 		= 1
+CONFIG_RTPS_A53_WDT 		= 1
 CONFIG_HPPS_WDT 		= 1
 CONFIG_TRCH_DMA 		= 1
 CONFIG_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
@@ -61,6 +59,12 @@ endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
 ifneq ($(strip $(CONFIG_RT_MMU)),1)
 $(error TEST_RT_MMU requires CONFIG_RT_MMU)
+endif
+endif
+ifeq ($(strip $(TEST_WDTS)),1)
+ifneq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
+$(error TEST_WDTS requires one of CONFIG_*_WDT)
+# TODO: remove this dependency by factoring ISRs into a separate file
 endif
 endif
 
@@ -117,7 +121,7 @@ OBJS = \
        boot.o \
        main.o \
 
-ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_WDT) $(CONFIG_HPPS_WDT)),1)
+ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
 OBJS += watchdog.o
 endif
 ifeq ($(strip $(CONFIG_RT_MMU)),1)
@@ -145,7 +149,7 @@ endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
 OBJS += tests/mmu.o
 endif
-ifeq ($(call cfg-or,$(TEST_TRCH_WDT) $(TEST_RTPS_WDT) $(TEST_HPPS_WDT)),1)
+ifeq ($(strip $(TEST_WDTS)),1)
 OBJS += tests/wdt.o
 endif
 ifeq ($(strip $(TEST_ETIMER)),1)

@@ -46,6 +46,14 @@ CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 CONFIG_WDT 			= 1
 CONFIG_HPPS_RTPS_MAILBOX  	= 1
 
+# Most tests are standalone, but these are exceptions
+ifeq ($(strip $(TEST_WDT)),1)
+ifneq ($(strip $(CONFIG_WDT)),1)
+$(error TEST_WDT requires a CONFIG_WDT)
+endif
+endif
+
+
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
 ifneq ($(strip $(CONFIG_GTIMER)),1)
 $(error CONFIG_SLEEP_TIMER requires a timer to be enabled)

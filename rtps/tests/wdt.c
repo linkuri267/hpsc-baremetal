@@ -40,7 +40,7 @@ int test_wdt()
     int rc = 1;
 
     volatile unsigned expired_stage = 0;
-    wdt = wdt_create_target("RTPS0", WDT_RTPS_RTPS_BASE + 0 * WDT_RTPS_SIZE,
+    wdt = wdt_create_target("RTPS0", WDT_RTPS_R52_0_RTPS_BASE,
                             wdt_tick, (void *)&expired_stage);
     if (!wdt)
         return 1;
