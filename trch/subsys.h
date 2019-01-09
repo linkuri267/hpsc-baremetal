@@ -4,7 +4,7 @@
 // Note: when changing, remember to change name array in subsys.c
 typedef enum { // bitmask
     SUBSYS_INVALID  = 0,
-    SUBSYS_RTPS     = 0x1,
+    SUBSYS_RTPS_R52 = 0x1,
     SUBSYS_RTPS_A53 = 0x2,
     SUBSYS_HPPS     = 0x4,
     NUM_SUBSYSS     = 3

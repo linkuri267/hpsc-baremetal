@@ -53,7 +53,7 @@ static int boot_load(subsys_t subsys)
     }
 
     switch (subsys) {
-        case SUBSYS_RTPS:
+        case SUBSYS_RTPS_R52:
             printf("BOOT: load RTPS mode %s\r\n", rtps_mode_name(cfg.rtps_mode));
             switch (cfg.rtps_mode) {
                 case CFG__RTPS_MODE__SPLIT: // TODO
@@ -71,7 +71,7 @@ static int boot_load(subsys_t subsys)
             }
             break;
         case SUBSYS_RTPS_A53:
-            printf("BOOT: load RTPS_A53 \r\n");
+            // TODO: load binaries
             break;
         case SUBSYS_HPPS:
             printf("BOOT: load HPPS\r\n");
@@ -95,7 +95,7 @@ static int boot_reset(subsys_t subsys)
 {
     int rc = 0;
     switch (subsys) {
-        case SUBSYS_RTPS:
+        case SUBSYS_RTPS_R52:
             switch (cfg.rtps_mode) {
                 case CFG__RTPS_MODE__SPLIT:
                     reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
@@ -121,9 +121,8 @@ static int boot_reset(subsys_t subsys)
         case SUBSYS_HPPS:
             rc = reset_release(COMP_CPU_HPPS_0);
             break;
-        case SUBSYS_INVALID:
-        case NUM_SUBSYSS:
-            printf("BOOT: ERROR: invalid subsystem\r\n");
+        default:
+            printf("BOOT: ERROR: invalid subsystem: %u\r\n", subsys);
             rc = 1;
     }
     return rc;

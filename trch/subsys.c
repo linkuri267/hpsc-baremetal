@@ -5,7 +5,7 @@
 static char subsys_name_buf[16];
 
 static const char *subsys_names[] = {
-    "RTPS",
+    "RTPS_R52",
     "RTPS_A53",
     "HPPS",
 };

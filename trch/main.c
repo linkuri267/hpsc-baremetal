@@ -223,8 +223,8 @@ int main ( void )
     if (boot_config())
         panic("BOOT CFG");
 
-#if CONFIG_BOOT_RTPS
-    boot_request(SUBSYS_RTPS);
+#if CONFIG_BOOT_RTPS_R52
+    boot_request(SUBSYS_RTPS_R52);
 #endif // CONFIG_BOOT_RTPS
 
 #if CONFIG_BOOT_RTPS_A53
