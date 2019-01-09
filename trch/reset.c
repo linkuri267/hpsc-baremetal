@@ -21,10 +21,9 @@
 #define CRF__RST_FPD_APU__GIC_RESET               0x40000
 
 #define CRL__RST_LPD_TOP 0x23c
-#define CRL__RST_LPD_TOP__RPU_R5x_RESET__SHIFT          0
-#define CRL__RST_LPD_TOP__RPU_R5x_RESET               0x3
-#define CRL__RST_LPD_TOP__RPU_A53_RESET               0x4
-#define CRL__RST_LPD_TOP__GIC_RESET            0x01000000
+#define CRL__RST_LPD_TOP__RPU_x_RESET__SHIFT            0
+#define CRL__RST_LPD_TOP__RPU_x_RESET                 0x7
+#define CRL__RST_LPD_TOP__R52_GIC_RESET        0x01000000
 #define CRL__RST_LPD_TOP__A53_GIC_RESET        0x02000000
 
 #define RPU_CTRL__RPU_GLBL_CNTL	0x0
@@ -45,16 +44,20 @@ int reset_assert(comp_t comps)
 
     // Note: we tie the GICs to the respective CPUs unconditionally here
 
+    uint32_t gic_reset = 0;
+    if (comps & COMP_CPUS_RTPS_R52)
+        gic_reset |= CRL__RST_LPD_TOP__R52_GIC_RESET;
+    if (comps & COMP_CPUS_RTPS_A53)
+        gic_reset |= CRL__RST_LPD_TOP__A53_GIC_RESET;
     if (comps & COMP_CPUS_RTPS) {
         REGB_SET32(CRL, CRL__RST_LPD_TOP,
-                ((CRL__RST_LPD_TOP__RPU_R5x_RESET | CRL__RST_LPD_TOP__RPU_A53_RESET) &
+                (CRL__RST_LPD_TOP__RPU_x_RESET &
                         (((comps & COMP_CPUS_RTPS) >> COMP_CPUS_SHIFT_RTPS)
-                                << CRL__RST_LPD_TOP__RPU_R5x_RESET__SHIFT)) |
-                CRL__RST_LPD_TOP__GIC_RESET | CRL__RST_LPD_TOP__A53_GIC_RESET);
+                                << CRL__RST_LPD_TOP__RPU_x_RESET__SHIFT)) | gic_reset);
     }
-    if (comps & COMP_CPU_RTPS_0)
+    if (comps & COMP_CPU_RTPS_R52_0)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
-    if (comps & COMP_CPU_RTPS_1)
+    if (comps & COMP_CPU_RTPS_R52_1)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
     if (comps & COMP_CPU_RTPS_A53_0)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT);
@@ -89,42 +92,26 @@ int reset_release(comp_t comps)
     if ((comps & COMP_CPUS_RTPS_R52) == COMP_CPUS_RTPS_R52)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
 
-    if (comps & COMP_CPU_RTPS_0)
+    if (comps & COMP_CPU_RTPS_R52_0)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
-    if (comps & COMP_CPU_RTPS_1)
+    if (comps & COMP_CPU_RTPS_R52_1)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
     if (comps & COMP_CPU_RTPS_A53_0)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT); 
 
-    uint32_t reg_val;
-    switch (comps & COMP_CPUS_RTPS) {
-        case COMP_CPUS_RTPS:
-            reg_val = ((CRL__RST_LPD_TOP__RPU_R5x_RESET | CRL__RST_LPD_TOP__RPU_A53_RESET) &
-                      (((COMP_CPUS_RTPS) >> COMP_CPUS_SHIFT_RTPS)
-                      << CRL__RST_LPD_TOP__RPU_R5x_RESET__SHIFT));
-            break;
-        case COMP_CPU_RTPS_0:
-        case COMP_CPU_RTPS_1:
-        case COMP_CPUS_RTPS_R52:
-            reg_val = ((CRL__RST_LPD_TOP__RPU_R5x_RESET) &
-                      (((comps & COMP_CPUS_RTPS_R52) >> COMP_CPUS_SHIFT_RTPS)
-                      << CRL__RST_LPD_TOP__RPU_R5x_RESET__SHIFT));
-            break;
-        case COMP_CPUS_RTPS_A53:
-            reg_val = (((COMP_CPUS_RTPS_A53) >> COMP_CPUS_SHIFT_RTPS)
-                      << CRL__RST_LPD_TOP__RPU_R5x_RESET__SHIFT);
-            break;
-        default:
-            reg_val = 0;
-    }
-    if ((comps & COMP_CPUS_RTPS)) {
-        REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, reg_val);
+    if (comps & COMP_CPUS_RTPS) {
+        uint32_t gic_reset = 0;
+        if (comps & COMP_CPUS_RTPS_R52)
+            gic_reset |= CRL__RST_LPD_TOP__R52_GIC_RESET;
+        if (comps & COMP_CPUS_RTPS_A53)
+            gic_reset |= CRL__RST_LPD_TOP__A53_GIC_RESET;
 
+        REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, gic_reset);
         mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
-        if ((comps & COMP_CPUS_RTPS_R52))
-            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__GIC_RESET);
-        if ((comps & COMP_CPUS_RTPS_A53))
-            REGB_CLEAR32(CRL, CRL__RST_LPD_TOP, CRL__RST_LPD_TOP__A53_GIC_RESET);
+
+        REGB_CLEAR32(CRL, CRL__RST_LPD_TOP,
+                CRL__RST_LPD_TOP__RPU_x_RESET &
+                 ((comps >> COMP_CPUS_SHIFT_RTPS) << CRL__RST_LPD_TOP__RPU_x_RESET__SHIFT));
     }
 
     if (comps & COMP_CPUS_HPPS) {
