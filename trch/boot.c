@@ -98,11 +98,16 @@ static int boot_reset(subsys_t subsys)
         case SUBSYS_RTPS:
             switch (cfg.rtps_mode) {
                 case CFG__RTPS_MODE__SPLIT:
+                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
                     rc |= reset_release(COMP_CPUS_RTPS_R52);
                     break;
                 case CFG__RTPS_MODE__LOCKSTEP:
+                    reset_set_rtps_r52_mode(RTPS_R52_MODE__LOCKSTEP);
+                    rc = reset_release(COMP_CPU_RTPS_R52_0);
+                    break;
                 case CFG__RTPS_MODE__SMP:
-                    rc = reset_release(COMP_CPU_RTPS_0);
+                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
+                    rc = reset_release(COMP_CPU_RTPS_R52_0);
                     break;
                 default:
                     printf("BOOT: ERROR: unknown RTPS boot mode: %s\r\n",

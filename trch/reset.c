@@ -38,6 +38,15 @@
 #define RPU_CTRL__RPU_2_CFG  0x270
 #define RPU_CTRL__RPU_2_CFG__NCPUHALT 0x1
 
+static const char *rtps_r52_mode_name(unsigned m)
+{
+    switch (m) {
+        case RTPS_R52_MODE__SPLIT:    return "SPLIT";
+        case RTPS_R52_MODE__LOCKSTEP: return "LOCKSTEP";
+        default:                      return "?";
+    };
+}
+
 int reset_assert(comp_t comps)
 {
     printf("RESET: assert: components mask %x\r\n", comps);
@@ -62,11 +71,6 @@ int reset_assert(comp_t comps)
     if (comps & COMP_CPU_RTPS_A53_0)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT);
 
-    // on assert, always clear the mode to lockstep, see also comment in release
-    if (comps & COMP_CPUS_RTPS) {
-        REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
-        REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
-    }
     if (comps & COMP_CPUS_HPPS) {
         REGB_SET32(CRF, CRF__RST_FPD_APU,
                    (CRF__RST_FPD_APU__ACPUx_RESET &
@@ -86,11 +90,6 @@ int reset_release(comp_t comps)
     printf("RESET: release: components mask %x\r\n", comps);
 
     // Note: we tie the GICs to the respective CPUs unconditionally here
-
-    // The only time we request both CPUs is in SPLIT mode. If this stops being
-    // true, then add a method reset_set_rtps_mode and call it from boot.c
-    if ((comps & COMP_CPUS_RTPS_R52) == COMP_CPUS_RTPS_R52)
-        REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
 
     if (comps & COMP_CPU_RTPS_R52_0)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
@@ -127,6 +126,22 @@ int reset_release(comp_t comps)
                 (CRF__RST_FPD_APU__ACPUx_RESET &
                  (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
                   << CRF__RST_FPD_APU__ACPUx_RESET__SHIFT)));
+    }
+    return 0;
+}
+
+int reset_set_rtps_r52_mode(enum rtps_r52_mode m)
+{
+    printf("RESET: set RTPS R52 mode: %s\r\n", rtps_r52_mode_name(m));
+    switch (m) {
+        case RTPS_R52_MODE__LOCKSTEP:
+            REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
+            break;
+        case RTPS_R52_MODE__SPLIT:
+            REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_GLBL_CNTL, RPU_CTRL__RPU_GLBL_CNTL__SLSPLIT);
+            break;
+        default:
+            ASSERT(false && "invalid RTPS R52 mode");
     }
     return 0;
 }
