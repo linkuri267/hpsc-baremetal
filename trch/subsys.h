@@ -4,10 +4,11 @@
 // Note: when changing, remember to change name array in subsys.c
 typedef enum { // bitmask
     SUBSYS_INVALID  = 0,
-    SUBSYS_RTPS_R52 = 0x1,
-    SUBSYS_RTPS_A53 = 0x2,
-    SUBSYS_HPPS     = 0x4,
-    NUM_SUBSYSS     = 3
+    SUBSYS_TRCH     = 0x1,
+    SUBSYS_RTPS_R52 = 0x2,
+    SUBSYS_RTPS_A53 = 0x4,
+    SUBSYS_HPPS     = 0x8,
+    NUM_SUBSYSS     = 4
 } subsys_t;
 
 typedef enum { // bitmask
