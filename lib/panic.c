@@ -2,10 +2,16 @@
 
 #include "printf.h"
 #include "arm.h"
+#include "intc.h"
 
 void panic(const char *msg)
 {
-    int_disable();
+    int_disable(); // raises priority, so ISRs won't run but WFI still returns
+
+    // To stay in WFI, we need to disable internal and external interrupts
+    sys_ints_disable(); // internal interrupts that bypass int controller
+    intc_disable_all(); // external interrupts
+
     printf("PANIC HALT: %s\r\n", msg);
 
     // Halt, but without busylooping. Note: even with masked interrupts, WFI
