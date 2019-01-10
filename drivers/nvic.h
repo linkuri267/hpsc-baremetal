@@ -16,7 +16,4 @@ struct irq;
 struct irq *nvic_request(unsigned irqn);
 void nvic_release(struct irq *irq);
 
-void nvic_intc_int_enable(struct irq *irq);
-void nvic_intc_int_disable(struct irq *irq);
-
 #endif // NVIC_H

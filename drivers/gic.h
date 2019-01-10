@@ -30,7 +30,4 @@ struct irq;
 struct irq *gic_request(unsigned irqn, gic_irq_type_t type, gic_irq_cfg_t cfg);
 void gic_release(struct irq *irq);
 
-void gic_intc_int_enable(struct irq *irq);
-void gic_intc_int_disable(struct irq *irq);
-
 #endif // GIC_H
