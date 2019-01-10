@@ -109,6 +109,7 @@ OBJS = \
        lib/intc.o \
        lib/mailbox-link.o \
        lib/command.o \
+       drivers/cortex-m4.o \
        drivers/systick.o \
        drivers/nvic.o \
        drivers/uart.o \

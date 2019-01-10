@@ -72,6 +72,7 @@ SUBDIRS = \
 
 OBJS = \
 	startup.o \
+	drivers/cortex-r52.o \
 	drivers/uart.o \
 	drivers/gic.o \
 	drivers/mailbox.o \
