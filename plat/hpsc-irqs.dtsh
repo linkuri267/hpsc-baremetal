@@ -84,6 +84,7 @@
 #define TRCH_IRQ__ELAPSED_TIMER                 72
 
 #define TRCH_IRQ__WDT_RTPS_A53_ST2              73 /* TODO: move to WDTs */
+#define TRCH_IRQ__RTI_TIMER                     74
 
 
 // ******** RTPS interrupt controller inputs **************

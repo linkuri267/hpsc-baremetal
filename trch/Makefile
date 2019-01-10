@@ -9,6 +9,7 @@ CONFIG_FLAGS = \
 	TEST_TRCH_DMA_CB \
 	TEST_RT_MMU \
 	TEST_ETIMER \
+	TEST_RTI_TIMER \
 	CONFIG_SYSTICK \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_HPPS_TRCH_MAILBOX \
@@ -32,6 +33,7 @@ TEST_TRCH_DMA			= 1
 TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU			= 1
 TEST_ETIMER			= 1
+TEST_RTI_TIMER			= 1
 
 # Set build configuration here
 CONFIG_SYSTICK			= 1
@@ -116,9 +118,11 @@ OBJS = \
        drivers/dma.o \
        drivers/mailbox.o \
        drivers/etimer.o \
+       drivers/rti-timer.o \
        subsys.o \
        reset.o \
        boot.o \
+       isrs.o \
        main.o \
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
@@ -154,6 +158,9 @@ OBJS += tests/wdt.o
 endif
 ifeq ($(strip $(TEST_ETIMER)),1)
 OBJS += tests/etimer.o
+endif
+ifeq ($(strip $(TEST_RTI_TIMER)),1)
+OBJS += tests/rti-timer.o
 endif
 
 TARGET=trch

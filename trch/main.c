@@ -98,6 +98,11 @@ int main ( void )
         panic("Elapsed Timer test");
 #endif // TEST_ETIMER
 
+#if TEST_RTI_TIMER
+    if (test_rti_timer())
+        panic("RTI Timer test");
+#endif // TEST_RTI_TIMER
+
 #if TEST_WDTS
     if (test_wdts())
         panic("WDT test");

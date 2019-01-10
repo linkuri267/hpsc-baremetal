@@ -52,3 +52,7 @@ TRCH_IRQ__WDT_HPPS7_ST2: wdt_11_st2_isr
 #if TEST_ETIMER
 TRCH_IRQ__ELAPSED_TIMER: etimer_isr
 #endif
+
+#if TEST_RTI_TIMER
+TRCH_IRQ__RTI_TIMER: rti_timer_trch_isr
+#endif

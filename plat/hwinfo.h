@@ -21,6 +21,7 @@
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
 
 #define ETIMER__BASE    ((volatile uint32_t *)0x21006000)
+#define RTI_TIMER__BASE ((volatile uint32_t *)0x21007000)
 
 #define HPSC_MBOX_NUM_BLOCKS 3
 
