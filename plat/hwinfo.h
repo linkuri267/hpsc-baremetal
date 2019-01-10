@@ -63,7 +63,11 @@
 #define ETIMER_NOMINAL_FREQ_HZ 1000000000
 #define ETIMER_CLK_FREQ_HZ      125000000
 #define ETIMER_MAX_DIVIDER             32
+#define ETIMER_MAX_DIVIDER_BITS         5 // log2(ETIMER_MAX_DIVIDER)
 #define ETIMER_MIN_CLK_FREQ_HZ (ETIMER_CLK_FREQ_HZ / ETIMER_MAX_DIVIDER)
+// See Qemu model: max count is less than 2^64-1 due to a limitation
+#define ETIMER_MAX_COUNT  ((1ULL << (64 - ETIMER_MAX_DIVIDER_BITS - 1)) - 1)
+#define RTI_MAX_COUNT ETIMER_MAX_COUNT
 
 #define WDT_CLK_FREQ_HZ         125000000
 #define WDT_MAX_DIVIDER                32
