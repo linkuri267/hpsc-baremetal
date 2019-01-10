@@ -42,7 +42,9 @@ struct endpoint endpoints[] = {
 };
 #endif // SERVER
 
+#if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
+#endif // CONFIG_TRCH_WDT
 
 #if CONFIG_SYSTICK
 static void systick_tick(void *arg)
