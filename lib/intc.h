@@ -13,6 +13,7 @@ struct irq;
 struct intc_ops {
     void (*int_enable)(struct irq *irq);
     void (*int_disable)(struct irq *irq);
+    void (*disable_all)(void);
 
     // For debugging info purpose
     unsigned (*int_num)(struct irq *irq);
@@ -23,6 +24,7 @@ void intc_register(const struct intc_ops *ops);
 
 void intc_int_enable(struct irq *irq);
 void intc_int_disable(struct irq *irq);
+void intc_disable_all();
 
 // For debugging info purposes, since the object is opaque
 unsigned intc_int_num(struct irq *irq);

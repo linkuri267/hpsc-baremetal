@@ -152,6 +152,11 @@ void gic_int_disable(unsigned irq, gic_irq_type_t type) {
     }
 }
 
+void gic_disable_all()
+{
+    ASSERT(false && "not implemented");
+}
+
 struct irq *gic_request(unsigned irqn, gic_irq_type_t type, gic_irq_cfg_t cfg)
 {
     struct irq *irq = OBJECT_ALLOC(gic.irqs);
@@ -174,6 +179,11 @@ static void gic_op_int_enable(struct irq *irq)
 static void gic_op_int_disable(struct irq *irq)
 {
     gic_int_disable(irq->n, irq->type);
+}
+
+static void gic_op_disable_all()
+{
+    gic_disable_all();
 }
 
 unsigned gic_op_int_num(struct irq *irq)

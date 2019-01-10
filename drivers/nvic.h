@@ -4,9 +4,12 @@
 #include <stdint.h>
 
 void nvic_init(volatile uint32_t *scs_base);
+unsigned nvic_num_ints();
 
 void nvic_int_enable(unsigned irq);
 void nvic_int_disable(unsigned irq);
+
+void nvic_disable_all();
 
 
 // For use by intc.h common adapter

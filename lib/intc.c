@@ -21,6 +21,12 @@ void intc_int_disable(struct irq *irq)
     intc_ops->int_disable(irq);
 }
 
+void intc_disable_all()
+{
+    ASSERT(intc_ops && intc_ops->disable_all);
+    intc_ops->disable_all();
+}
+
 unsigned intc_int_num(struct irq *irq)
 {
     ASSERT(intc_ops && intc_ops->int_num);
