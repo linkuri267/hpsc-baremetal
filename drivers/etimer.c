@@ -75,7 +75,8 @@ struct etimer {
     uint32_t sync_interval;
 };
 
-static struct etimer etimers[1];
+#define MAX_TIMERS 1 // there's only one instance per system
+static struct etimer etimers[MAX_TIMERS];
 
 static void exec_cmd(struct etimer *et, enum cmd cmd)
 {
@@ -200,9 +201,8 @@ void etimer_sync(struct etimer *et)
     exec_cmd(et, CMD_SYNC);
 }
 
-void etimer_isr()
+void etimer_isr(struct etimer *et)
 {
-    struct etimer *et = &etimers[0]; // only one in the system
     DPRINTF("ETMR %s: ISR\r\n", et->name);
 
     if (et->cb)

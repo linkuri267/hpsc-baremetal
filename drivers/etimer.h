@@ -32,5 +32,6 @@ void etimer_event(struct etimer *et, uint64_t count);
 void etimer_pulse(struct etimer *et, uint32_t thres, uint16_t width);
 uint64_t etimer_skew(struct etimer *et); // at last sync event
 void etimer_sync(struct etimer *et);
+void etimer_isr(struct etimer *et);
 
 #endif // ETIMER_H

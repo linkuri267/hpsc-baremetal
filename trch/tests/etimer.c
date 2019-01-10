@@ -16,6 +16,8 @@
 
 #define NUM_EVENTS 3
 
+extern struct etimer *elapsed_timer; // defined near ISR
+
 static void handle_event(struct etimer *et, void *arg)
 {
     volatile int *events = arg;
@@ -33,6 +35,7 @@ int test_etimer()
             ETIMER_NOMINAL_FREQ_HZ, ETIMER_CLK_FREQ_HZ, ETIMER_MAX_DIVIDER);
     if (!et)
         return 1;
+    elapsed_timer = et; // for ISR
 
     nvic_int_enable(TRCH_IRQ__ELAPSED_TIMER);
 

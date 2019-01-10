@@ -12,3 +12,9 @@
 struct rti_timer *trch_rti_timer;
 void rti_timer_trch_isr() { rti_timer_isr(trch_rti_timer); };
 #endif // TEST_RTI_TIMER
+
+#if TEST_ETIMER
+#include "etimer.h"
+struct etimer *elapsed_timer;
+void elapsed_timer_isr() { etimer_isr(elapsed_timer); };
+#endif // TEST_ETIMER
