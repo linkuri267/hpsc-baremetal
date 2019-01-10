@@ -54,8 +54,8 @@ int test_etimer()
     if (count2 <= count) {
         printf("TEST: FAIL: ETMR: value did not advance: "
                "0x%08x%08x <= 0x%08x%08x\r\n",
-               (uint32_t)(count >> 32), (uint32_t)(count & 0xffffffff),
-               (uint32_t)(START_TIME_NS >> 32), (uint32_t)(START_TIME_NS & 0xffffffff));
+               (uint32_t)(count2 >> 32), (uint32_t)count2,
+               (uint32_t)(count >> 32), (uint32_t)count);
         goto cleanup;
     }
 
