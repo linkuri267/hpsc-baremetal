@@ -1,6 +1,8 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <stdint.h>
+
 // Helper for maintaining dynamic lists of objects in static arrays
 
 // As long as the type of derived object satisfies this template:
