@@ -70,6 +70,10 @@ int test_rti_timer()
         }
     }
 
+    // Since there's no way to disable the RTI timer, the best we can do to
+    // reduce the load in the HW emulator, set the interval to max.
+    rti_timer_configure(tmr, RTI_MAX_COUNT);
+
     rc = 0;
 cleanup:
     nvic_int_disable(TRCH_IRQ__RTI_TIMER);
