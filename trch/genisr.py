@@ -89,6 +89,8 @@ def parse_irqmap(fname, defs, incpaths):
         if ':' in p: # explicitly named C ISR
             kv = [s.strip() for s in p.split(':')]
             irq = int(eval(kv[0]))
+            if irq in d:
+                raise Exception("line %u: IRQ %u redefined" % (linenum, irq))
             d[irq] = kv[1]
         else: # create an ISR stub
             if '-' in p:
