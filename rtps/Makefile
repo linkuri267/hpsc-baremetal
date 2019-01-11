@@ -63,13 +63,6 @@ endif
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 
 VPATH = ..
-
-BLDDIR = bld
-SUBDIRS = \
-	lib \
-	drivers \
-	plat \
-
 OBJS = \
 	startup.o \
 	drivers/cortex-r52.o \
