@@ -20,8 +20,14 @@
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
 
-#define ETIMER__BASE    ((volatile uint32_t *)0x21006000)
-#define RTI_TIMER__BASE ((volatile uint32_t *)0x21007000)
+#define ETIMER__BASE                    ((volatile uint32_t *)0x2100a000)
+#define RTI_TIMER_TRCH__BASE            ((volatile uint32_t *)0x21009000)
+#define RTI_TIMER_RTPS_R52_0__TRCH_BASE ((volatile uint32_t *)0x21007000)
+#define RTI_TIMER_RTPS_R52_1__TRCH_BASE ((volatile uint32_t *)0x21008000)
+#define RTI_TIMER_RTPS_A53__TRCH_BASE   ((volatile uint32_t *)0x21006000)
+#define RTI_TIMER_RTPS_R52_0__RTPS_BASE ((volatile uint32_t *)0x30a05000)
+#define RTI_TIMER_RTPS_R52_1__RTPS_BASE ((volatile uint32_t *)0x30a06000)
+#define RTI_TIMER_RTPS_A53__RTPS_BASE   ((volatile uint32_t *)0x30a04000)
 
 #define HPSC_MBOX_NUM_BLOCKS 3
 
@@ -35,9 +41,9 @@
 #define WDT_TRCH_BASE              ((volatile uint32_t *)0x21002000)
 #define WDT_TRCH_SIZE              WDT_SIZE_4KB
 
-#define WDT_RTPS_R52_0_TRCH_BASE   ((volatile uint32_t *)0x21003000)
-#define WDT_RTPS_R52_1_TRCH_BASE   ((volatile uint32_t *)0x21004000)
-#define WDT_RTPS_A53_TRCH_BASE     ((volatile uint32_t *)0x21005000)
+#define WDT_RTPS_R52_0_TRCH_BASE   ((volatile uint32_t *)0x21004000)
+#define WDT_RTPS_R52_1_TRCH_BASE   ((volatile uint32_t *)0x21005000)
+#define WDT_RTPS_A53_TRCH_BASE     ((volatile uint32_t *)0x21003000)
 #define WDT_RTPS_R52_0_RTPS_BASE   ((volatile uint32_t *)0x30a0a000)
 #define WDT_RTPS_R52_1_RTPS_BASE   ((volatile uint32_t *)0x30a0b000)
 #define WDT_RTPS_R52_SIZE          WDT_SIZE_4KB
