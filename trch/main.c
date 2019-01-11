@@ -99,7 +99,7 @@ int main ( void )
 #endif // TEST_ETIMER
 
 #if TEST_RTI_TIMER
-    if (test_rti_timer())
+    if (test_core_rti_timer())
         panic("RTI Timer test");
 #endif // TEST_RTI_TIMER
 

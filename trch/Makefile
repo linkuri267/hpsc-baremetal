@@ -161,7 +161,7 @@ ifeq ($(strip $(TEST_ETIMER)),1)
 OBJS += tests/etimer.o
 endif
 ifeq ($(strip $(TEST_RTI_TIMER)),1)
-OBJS += tests/rti-timer.o
+OBJS += test/test-rti-timer.o tests/rti-timer.o
 endif
 
 TARGET=trch

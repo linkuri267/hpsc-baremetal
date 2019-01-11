@@ -7,6 +7,7 @@ SUBDIRS = \
 	lib \
 	drivers \
 	plat \
+	test \
 	tests \
 
 define dirrule
