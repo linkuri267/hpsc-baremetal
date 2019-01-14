@@ -113,11 +113,15 @@ void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg) {
 
     if (use_redist(type)) {
         switch (type) {
-            case GIC_IRQ_TYPE_SGI:
-                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), cfg_bit << (intid % 16));
+            case GIC_IRQ_TYPE_SGI: {
+                unsigned sgi_id = intid % 16;
+                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), cfg_bit << (2 * sgi_id + 1));
                 break;
-            case GIC_IRQ_TYPE_PPI:
-                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), cfg_bit << (intid % 16));
+            }
+            case GIC_IRQ_TYPE_PPI: {
+                unsigned ppi_id = intid % 16;
+                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), cfg_bit << (2 * ppi_id + 1));
+            }
             default:
                 ASSERT("unreachable");
         }
