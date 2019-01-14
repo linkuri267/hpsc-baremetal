@@ -198,6 +198,7 @@ unsigned gic_op_int_type(struct irq *irq)
 static const struct intc_ops gic_ops = {
     .int_enable = gic_op_int_enable,
     .int_disable = gic_op_int_disable,
+    .disable_all = gic_op_disable_all,
     .int_num = gic_op_int_num,
     .int_type = gic_op_int_type,
 };
