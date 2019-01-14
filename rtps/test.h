@@ -2,6 +2,7 @@
 #define TEST_H
 
 #include "dma.h"
+#include "rti-timer.h"
 
 // Needs to be exposed since referenced from the GIC ISR
 // TODO: add cb registration to irq framework to avoid this
@@ -15,5 +16,6 @@ int test_rtps_mmu();
 int test_rtps_trch_mailbox();
 int test_rtps_dma();
 int test_wdt();
+int test_core_rti_timer(struct rti_timer **tmr_ptr);
 
 #endif // TEST_H

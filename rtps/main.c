@@ -16,6 +16,7 @@
 #include "watchdog.h"
 #include "sleep.h"
 #include "arm.h"
+#include "rti-timer.h"
 #include "test.h"
 
 extern unsigned char _text_start;
@@ -33,6 +34,9 @@ extern void compare_sorts(void);
 
 static enum gtimer sys_timer = GTIMER_PHYS;
 static uint32_t sys_timer_interval; // in cycles
+
+// Main is the owner of these pointers because the ISR accesses them
+static struct rti_timer *rti_timer; // only one since this BM code is not SMP
 
 void enable_interrupts (void)
 {
@@ -93,6 +97,13 @@ int main(void)
     sleep_set_clock(sys_timer_clk);
 #endif // CONFIG_SLEEP_TIMER
 #endif // CONFIG_GTIMER
+
+#if TEST_RTI_TIMER
+    // Test only one timer, because each timer can only be be tested from its
+    // associated core, and this BM code is not SMP.
+    if (test_core_rti_timer(&rti_timer))
+        panic("RTI Timer test");
+#endif // TEST_RTI_TIMER
 
 #if TEST_FLOAT
     if (test_float())
@@ -232,6 +243,12 @@ void irq_handler(unsigned intid) {
                 wdt_isr(wdt, /* stage */ 0);
                 break;
 #endif // TEST_WDT || CONFIG_WDT
+#if TEST_RTI_TIMER
+            case PPI_IRQ__RTI_TIMER: {
+                rti_timer_isr(rti_timer);
+                break;
+            }
+#endif // TEST_RTI_TIMER
             default:
                 printf("WARN: no ISR for PPI IRQ #%u\r\n", ppi);
         }

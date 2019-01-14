@@ -17,6 +17,7 @@ CONFIG_FLAGS = \
 	TEST_SORT \
 	TEST_GTIMER \
 	TEST_WDT \
+	TEST_RTI_TIMER \
 	TEST_RTPS_TRCH_MAILBOX \
 	TEST_RT_MMU \
 	TEST_RTPS_MMU \
@@ -33,6 +34,7 @@ TEST_FLOAT 			= 1
 TEST_SORT 			= 1
 TEST_GTIMER			= 1
 TEST_WDT			= 1
+TEST_RTI_TIMER			= 1
 TEST_RTPS_TRCH_MAILBOX  	= 1
 TEST_RTPS_DMA 			= 1
 TEST_RTPS_DMA_CB 		= 1
@@ -73,6 +75,7 @@ OBJS = \
 	drivers/mmu.o \
 	drivers/gtimer.o \
 	drivers/wdt.o \
+	drivers/rti-timer.o \
 	lib/printf.o \
 	lib/panic.o \
 	lib/mem.o \
@@ -104,6 +107,9 @@ OBJS += tests/gtimer.o
 endif
 ifeq ($(strip $(TEST_WDT)),1)
 OBJS += tests/wdt.o
+endif
+ifeq ($(strip $(TEST_RTI_TIMER)),1)
+OBJS += test/test-rti-timer.o tests/rti-timer.o
 endif
 ifeq ($(strip $(TEST_RT_MMU)),1)
 OBJS += tests/rt-mmu.o
