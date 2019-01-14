@@ -12,12 +12,6 @@
 #define INTERVAL_MS (INTERVAL_NS / 1000000)
 
 // Number of intervals to expect the ISR for.
-//
-// Note: can't be too high, because eventually our checks skew relative to the
-// timer, since our sleep interval does not account for the loop overhead and
-// because in the current sleep implementation the granularity of the sleep
-// interval is at the granularity of the system timer, which can be low (which
-// makes subtracting the loop overhead not possible).
 #define NUM_EVENTS 3
 
 static void handle_event(struct rti_timer *tmr, void *arg)
@@ -39,7 +33,7 @@ int test_rti_timer(volatile uint32_t *base, struct rti_timer **tmr_ptr)
     *tmr_ptr = tmr; // for ISR
 
     uint64_t count = rti_timer_capture(tmr);
-    mdelay(1);
+    msleep(1);
     uint64_t count2 = rti_timer_capture(tmr);
     if (count2 <= count) {
         printf("TEST: FAIL: RTI TMR: value did not advance: "
@@ -56,9 +50,9 @@ int test_rti_timer(volatile uint32_t *base, struct rti_timer **tmr_ptr)
 
     rti_timer_configure(tmr, INTERVAL_NS);
 
-    mdelay(INTERVAL_MS / 10); // offset the checks by an epsilon
+    msleep(INTERVAL_MS / 10); // offset the checks by an epsilon
     for (int i = 1; i <= NUM_EVENTS; ++i) {
-        mdelay(INTERVAL_MS);
+        msleep(INTERVAL_MS);
         if (events != i) {
             printf("TEST: FAIL: RTI TMR: unexpected event count: %u != %u\r\n",
                    events, i);
