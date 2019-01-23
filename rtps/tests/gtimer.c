@@ -49,6 +49,14 @@ int test_gtimer()
     int rc = 0;
     uint32_t frq = gtimer_get_frq();
 
+    if (frq == 0) {
+        printf("ERROR: gtimer test: "
+               "sys counter freq was not set by bootloader\r\n");
+        return 1;
+    }
+
+    // TODO: test frq against measured tick rate
+
 #if 0 // only allowed from EL2
     gtimer_set_frq(FREQ_HZ);
     frq = gtimer_get_frq();
