@@ -87,6 +87,8 @@ int main(void)
 
 #if CONFIG_GTIMER
     uint32_t sys_timer_clk = gtimer_get_frq();
+    if (sys_timer_clk == 0)
+        panic("system counter freq register was not initialized by bootloader");
     sys_timer_interval = SYS_TICK_INTERVAL_MS * (sys_timer_clk / 1000);
     gtimer_set_tval(sys_timer, sys_timer_interval);
     gtimer_subscribe(sys_timer, sys_tick, NULL);
