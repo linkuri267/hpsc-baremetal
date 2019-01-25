@@ -15,6 +15,10 @@
 #define HPPS_DDR_LOW_ADDR   0x80000000
 #define HPPS_DDR_LOW_SIZE   0x3fe00000 // usable by the HPPS subsystem
 
+// Shared memory regions accessible to HPPS
+#define HPPS_SHM_ADDR 0xbf800000
+#define HPPS_SHM_SIZE   0x400000
+
 // Page table should be in memory that is on a bus accessible from the MMUs
 // master port ('dma' prop in MMU node in Qemu DT).  We put it in HPPS DRAM,
 // because that seems to be the only option, judging from high-level Chiplet
