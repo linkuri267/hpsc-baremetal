@@ -106,8 +106,9 @@ def dict_entry(s):
     m = re.match(r'([^=]*)(=(.*))?', s)
     if m:
         name = m.group(1).strip()
-        value = m.group(3).strip()
-    if not m or len(name) == 0 or len(value) == 0:
+        value_group = m.group(3)
+        value = value_group.strip() if value_group is not None else ""
+    if not m or len(name) == 0:
         raise Exception("Invalid dict entry string: '%s'" % s)
     return { name: value }
 
