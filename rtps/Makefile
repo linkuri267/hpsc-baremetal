@@ -47,6 +47,7 @@ CONFIG_GTIMER 			= 1
 CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 CONFIG_WDT 			= 1
 CONFIG_HPPS_RTPS_MAILBOX  	= 1
+CONFIG_CONSOLE			= CADENCE
 
 # Most tests are standalone, but these are exceptions
 ifeq ($(strip $(TEST_WDT)),1)
@@ -63,6 +64,7 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
 
 VPATH = ..
 OBJS = \
@@ -86,6 +88,7 @@ OBJS = \
 	lib/mailbox-link.o \
 	lib/balloc.o \
 	lib/command.o \
+	plat/console.o \
 	main.o \
 
 ifeq ($(strip $(CONFIG_WDT)),1)

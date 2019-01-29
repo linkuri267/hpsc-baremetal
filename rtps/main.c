@@ -1,7 +1,7 @@
 #define DEBUG 0
 
 #include "printf.h"
-#include "cadence_uart.h"
+#include "console.h"
 #include "float.h"
 #include "mailbox.h"
 #include "command.h"
@@ -70,7 +70,7 @@ static void sys_tick(void *arg)
 
 int main(void)
 {
-    cdns_uart_startup();
+    console_init();
     printf("\r\n\r\nRTPS\r\n");
 
     enable_caches();

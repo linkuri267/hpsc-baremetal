@@ -1,9 +1,5 @@
 #include <stdint.h>
 
-#include "hwinfo.h"
-
-#define BASEADDR UART_BASE // TOOD: settable at runtime
-
 /* Register offsets for the UART. */
 #define CDNS_UART_CR_OFFSET		0x00  /* Control Register */
 #define CDNS_UART_MR_OFFSET		0x04  /* Mode Register */
@@ -117,8 +113,10 @@
 #define CDNS_UART_BDIV_MAX	255
 #define CDNS_UART_CD_MAX	65535
 
-#define cdns_uart_readl(offset)		(*((volatile uint32_t *)BASEADDR + (offset/4)))
-#define cdns_uart_writel(val, offset)	do { *((volatile uint32_t *)BASEADDR + (offset/4)) = val; } while (0)
+#define cdns_uart_readl(offset)		(*((volatile uint32_t *)baseaddr + (offset/4)))
+#define cdns_uart_writel(val, offset)	do { *((volatile uint32_t *)baseaddr + (offset/4)) = val; } while (0)
+
+static volatile uint32_t *baseaddr = 0x0;
 
 /**
  * cdns_uart_startup - Called when an application opens a cdns_uart port
@@ -126,9 +124,11 @@
  *
  * Return: 0 on success, negative errno otherwise
  */
-int cdns_uart_startup()
+int cdns_uart_startup(volatile uint32_t *base)
 {
         int retval = 0;
+
+	baseaddr = base;
 
 	/* Disable the TX and RX */
 	cdns_uart_writel(CDNS_UART_CR_TX_DIS | CDNS_UART_CR_RX_DIS,
@@ -203,7 +203,7 @@ int cdns_uart_startup()
 	return retval;
 }
 
-void _putchar(char c)
+void cdns_uart_poll_put_char(unsigned char c)
 {
 
 #if 0

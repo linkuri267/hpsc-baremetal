@@ -20,6 +20,9 @@
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
 
+#define UART_CLOCK      100000000
+#define UART_BAUDRATE      115200
+
 #define ETIMER__BASE                    ((volatile uint32_t *)0x2100a000)
 #define RTI_TIMER_TRCH__BASE            ((volatile uint32_t *)0x21009000)
 #define RTI_TIMER_RTPS_R52_0__TRCH_BASE ((volatile uint32_t *)0x21007000)

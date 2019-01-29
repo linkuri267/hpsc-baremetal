@@ -50,6 +50,7 @@ CONFIG_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
 CONFIG_BOOT_RTPS_R52 		= 1
 CONFIG_BOOT_RTPS_A53 		= 0
 CONFIG_BOOT_HPPS 		= 1
+CONFIG_CONSOLE			= CADENCE
 
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
 ifneq ($(strip $(CONFIG_SYSTICK)),1)
@@ -71,6 +72,7 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
 
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
@@ -120,6 +122,7 @@ OBJS = \
        drivers/mailbox.o \
        drivers/etimer.o \
        drivers/rti-timer.o \
+       plat/console.o \
        subsys.o \
        reset.o \
        boot.o \

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "printf.h"
-#include "cadence_uart.h"
+#include "console.h"
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"
@@ -69,7 +69,7 @@ static void systick_tick(void *arg)
 
 int main ( void )
 {
-    cdns_uart_startup(); // init UART peripheral
+    console_init();
     printf("\r\n\r\nTRCH\r\n");
 
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
