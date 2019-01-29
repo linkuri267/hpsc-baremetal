@@ -47,7 +47,7 @@ CONFIG_GTIMER 			= 1
 CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 CONFIG_WDT 			= 1
 CONFIG_HPPS_RTPS_MAILBOX  	= 1
-CONFIG_CONSOLE			= CADENCE
+CONFIG_CONSOLE			= NS16550
 
 # Most tests are standalone, but these are exceptions
 ifeq ($(strip $(TEST_WDT)),1)
