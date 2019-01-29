@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "printf.h"
-#include "uart.h"
+#include "cadence_uart.h"
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"

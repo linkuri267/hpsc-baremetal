@@ -68,7 +68,7 @@ VPATH = ..
 OBJS = \
 	startup.o \
 	drivers/cortex-r52.o \
-	drivers/uart.o \
+	drivers/cadence_uart.o \
 	drivers/gic.o \
 	drivers/mailbox.o \
 	drivers/dma.o \

@@ -1,7 +1,7 @@
 #define DEBUG 0
 
 #include "printf.h"
-#include "uart.h"
+#include "cadence_uart.h"
 #include "float.h"
 #include "mailbox.h"
 #include "command.h"
