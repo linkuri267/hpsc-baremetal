@@ -114,7 +114,6 @@ OBJS = \
        drivers/cortex-m4.o \
        drivers/systick.o \
        drivers/nvic.o \
-       drivers/cadence_uart.o \
        drivers/ns16550.o \
        drivers/smc.o \
        drivers/wdt.o \

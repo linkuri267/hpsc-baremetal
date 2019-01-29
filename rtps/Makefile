@@ -70,7 +70,6 @@ VPATH = ..
 OBJS = \
 	startup.o \
 	drivers/cortex-r52.o \
-	drivers/cadence_uart.o \
 	drivers/ns16550.o \
 	drivers/gic.o \
 	drivers/mailbox.o \
