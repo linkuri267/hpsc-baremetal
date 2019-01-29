@@ -3,7 +3,21 @@
 #include "hwinfo.h"
 #include  "console.h"
 
-#if defined(CONFIG_CONSOLE__CADENCE)
+#if defined(CONFIG_CONSOLE__NS16550)
+
+#include "ns16550.h"
+
+int console_init()
+{
+    return ns16550_startup(UART_BASE, UART_CLOCK, UART_BAUDRATE);
+}
+
+void _putchar(char c)
+{
+    ns16550_putchar(c);
+}
+
+#elif defined(CONFIG_CONSOLE__CADENCE)
 
 #include "cadence_uart.h"
 
