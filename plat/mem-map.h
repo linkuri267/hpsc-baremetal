@@ -19,6 +19,12 @@
 #define HPPS_SHM_ADDR 0xbf800000
 #define HPPS_SHM_SIZE   0x400000
 
+// Shared memoy regions for SSW
+#define HPPS_SHM_ADDR__TRCH_HPPS_SSW 0xbfbf0000
+#define HPPS_SHM_SIZE__TRCH_HPPS_SSW 0x08000
+#define HPPS_SHM_ADDR__HPPS_TRCH_SSW 0xbfbf8000
+#define HPPS_SHM_SIZE__HPPS_TRCH_SSW 0x08000
+
 // Page table should be in memory that is on a bus accessible from the MMUs
 // master port ('dma' prop in MMU node in Qemu DT).  We put it in HPPS DRAM,
 // because that seems to be the only option, judging from high-level Chiplet
