@@ -4,9 +4,7 @@
 #include <stdint.h>
 
 #include "intc.h"
-#include "mailbox.h"
-
-struct mbox_link;
+#include "link.h"
 
 // We use 'owner' to indicate both the ID (arbitrary value) to which the
 // mailbox should be claimed (i.e. OWNER HW register should be set) and whether
@@ -16,15 +14,11 @@ struct mbox_link;
 //
 // To claim as server: set both server and client to non-zero ID
 // To claim as client: set server to 0 and set client to non-zero ID
-struct mbox_link *mbox_link_connect(
+struct link *mbox_link_connect(
         volatile uint32_t *base,
         unsigned idx_from, unsigned idx_to,
         struct irq *rcv_irq, unsigned rcv_int_idx, /* interrupt index within IP block */
         struct irq *ack_irq, unsigned ack_int_idx,
         unsigned server, unsigned client);
-int mbox_link_disconnect(struct mbox_link *link);
-int mbox_link_request(struct mbox_link *link,
-                      uint32_t *arg, size_t arg_len,
-                      uint32_t *reply, size_t reply_sz);
 
 #endif // MAILBOX_LINK_H

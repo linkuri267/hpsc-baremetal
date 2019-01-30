@@ -98,7 +98,7 @@ void cmd_handle(struct cmd *cmd)
     }
 
     *cmd->reply_acked = false;
-    if (mbox_send(cmd->reply_mbox, &reply[0], reply_len)) {
+    if (mbox_send(cmd->reply_mbox, &reply[0], reply_len * sizeof(uint32_t))) {
         printf("failed to send reply\r\n");
     } else {
         printf("waiting for ACK for our reply\r\n");

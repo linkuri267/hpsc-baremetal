@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "printf.h"
@@ -189,7 +190,7 @@ int mbox_release(struct mbox *m)
     if (m->owner) {
         volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_CONFIG);
         uint32_t val = 0;
-        printf("mbox_init: owner: %p <|- %08lx\r\n", addr, val);
+        printf("mbox_release: owner: %p <|- %08lx\r\n", addr, val);
         *addr = val;
 
         // clearing owner also clears destination (resets the instance)
@@ -201,16 +202,19 @@ int mbox_release(struct mbox *m)
     return 0;
 }
 
-int mbox_send(struct mbox *m, uint32_t *msg, unsigned len)
+int mbox_send(struct mbox *m, void *buf, size_t sz)
 {
     unsigned i;
+    uint32_t *msg = buf;
+    unsigned len = sz / sizeof(uint32_t);
+    ASSERT(sz % sizeof(uint32_t) == 0);
 
     if (len > HPSC_MBOX_DATA_REGS) {
         printf("ERROR: message too long: %u > %u\r\n", len, HPSC_MBOX_DATA_REGS);
         return 1;
     }
 
-    printf("mbox_request: writing msg: ");
+    printf("mbox_send: writing msg: ");
     volatile uint32_t *slot = (volatile uint32_t *)((uint8_t *)m->base + REG_DATA);
     for (i = 0; i < len; ++i) {
         slot[i] = msg[i];
@@ -220,7 +224,7 @@ int mbox_send(struct mbox *m, uint32_t *msg, unsigned len)
 
     volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_EVENT_SET);
     uint32_t val = HPSC_MBOX_EVENT_A;
-    printf("mbox_request: raise int A: %p <- %08lx\r\n", addr, val);
+    printf("mbox_send: raise int A: %p <- %08lx\r\n", addr, val);
     *addr = val;
 
     return 0;
@@ -258,7 +262,7 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
     *addr = val;
 
     if (mbox->cb.rcv_cb)
-        mbox->cb.rcv_cb(mbox->cb_arg, &msg[0], HPSC_MBOX_DATA_REGS);
+        mbox->cb.rcv_cb(mbox->cb_arg, msg, sizeof(msg));
 }
 
 static void mbox_instance_ack_isr(struct mbox *mbox)

@@ -3,6 +3,7 @@
 
 #include "printf.h"
 #include "command.h"
+#include "link.h"
 #include "mailbox-link.h"
 #include "hwinfo.h"
 #include "boot.h"
@@ -13,11 +14,14 @@
 
 #define MAX_MBOX_LINKS          8
 
-static struct mbox_link *links[MAX_MBOX_LINKS] = {0};
+#define TIMEOUT_MS_SEND 1000
+#define TIMEOUT_MS_RECV 1000
+
+static struct link *links[MAX_MBOX_LINKS] = {0};
 static struct endpoint *endpoints = NULL;
 static size_t num_endpoints = 0;
 
-static int linkp_alloc(struct mbox_link *link)
+static int linkp_alloc(struct link *link)
 {
     size_t i = 0;
     while (links[i] && i < MAX_MBOX_LINKS)
@@ -73,8 +77,13 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             reply[0] = 0;
             return 1;
         case CMD_MBOX_LINK_CONNECT: {
-            printf("MBOX_LINK_CONNECT ...\r\n");
             unsigned endpoint_idx = cmd->msg[1];
+            unsigned idx_from = cmd->msg[2];
+            unsigned idx_to = cmd->msg[3];
+            printf("MBOX_LINK_CONNECT ...\r\n");
+            printf("\tendpoint_idx = %u\r\n", endpoint_idx);
+            printf("\tindex_from = %u\r\n", idx_from);
+            printf("\tindex_to = %u\r\n", idx_to);
 
             if (endpoint_idx >= num_endpoints) {
                 reply[0] = -1;
@@ -82,8 +91,8 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             }
             struct endpoint *endpt = &endpoints[endpoint_idx];
 
-            struct mbox_link *link = mbox_link_connect(endpt->base,
-                            /* from mbox */ cmd->msg[2], /* to mbox */ cmd->msg[3],
+            struct link *link = mbox_link_connect(endpt->base,
+                            idx_from, idx_to,
                             endpt->rcv_irq, endpt->rcv_int_idx,
                             endpt->ack_irq, endpt->ack_int_idx,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
@@ -104,7 +113,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
                 rc = -1;
             } else {
                 printf("link disconnect index: %u\r\n", index);
-                rc = mbox_link_disconnect(links[index]);
+                rc = links[index]->disconnect(links[index]);
                 linkp_free(index);
             }
             printf("link disconnect rc: %u\r\n", rc);
@@ -112,17 +121,20 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 1;
         }
         case CMD_MBOX_LINK_PING: {
-            printf("MBOX_LINK_PING ...\r\n");
             unsigned index = cmd->msg[1];
+            printf("MBOX_LINK_PING ...\r\n");
+            printf("\tindex = %u\r\n", index);
             if (index >= MAX_MBOX_LINKS) {
                 reply[0] = -1;
                 return 1;
             }
 
-            struct mbox_link *link = links[index];
+            struct link *link = links[index];
             uint32_t msg[] = { CMD_PING, 43 };
-            uint32_t reply[1];
-            int rc = mbox_link_request(link, msg, 2, reply, 1 + 1 /* cmd + arg */);
+            uint32_t reply[2];
+            int rc = link->request(link,
+                                   TIMEOUT_MS_SEND, msg, sizeof(msg),
+                                   TIMEOUT_MS_RECV, reply, sizeof(reply));
             if (rc) {
                 reply[0] = -2;
                 return 1;

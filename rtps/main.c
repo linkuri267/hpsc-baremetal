@@ -147,7 +147,7 @@ int main(void)
         gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_ACK_IRQ_IDX,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
 
-    struct mbox_link *hpps_link = mbox_link_connect(MBOX_HPPS_RTPS__BASE,
+    struct link *hpps_link = mbox_link_connect(MBOX_HPPS_RTPS__BASE,
                     MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
                     hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
                     hpps_ack_irq, HPPS_ACK_IRQ_IDX,
