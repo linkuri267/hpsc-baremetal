@@ -1,6 +1,7 @@
 #ifndef LINK_H
 #define LINK_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -12,6 +13,7 @@ struct link {
     void *priv;
     int (*disconnect)(struct link *link);
     int (*send)(struct link *link, int timeout_ms, void *buf, size_t sz);
+    bool (*is_send_acked)(struct link *link);
     // int (*recv)(struct link *link, int timeout_ms, void *buf, size_t sz);
     int (*request)(struct link *link,
                    int wtimeout_ms, void *wbuf, size_t wsz,

@@ -12,7 +12,6 @@
 #define MAX_LINKS 8
 
 struct cmd_ctx {
-    struct mbox *reply_mbox;
     volatile bool tx_acked;
     uint32_t *reply;
     size_t reply_sz;
@@ -33,21 +32,21 @@ static struct mbox_link mlinks[MAX_LINKS] = {0};
 
 static void handle_ack(void *arg)
 {
-    struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
+    struct link *link = arg;
+    struct mbox_link *mlink = link->priv;
     printf("rcved ACK\r\n");
-    ctx->tx_acked = true;
+    mlink->cmd_ctx.tx_acked = true;
 }
 
 static void handle_cmd(void *arg, void *buf, size_t sz)
 {
-    struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
+    struct link *link = arg;
     size_t i;
     size_t msg_size = sz / sizeof(uint32_t);
     ASSERT(sz % sizeof(uint32_t) == 0);
 
     struct cmd cmd; // can't use initializer, because GCC inserts a memset for initing .msg
-    cmd.reply_mbox = ctx->reply_mbox;
-    cmd.reply_acked = &ctx->tx_acked;
+    cmd.link = link;
     for (i = 0; i < HPSC_MBOX_DATA_REGS && i < msg_size; ++i)
         cmd.msg[i] = ((uint32_t *) buf)[i];
 
@@ -59,14 +58,15 @@ static void handle_cmd(void *arg, void *buf, size_t sz)
 
 static void handle_reply(void *arg, void *buf, size_t sz)
 {
-    struct cmd_ctx *ctx = (struct cmd_ctx *)arg;
+    struct link *link = arg;
+    struct mbox_link *mlink = link->priv;
     size_t i;
     size_t msg_size = sz / sizeof(uint32_t);
     ASSERT(sz % sizeof(uint32_t) == 0);
 
-    for (i = 0; i < msg_size && i < ctx->reply_sz; ++i)
-        ctx->reply[i] = ((uint32_t *) buf)[i];
-    ctx->reply_len = i;
+    for (i = 0; i < msg_size && i < mlink->cmd_ctx.reply_sz; ++i)
+        mlink->cmd_ctx.reply[i] = ((uint32_t *) buf)[i];
+    mlink->cmd_ctx.reply_len = i;
 }
 
 static void mlink_clear(struct mbox_link *mlink)
@@ -117,6 +117,12 @@ static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
     mlink->cmd_ctx.tx_acked = false;
     printf("mbox_link_send: cmd %x arg %x..\r\n", arg[0], arg[1]);
     return mbox_send(mlink->mbox_to, buf, sz);
+}
+
+static bool mbox_link_is_send_acked(struct link *link)
+{
+    struct mbox_link *mlink = link->priv;
+    return mlink->cmd_ctx.tx_acked;
 }
 
 static int mbox_link_recv(struct link *link, int timeout_ms, void *buf,
@@ -188,7 +194,7 @@ struct link *mbox_link_connect(
     union mbox_cb rcv_cb = { .rcv_cb = server ? handle_cmd : handle_reply };
     mlink->mbox_from = mbox_claim(base, idx_from, rcv_irq, rcv_int_idx,
                                   server, client, server, MBOX_INCOMING,
-                                  rcv_cb, &mlink->cmd_ctx);
+                                  rcv_cb, link);
     if (!mlink->mbox_from) {
         printf("ERROR: mbox_link_connect: failed to claim mbox_from\r\n");
         goto free_links;
@@ -197,19 +203,19 @@ struct link *mbox_link_connect(
     union mbox_cb ack_cb = { .ack_cb = handle_ack };
     mlink->mbox_to = mbox_claim(base, idx_to, ack_irq, ack_int_idx,
                                 server, server, client, MBOX_OUTGOING,
-                                ack_cb, &mlink->cmd_ctx);
+                                ack_cb, link);
     if (!mlink->mbox_to) {
         printf("ERROR: mbox_link_connect: failed to claim mbox_to\r\n");
         goto free_from;
     }
 
-    mlink->cmd_ctx.reply_mbox = mlink->mbox_to;
     mlink->cmd_ctx.tx_acked = false;
     mlink->cmd_ctx.reply = NULL;
 
     link->priv = mlink;
     link->disconnect = mbox_link_disconnect;
     link->send = mbox_link_send;
+    link->is_send_acked = mbox_link_is_send_acked;
     // link->recv = mbox_link_recv;
     link->request = mbox_link_request;
     return link;

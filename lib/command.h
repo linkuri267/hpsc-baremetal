@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <unistd.h>
-#include "mailbox.h"
+#include "link.h"
 
 #define CMD_MSG_LEN 16
 
@@ -17,10 +17,12 @@
 #define CMD_MBOX_LINK_DISCONNECT        1001
 #define CMD_MBOX_LINK_PING              1002
 
+#define CMD_TIMEOUT_MS_SEND 1000
+#define CMD_TIMEOUT_MS_RECV 1000
+
 struct cmd {
     uint32_t msg[CMD_MSG_LEN];
-    struct mbox *reply_mbox;
-    volatile bool *reply_acked;
+    struct link *link;
 };
 
 typedef int (cmd_handler_t)(struct cmd *cmd, uint32_t *reply, size_t reply_size);

@@ -36,8 +36,7 @@ int cmd_enqueue(struct cmd *cmd)
     cmdq_head = (cmdq_head + 1) % CMD_QUEUE_LEN;
 
     // cmdq[cmdq_head] = *cmd; // can't because GCC inserts a memcpy
-    cmdq[cmdq_head].reply_mbox = cmd->reply_mbox;
-    cmdq[cmdq_head].reply_acked = cmd->reply_acked;
+    cmdq[cmdq_head].link = cmd->link;
     for (i = 0; i < CMD_MSG_LEN; ++i)
         cmdq[cmdq_head].msg[i] = cmd->msg[i];
 
@@ -59,8 +58,7 @@ int cmd_dequeue(struct cmd *cmd)
     cmdq_tail = (cmdq_tail + 1) % CMD_QUEUE_LEN;
 
     // *cmd = cmdq[cmdq_tail].cmd; // can't because GCC inserts a memcpy
-    cmd->reply_mbox = cmdq[cmdq_tail].reply_mbox;
-    cmd->reply_acked = cmdq[cmdq_tail].reply_acked;
+    cmd->link = cmdq[cmdq_tail].link;
     for (i = 0; i < CMD_MSG_LEN; ++i)
         cmd->msg[i] = cmdq[cmdq_tail].msg[i];
     printf("dequeue command (tail %u head %u): cmd %u arg %u...\r\n",
@@ -77,6 +75,7 @@ void cmd_handle(struct cmd *cmd)
 {
     uint32_t reply[REPLY_SIZE];
     int reply_len;
+    int rc;
 
     printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[1]);
 
@@ -97,12 +96,13 @@ void cmd_handle(struct cmd *cmd)
         return;
     }
 
-    *cmd->reply_acked = false;
-    if (mbox_send(cmd->reply_mbox, &reply[0], reply_len * sizeof(uint32_t))) {
+    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply,
+                         reply_len * sizeof(uint32_t));
+    if (rc) {
         printf("failed to send reply\r\n");
     } else {
         printf("waiting for ACK for our reply\r\n");
-        while(!*cmd->reply_acked); // block
+        while(!(cmd->link->is_send_acked(cmd->link))); // block
         printf("ACK for our reply received\r\n");
     }
 }

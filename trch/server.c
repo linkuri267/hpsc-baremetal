@@ -14,9 +14,6 @@
 
 #define MAX_MBOX_LINKS          8
 
-#define TIMEOUT_MS_SEND 1000
-#define TIMEOUT_MS_RECV 1000
-
 static struct link *links[MAX_MBOX_LINKS] = {0};
 static struct endpoint *endpoints = NULL;
 static size_t num_endpoints = 0;
@@ -133,8 +130,8 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             uint32_t msg[] = { CMD_PING, 43 };
             uint32_t reply[2];
             int rc = link->request(link,
-                                   TIMEOUT_MS_SEND, msg, sizeof(msg),
-                                   TIMEOUT_MS_RECV, reply, sizeof(reply));
+                                   CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
+                                   CMD_TIMEOUT_MS_RECV, reply, sizeof(reply));
             if (rc) {
                 reply[0] = -2;
                 return 1;
