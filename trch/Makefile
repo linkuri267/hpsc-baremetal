@@ -16,6 +16,7 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_TRCH_MAILBOX_SSW \
 	CONFIG_RTPS_TRCH_MAILBOX \
 	CONFIG_TRCH_WDT \
+	CONFIG_HPPS_TRCH_SHMEM_SSW \
 	CONFIG_RTPS_R52_WDT \
 	CONFIG_RTPS_A53_WDT \
 	CONFIG_HPPS_WDT \
@@ -41,6 +42,7 @@ CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
 CONFIG_HPPS_TRCH_MAILBOX 	= 1
 CONFIG_HPPS_TRCH_MAILBOX_SSW 	= 1
 CONFIG_RTPS_TRCH_MAILBOX 	= 1
+CONFIG_HPPS_TRCH_SHMEM_SSW 	= 1
 CONFIG_TRCH_WDT 		= 1
 CONFIG_RTPS_R52_WDT 		= 1
 CONFIG_RTPS_A53_WDT 		= 1
@@ -111,6 +113,8 @@ OBJS = \
        lib/intc.o \
        lib/mailbox-link.o \
        lib/command.o \
+       lib/shmem.o \
+       lib/shmem-link.o \
        drivers/cortex-m4.o \
        drivers/systick.o \
        drivers/nvic.o \
