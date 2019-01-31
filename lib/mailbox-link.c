@@ -15,7 +15,7 @@ struct cmd_ctx {
     volatile bool tx_acked;
     uint32_t *reply;
     size_t reply_sz;
-    size_t reply_len;
+    size_t reply_sz_read;
 };
 
 struct mbox_link {
@@ -34,7 +34,7 @@ static void handle_ack(void *arg)
 {
     struct link *link = arg;
     struct mbox_link *mlink = link->priv;
-    printf("%s: rcved ACK\r\n", link->name);
+    printf("handle_ack: %s\r\n", link->name);
     mlink->cmd_ctx.tx_acked = true;
 }
 
@@ -42,33 +42,25 @@ static void handle_cmd(void *arg)
 {
     struct link *link = arg;
     struct mbox_link *mlink = link->priv;
-    int ret;
     struct cmd cmd; // can't use initializer, because GCC inserts a memset for initing .msg
     cmd.link = link;
     ASSERT(sizeof(cmd.msg) == HPSC_MBOX_DATA_SIZE); // o/w zero-fill rest of msg
-    printf("%s: rcved cmd\r\n", link->name);
-    ret = mbox_read(mlink->mbox_from, cmd.msg, sizeof(cmd.msg));
-    if (ret <= 0) {
-        printf("handle_cmd: failed to receive mailbox message!\r\n");
-        return;
-    }
 
+    printf("handle_cmd: %s\r\n", link->name);
+    // read never fails if sizeof(cmd.msg) > 0
+    mbox_read(mlink->mbox_from, cmd.msg, sizeof(cmd.msg));
     if (cmd_enqueue(&cmd))
-        panic("failed to enqueue command");
+        panic("handle_cmd: failed to enqueue command");
 }
 
 static void handle_reply(void *arg)
 {
     struct link *link = arg;
     struct mbox_link *mlink = link->priv;
-    printf("%s: rcved reply\r\n", link->name);
-    int ret = mbox_read(mlink->mbox_from, mlink->cmd_ctx.reply,
-                        mlink->cmd_ctx.reply_sz);
-    if (ret <= 0) {
-        printf("handle_reply: failed to receive mailbox message!\r\n");
-        return;
-    }
-    mlink->cmd_ctx.reply_len = ret;
+    printf("handle_reply: %s\r\n", link->name);
+    mlink->cmd_ctx.reply_sz_read = mbox_read(mlink->mbox_from,
+                                             mlink->cmd_ctx.reply,
+                                             mlink->cmd_ctx.reply_sz);
 }
 
 static void mlink_clear(struct mbox_link *mlink)
@@ -102,8 +94,10 @@ static void mlink_free(struct mbox_link *mlink)
 
 static int mbox_link_disconnect(struct link *link) {
     struct mbox_link *mlink = link->priv;
+    int rc;
+    printf("mbox_link_disconnect: %s\r\n", link->name);
     // in case of failure, keep going and fwd code
-    int rc = mbox_release(mlink->mbox_from);
+    rc = mbox_release(mlink->mbox_from);
     rc |= mbox_release(mlink->mbox_to);
     mlink_free(mlink);
     OBJECT_FREE(link);
@@ -116,6 +110,7 @@ static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
     // TODO: timeout
     struct mbox_link *mlink = link->priv;
     mlink->cmd_ctx.tx_acked = false;
+    printf("mbox_link_send: %s\r\n", link->name);
     return mbox_send(mlink->mbox_to, buf, sz);
 }
 
@@ -129,10 +124,10 @@ static int mbox_link_poll(struct link *link, int timeout_ms)
 {
     // TODO: timeout
     struct mbox_link *mlink = link->priv;
-    printf("mbox_link_poll: waiting for reply...\r\n");
-    while (!mlink->cmd_ctx.reply_len);
-    printf("mbox_link_poll: reply received\r\n");
-    return mlink->cmd_ctx.reply_len * sizeof(uint32_t);
+    printf("mbox_link_poll: %s: waiting for reply...\r\n", link->name);
+    while (!mlink->cmd_ctx.reply_sz_read);
+    printf("mbox_link_poll: %s: reply received\r\n", link->name);
+    return mlink->cmd_ctx.reply_sz_read;
 }
 
 static int mbox_link_request(struct link *link,
@@ -142,7 +137,8 @@ static int mbox_link_request(struct link *link,
     struct mbox_link *mlink = link->priv;
     int rc;
 
-    mlink->cmd_ctx.reply_len = 0;
+    printf("mbox_link_request: %s\r\n", link->name);
+    mlink->cmd_ctx.reply_sz_read = 0;
     mlink->cmd_ctx.reply = rbuf;
     mlink->cmd_ctx.reply_sz = rsz / sizeof(uint32_t);
 
@@ -153,9 +149,9 @@ static int mbox_link_request(struct link *link,
     }
 
     // TODO: timeout on ACKs as part of rtimeout_ms
-    printf("mbox_link_request: waiting for ACK...\r\n");
+    printf("mbox_link_request: %s: waiting for ACK...\r\n", link->name);
     while (!mlink->cmd_ctx.tx_acked);
-    printf("mbox_link_request: ACK received\r\n");
+    printf("mbox_link_request: %s: ACK received\r\n", link->name);
 
     rc = mbox_link_poll(link, rtimeout_ms);
     if (!rc)
@@ -172,7 +168,9 @@ struct link *mbox_link_connect(
         unsigned server, unsigned client)
 {
     struct mbox_link *mlink;
-    struct link *link = OBJECT_ALLOC(links);
+    struct link *link;
+    printf("mbox_link_connect: %s\r\n", name);
+    link = OBJECT_ALLOC(links);
     if (!link)
         return NULL;
 
