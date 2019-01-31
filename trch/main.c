@@ -8,7 +8,9 @@
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"
+#include "mem-map.h"
 #include "mailbox-link.h"
+#include "shmem-link.h"
 #include "mailbox-map.h"
 #include "mailbox.h"
 #include "hwinfo.h"
@@ -171,7 +173,7 @@ int main ( void )
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
-        panic("HPPS link SSW");
+        panic("HPPS_MBOX_SSW_LINK");
 
     // Never release the link, because we listen on it in main loop
 #endif
@@ -185,7 +187,7 @@ int main ( void )
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
-        panic("HPPS link");
+        panic("HPPS_MBOX_LINK");
 
     // Never release the link, because we listen on it in main loop
 #endif
@@ -210,10 +212,21 @@ int main ( void )
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
-        panic("RTPS link");
+        panic("RTPS_MBOX_LINK");
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
+
+#if CONFIG_HPPS_TRCH_SHMEM_SSW
+    // TODO: when we add more polling links, we'll need to keep a list
+    struct link *hpps_link_shmem_ssw = shmem_link_connect("HPPS_SHMEM_SSW_LINK",
+                    (void *)HPPS_SHM_ADDR__TRCH_HPPS_SSW,
+                    (void *)HPPS_SHM_ADDR__HPPS_TRCH_SSW);
+    if (!hpps_link_shmem_ssw)
+        panic("HPPS_SHMEM_SSW_LINK");
+
+    // Never disconnect the link, because we listen on it in main loop
+#endif // CONFIG_HPPS_TRCH_SHMEM_SSW
 
     if (boot_config())
         panic("BOOT CFG");
@@ -268,6 +281,12 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
+#if CONFIG_HPPS_TRCH_SHMEM_SSW
+        int sz = hpps_link_shmem_ssw->recv(hpps_link_shmem_ssw, cmd.msg,
+                                           sizeof(cmd.msg));
+        if (sz && cmd_enqueue(&cmd))
+            panic("TRCH: failed to enqueue command");
+#endif // CONFIG_HPPS_TRCH_SHMEM_SSW
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
