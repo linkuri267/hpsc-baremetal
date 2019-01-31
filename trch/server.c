@@ -88,7 +88,7 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             }
             struct endpoint *endpt = &endpoints[endpoint_idx];
 
-            struct link *link = mbox_link_connect(endpt->base,
+            struct link *link = mbox_link_connect("CMD_MBOX_LINK", endpt->base,
                             idx_from, idx_to,
                             endpt->rcv_irq, endpt->rcv_int_idx,
                             endpt->ack_irq, endpt->ack_int_idx,
@@ -129,10 +129,11 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             struct link *link = links[index];
             uint32_t msg[] = { CMD_PING, 43 };
             uint32_t reply[2];
+            printf("request: cmd %x arg %x..\r\n", msg[0], msg[1]);
             int rc = link->request(link,
                                    CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
                                    CMD_TIMEOUT_MS_RECV, reply, sizeof(reply));
-            if (rc) {
+            if (rc <= 0) {
                 reply[0] = -2;
                 return 1;
             }

@@ -33,7 +33,7 @@
 #define HPSC_MBOX_EVENTS 2
 #define HPSC_MBOX_INTS   16
 #define HPSC_MBOX_INSTANCES 32
-#define HPSC_MBOX_INSTANCE_REGION (REG_DATA + HPSC_MBOX_DATA_REGS * 4)
+#define HPSC_MBOX_INSTANCE_REGION (REG_DATA + HPSC_MBOX_DATA_SIZE)
 
 #define MAX_BLOCKS 2
 #define MAX_MBOXES (MAX_BLOCKS * HPSC_MBOX_INSTANCES)
@@ -202,67 +202,74 @@ int mbox_release(struct mbox *m)
     return 0;
 }
 
-int mbox_send(struct mbox *m, void *buf, size_t sz)
+size_t mbox_send(struct mbox *m, void *buf, size_t sz)
 {
     unsigned i;
     uint32_t *msg = buf;
     unsigned len = sz / sizeof(uint32_t);
-    ASSERT(sz % sizeof(uint32_t) == 0);
+    ASSERT(sz <= HPSC_MBOX_DATA_SIZE);
+    if (sz % sizeof(uint32_t))
+        len++;
 
-    if (len > HPSC_MBOX_DATA_REGS) {
-        printf("ERROR: message too long: %u > %u\r\n", len, HPSC_MBOX_DATA_REGS);
-        return 1;
-    }
-
-    printf("mbox_send: writing msg: ");
+    printf("mbox_send: msg: ");
     volatile uint32_t *slot = (volatile uint32_t *)((uint8_t *)m->base + REG_DATA);
     for (i = 0; i < len; ++i) {
         slot[i] = msg[i];
         printf("%x ", msg[i]);
     }
     printf("\r\n");
+    // zero out any remaining registers
+    for (; i < HPSC_MBOX_DATA_REGS; i++)
+        slot[i] = 0;
 
     volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_EVENT_SET);
     uint32_t val = HPSC_MBOX_EVENT_A;
     printf("mbox_send: raise int A: %p <- %08lx\r\n", addr, val);
     *addr = val;
 
-    return 0;
+    return sz;
+}
+
+size_t mbox_read(struct mbox *m, void *buf, size_t sz)
+{
+    size_t i;
+    uint32_t *msg = buf;
+    volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)m->base + REG_DATA);
+    size_t len = sz / sizeof(uint32_t);
+    if (sz % sizeof(uint32_t))
+        len++;
+
+    printf("mbox_read: msg: ");
+    for (i = 0; i < len && i < HPSC_MBOX_DATA_REGS; i++) {
+        msg[i] = *data++;
+        printf("%x ", msg[i]);
+    }
+    printf("\r\n");
+
+    // ACK
+    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_EVENT_SET);
+    uint32_t val = HPSC_MBOX_EVENT_B;
+    printf("mbox_ack: set int B: %p <- %08lx\r\n", addr, val);
+    *addr = val;
+
+    return i * sizeof(uint32_t);
 }
 
 static void mbox_instance_rcv_isr(struct mbox *mbox)
 {
     volatile uint32_t *addr;
     uint32_t val;
-    uint32_t msg[HPSC_MBOX_DATA_REGS];
 
     printf("mbox_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    printf("mbox_receive: rcved: ", msg);
-    volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)mbox->base + REG_DATA);
-
-    int len;
-    for (len = 0; len < HPSC_MBOX_DATA_REGS; len++) {
-        msg[len] = *data++;
-        printf("%x ", msg[len]);
-    }
-    printf("\r\n");
-
-    // Clear the event now that we have the message
+    // Clear the event
     addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
     val = HPSC_MBOX_EVENT_A;
-    printf("mbox_receive: clear int A: %p <- %08lx\r\n", addr, val);
-    *addr = val;
-
-    // ACK before the callback, because if callback wants to block,
-    // we might have a deadlock.
-    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_SET);
-    val = HPSC_MBOX_EVENT_B;
-    printf("mbox_receive: set int B: %p <- %08lx\r\n", addr, val);
+    printf("mbox_instance_rcv_isr: clear int A: %p <- %08lx\r\n", addr, val);
     *addr = val;
 
     if (mbox->cb.rcv_cb)
-        mbox->cb.rcv_cb(mbox->cb_arg, msg, sizeof(msg));
+        mbox->cb.rcv_cb(mbox->cb_arg);
 }
 
 static void mbox_instance_ack_isr(struct mbox *mbox)

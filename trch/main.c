@@ -163,7 +163,8 @@ int main ( void )
 #endif // CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
-    struct link *hpps_link_ssw = mbox_link_connect(MBOX_HPPS_TRCH__BASE,
+    struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
+                    MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
                     hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
                     hpps_ack_irq, HPPS_ACK_IRQ_IDX,
@@ -176,7 +177,8 @@ int main ( void )
 #endif
 
 #if CONFIG_HPPS_TRCH_MAILBOX
-    struct link *hpps_link = mbox_link_connect( MBOX_HPPS_TRCH__BASE,
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
+                    MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
                     hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
                     hpps_ack_irq, HPPS_ACK_IRQ_IDX,
@@ -200,7 +202,8 @@ int main ( void )
      endpoint->ack_irq = lsio_rcv_irq;
      endpoint->ack_int_idx = LSIO_ACK_IRQ_IDX;
 
-    struct link *rtps_link = mbox_link_connect(MBOX_LSIO__BASE,
+    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
+                    MBOX_LSIO__BASE,
                     MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
                     lsio_rcv_irq, LSIO_RCV_IRQ_IDX,
                     lsio_ack_irq, LSIO_ACK_IRQ_IDX,

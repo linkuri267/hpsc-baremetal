@@ -75,7 +75,7 @@ void cmd_handle(struct cmd *cmd)
 {
     uint32_t reply[REPLY_SIZE];
     int reply_len;
-    int rc;
+    size_t rc;
 
     printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[1]);
 
@@ -98,7 +98,7 @@ void cmd_handle(struct cmd *cmd)
 
     rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply,
                          reply_len * sizeof(uint32_t));
-    if (rc) {
+    if (!rc) {
         printf("failed to send reply\r\n");
     } else {
         printf("waiting for ACK for our reply\r\n");
