@@ -5,11 +5,14 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "object.h"
+
 /**
  * The link struct is effectively an API, which can be populated by other
  * link-like interfaces.
  */
 struct link {
+    struct object obj;
     void *priv;
     const char *name;
     int (*disconnect)(struct link *link);

@@ -19,7 +19,7 @@ struct cmd_ctx {
 };
 
 struct mbox_link {
-    bool valid; // is entry in the array full
+    struct object obj;
     unsigned idx_to;
     unsigned idx_from;
     struct mbox *mbox_from;
