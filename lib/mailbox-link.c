@@ -63,35 +63,6 @@ static void handle_reply(void *arg)
                                              mlink->cmd_ctx.reply_sz);
 }
 
-static void mlink_clear(struct mbox_link *mlink)
-{
-    // We don't have a libc, so no memset
-    mlink->idx_to = 0;
-    mlink->idx_from = 0;
-    mlink->mbox_from = NULL;
-    mlink->mbox_to = NULL;
-}
-
-static struct mbox_link *mlink_alloc()
-{
-    size_t i = 0;
-    struct mbox_link *mlink;
-    while (mlinks[i].valid && i < MAX_LINKS)
-        ++i;
-    if (i == MAX_LINKS)
-        return NULL;
-    mlink = &mlinks[i];
-    mlink_clear(mlink);
-    mlink->valid = true;
-    return mlink;
-}
-
-static void mlink_free(struct mbox_link *mlink)
-{
-    mlink->valid = false;
-    mlink_clear(mlink);
-}
-
 static int mbox_link_disconnect(struct link *link) {
     struct mbox_link *mlink = link->priv;
     int rc;
@@ -99,7 +70,7 @@ static int mbox_link_disconnect(struct link *link) {
     // in case of failure, keep going and fwd code
     rc = mbox_release(mlink->mbox_from);
     rc |= mbox_release(mlink->mbox_to);
-    mlink_free(mlink);
+    OBJECT_FREE(mlink);
     OBJECT_FREE(link);
     return rc;
 }
@@ -174,7 +145,7 @@ struct link *mbox_link_connect(
     if (!link)
         return NULL;
 
-    mlink = mlink_alloc();
+    mlink = OBJECT_ALLOC(mlinks);
     if (!mlink) {
         printf("ERROR: mbox_link_connect: failed to allocate mlink state\r\n");
         goto free_link;
@@ -216,7 +187,7 @@ struct link *mbox_link_connect(
 free_from:
     mbox_release(mlink->mbox_from);
 free_links:
-    mlink_free(mlink);
+    OBJECT_FREE(mlink);
 free_link:
     OBJECT_FREE(link);
     return NULL;
