@@ -19,6 +19,12 @@
 #define HPPS_SHM_ADDR 0xbf800000
 #define HPPS_SHM_SIZE   0x400000
 
+// Shared memory regions for userspace
+#define HPPS_SHM_ADDR__TRCH_HPPS 0xbf800000
+#define HPPS_SHM_SIZE__TRCH_HPPS 0x10000
+#define HPPS_SHM_ADDR__HPPS_TRCH 0xbf810000
+#define HPPS_SHM_SIZE__HPPS_TRCH 0x10000
+
 // Shared memory regions for SSW
 #define HPPS_SHM_ADDR__TRCH_HPPS_SSW 0xbfbf0000
 #define HPPS_SHM_SIZE__TRCH_HPPS_SSW 0x08000
