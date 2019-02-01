@@ -8,6 +8,7 @@
 #include "command.h"
 #include "mmu.h"
 #include "panic.h"
+#include "llist.h"
 #include "mem-map.h"
 #include "mailbox-link.h"
 #include "shmem-link.h"
@@ -147,6 +148,8 @@ int main ( void )
 
 #if SERVER
     struct endpoint *endpoint;
+    struct llist link_list;
+    llist_init(&link_list);
 #endif // SERVER
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
@@ -224,6 +227,8 @@ int main ( void )
                     (void *)HPPS_SHM_ADDR__HPPS_TRCH_SSW);
     if (!hpps_link_shmem_ssw)
         panic("HPPS_SHMEM_SSW_LINK");
+    if (llist_insert(&link_list, hpps_link_shmem_ssw))
+        panic("HPPS_SHMEM_SSW_LINK: llist_insert");
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
@@ -281,12 +286,17 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
-#if CONFIG_HPPS_TRCH_SHMEM_SSW
-        int sz = hpps_link_shmem_ssw->recv(hpps_link_shmem_ssw, cmd.msg,
-                                           sizeof(cmd.msg));
-        if (sz && cmd_enqueue(&cmd))
-            panic("TRCH: failed to enqueue command");
-#endif // CONFIG_HPPS_TRCH_SHMEM_SSW
+        struct link *link_curr;
+        int sz;
+        llist_iter_init(&link_list);
+        do {
+            link_curr = (struct link *) llist_iter_next(&link_list);
+            if (!link_curr)
+                break;
+            sz = link_curr->recv(link_curr, cmd.msg, sizeof(cmd.msg));
+            if (sz && cmd_enqueue(&cmd))
+                panic("TRCH: failed to enqueue command");
+        } while (1);
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
