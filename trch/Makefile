@@ -113,6 +113,7 @@ OBJS = \
        lib/intc.o \
        lib/mailbox-link.o \
        lib/command.o \
+       lib/llist.o \
        lib/shmem.o \
        lib/shmem-link.o \
        drivers/cortex-m4.o \
