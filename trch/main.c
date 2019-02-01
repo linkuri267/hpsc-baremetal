@@ -220,8 +220,19 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
+#if CONFIG_HPPS_TRCH_SHMEM
+    struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
+                    (void *)HPPS_SHM_ADDR__TRCH_HPPS,
+                    (void *)HPPS_SHM_ADDR__HPPS_TRCH);
+    if (!hpps_link_shmem)
+        panic("HPPS_SHMEM_LINK");
+    if (llist_insert(&link_list, hpps_link_shmem))
+        panic("HPPS_SHMEM_LINK: llist_insert");
+
+    // Never disconnect the link, because we listen on it in main loop
+#endif // CONFIG_HPPS_TRCH_SHMEM
+
 #if CONFIG_HPPS_TRCH_SHMEM_SSW
-    // TODO: when we add more polling links, we'll need to keep a list
     struct link *hpps_link_shmem_ssw = shmem_link_connect("HPPS_SHMEM_SSW_LINK",
                     (void *)HPPS_SHM_ADDR__TRCH_HPPS_SSW,
                     (void *)HPPS_SHM_ADDR__HPPS_TRCH_SSW);
@@ -294,8 +305,12 @@ int main ( void )
             if (!link_curr)
                 break;
             sz = link_curr->recv(link_curr, cmd.msg, sizeof(cmd.msg));
-            if (sz && cmd_enqueue(&cmd))
-                panic("TRCH: failed to enqueue command");
+            if (sz) {
+                printf("%s: recv: got message\r\n", link_curr->name);
+                cmd.link = link_curr;
+                if (cmd_enqueue(&cmd))
+                    panic("TRCH: failed to enqueue command");
+            }
         } while (1);
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
