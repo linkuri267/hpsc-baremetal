@@ -15,21 +15,35 @@ void bzero(void *p, int sz)
         *bp++ = 0;
 }
 
-void *mem_set(void *s, int c, unsigned n)
+volatile void *vmem_set(volatile void *s, int c, unsigned n)
 {
-    uint8_t *bs = s;
+    volatile uint8_t *bs = s;
     while (n--)
         *bs++ = (unsigned char) c;
     return s;
 }
 
-void *mem_cpy(void *dest, void *src, unsigned n)
+volatile void *vmem_cpy(volatile void *dest, void *src, unsigned n)
+{
+    // assume dest and src are word-aligned
+    volatile uint32_t *wd;
+    uint32_t *ws;
+    volatile uint8_t *bd;
+    uint8_t *bs;
+    for (wd = dest, ws = src; n >= sizeof(*wd); n -= sizeof(*wd))
+        *wd++ = *ws++;
+    for (bd = (uint8_t *) wd, bs = (uint8_t *) ws; n > 0; n--)
+        *bd++ = *bs++;
+    return dest;
+}
+
+void *mem_vcpy(void *dest, volatile void *src, unsigned n)
 {
     // assume dest and src are word-aligned
     uint32_t *wd;
-    uint32_t *ws;
+    volatile uint32_t *ws;
     uint8_t *bd;
-    uint8_t *bs;
+    volatile uint8_t *bs;
     for (wd = dest, ws = src; n >= sizeof(*wd); n -= sizeof(*wd))
         *wd++ = *ws++;
     for (bd = (uint8_t *) wd, bs = (uint8_t *) ws; n > 0; n--)

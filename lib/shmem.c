@@ -35,32 +35,27 @@ void shmem_close(struct shmem *s)
 
 size_t shmem_send(struct shmem *s, void *msg, size_t sz)
 {
-    struct hpsc_shmem_region *shm = (struct hpsc_shmem_region *) s->addr;
-    size_t sz_rem;
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
+    size_t sz_rem = SHMEM_MSG_SIZE - sz;
     ASSERT(sz <= SHMEM_MSG_SIZE);
-    if (shm->is_new)
-        return 0;
-    sz_rem = SHMEM_MSG_SIZE - sz;
-    mem_cpy(shm->data, msg, sz);
+    vmem_cpy(shm->data, msg, sz);
     if (sz_rem)
-        mem_set(shm->data + sz, 0, sz_rem);
+        vmem_set(shm->data + sz, 0, sz_rem);
     shm->is_new = 1;
     return sz;
 }
 
 uint32_t shmem_get_status(struct shmem *s)
 {
-    struct hpsc_shmem_region *shm = (struct hpsc_shmem_region *) s->addr;
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
     return shm->is_new;
 }
 
 size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
 {
-    struct hpsc_shmem_region *shm = (struct hpsc_shmem_region *) s->addr;
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
     ASSERT(sz >= SHMEM_MSG_SIZE);
-    if (!shm->is_new)
-        return 0;
-    mem_cpy(msg, shm->data, SHMEM_MSG_SIZE);
+    mem_vcpy(msg, shm->data, SHMEM_MSG_SIZE);
     shm->is_new = 0;
     return SHMEM_MSG_SIZE;
 }

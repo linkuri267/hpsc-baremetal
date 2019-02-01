@@ -43,17 +43,16 @@ static int shmem_link_send(struct link *link, int timeout_ms, void *buf,
 {
     struct shmem_link *slink = link->priv;
     int sleep_ms_rem = timeout_ms;
-    int rc;
     printf("shmem_link_send: %s\r\n", link->name);
     do {
-        rc = shmem_send(slink->shmem_out, buf, sz);
-        if (rc > 0)
-            break; // success
+        if (!shmem_get_status(slink->shmem_out)) {
+            return shmem_send(slink->shmem_out, buf, sz);
+        }
         if (!sleep_ms_rem)
             break; // timeout
         msleep_and_dec(&sleep_ms_rem);
     } while (1);
-    return rc;
+    return 0;
 }
 
 static bool shmem_link_is_send_acked(struct link *link)
@@ -63,14 +62,22 @@ static bool shmem_link_is_send_acked(struct link *link)
     return shmem_get_status(slink->shmem_out) ? false : true;
 }
 
+static int shmem_link_recv(struct link *link, void *buf, size_t sz)
+{
+    struct shmem_link *slink = link->priv;
+    // printf("shmem_link_recv: %s\r\n", link->name);
+    if (shmem_get_status(slink->shmem_in))
+        return shmem_recv(slink->shmem_in, buf, sz);
+    return 0;
+}
+
 static int shmem_link_poll(struct link *link, int timeout_ms, void *buf,
                            size_t sz)
 {
-    struct shmem_link *slink = link->priv;
     int sleep_ms_rem = timeout_ms;
     int rc;
     do {
-        rc = shmem_recv(slink->shmem_in, buf, sz);
+        rc = shmem_link_recv(link, buf, sz);
         if (rc > 0)
             break; // got data
         if (!sleep_ms_rem)
@@ -95,13 +102,6 @@ static int shmem_link_request(struct link *link,
     if (!rc)
         printf("shmem_link_request: recv timed out\r\n");
     return rc;
-}
-
-static int shmem_link_recv(struct link *link, void *buf, size_t sz)
-{
-    struct shmem_link *slink = link->priv;
-    // printf("shmem_link_recv: %s\r\n", link->name);
-    return shmem_recv(slink->shmem_in, buf, sz);
 }
 
 struct link *shmem_link_connect(const char* name, void *addr_out, void *addr_in)
