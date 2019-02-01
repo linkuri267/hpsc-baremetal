@@ -121,6 +121,11 @@ int main ( void )
         panic("TRCH DMA test");
 #endif // TEST_TRCH_DMA
 
+#if TEST_SHMEM
+    if (test_shmem())
+        panic("shmem test");
+#endif // TEST_SHMEM
+
 #if CONFIG_TRCH_DMA
     struct dma *trch_dma = trch_dma_init();
     if (!trch_dma)

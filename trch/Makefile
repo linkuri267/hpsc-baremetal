@@ -10,6 +10,7 @@ CONFIG_FLAGS = \
 	TEST_RT_MMU \
 	TEST_ETIMER \
 	TEST_RTI_TIMER \
+	TEST_SHMEM \
 	CONFIG_SYSTICK \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_HPPS_TRCH_MAILBOX \
@@ -36,6 +37,7 @@ TEST_TRCH_DMA_CB 		= 1 # if set, use callback, otherwise call dma_wait
 TEST_RT_MMU			= 1
 TEST_ETIMER			= 1
 TEST_RTI_TIMER			= 1
+TEST_SHMEM			= 1
 
 # Set build configuration here
 CONFIG_SYSTICK			= 1
@@ -172,6 +174,9 @@ OBJS += tests/etimer.o
 endif
 ifeq ($(strip $(TEST_RTI_TIMER)),1)
 OBJS += test/test-rti-timer.o tests/rti-timer.o
+endif
+ifeq ($(strip $(TEST_SHMEM)),1)
+OBJS += tests/shmem.o
 endif
 
 TARGET=trch
