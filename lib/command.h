@@ -19,6 +19,8 @@
 
 #define CMD_TIMEOUT_MS_SEND 1000
 #define CMD_TIMEOUT_MS_RECV 1000
+// wait up to 30 seconds for replies - a timeout prevent hangs when remotes fail
+#define CMD_TIMEOUT_MS_REPLY 30000
 
 struct cmd {
     uint32_t msg[CMD_MSG_LEN];
