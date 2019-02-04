@@ -23,7 +23,8 @@ volatile void *vmem_set(volatile void *s, int c, unsigned n)
     return s;
 }
 
-volatile void *vmem_cpy(volatile void *dest, void *src, unsigned n)
+volatile void *vmem_cpy(volatile void *restrict dest, void *restrict src,
+                        unsigned n)
 {
     // assume dest and src are word-aligned
     volatile uint32_t *wd;
@@ -37,7 +38,7 @@ volatile void *vmem_cpy(volatile void *dest, void *src, unsigned n)
     return dest;
 }
 
-void *mem_vcpy(void *dest, volatile void *src, unsigned n)
+void *mem_vcpy(void *restrict dest, volatile void *restrict src, unsigned n)
 {
     // assume dest and src are word-aligned
     uint32_t *wd;

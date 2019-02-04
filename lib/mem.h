@@ -5,8 +5,9 @@ void bzero(void *p, int size);
 
 volatile void *vmem_set(volatile void *s, int c, unsigned n);
 
-volatile void *vmem_cpy(volatile void *dest, void *src, unsigned n);
+volatile void *vmem_cpy(volatile void *restrict dest, void *restrict src,
+                        unsigned n);
 
-void *mem_vcpy(void *dest, volatile void *src, unsigned n);
+void *mem_vcpy(void *restrict dest, volatile void *restrict src, unsigned n);
 
 #endif // MEM_H
