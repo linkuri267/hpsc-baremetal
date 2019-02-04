@@ -63,8 +63,8 @@ void *llist_iter_next(struct llist *l)
 {
     void *data = NULL;
     if (l->iter == (struct llist_node *) -1) {
-        printf("llist_iter_next: ERROR: concurrent modification\n");
-        printf("\tHint: use llist_iter_init before iterating\n");
+        printf("llist_iter_next: ERROR: concurrent modification\r\n");
+        printf("\tHint: use llist_iter_init before iterating\r\n");
         return NULL;
     }
     if (l->iter) {
