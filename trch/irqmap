@@ -20,7 +20,7 @@ TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT : mbox_hpps_rcv_isr
 TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT : mbox_hpps_ack_isr
 #endif
 
-#if CONFIG_TRCH_DMA
+#if CONFIG_TRCH_DMA | TEST_TRCH_DMA
 TRCH_IRQ__TRCH_DMA_ABORT : dma_trch_dma_abort_isr
 TRCH_IRQ__TRCH_DMA_EV0 : dma_trch_dma_event_0_isr
 #endif
