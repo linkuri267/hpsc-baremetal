@@ -91,11 +91,16 @@ static unsigned irq_to_intid(unsigned irq, gic_irq_type_t type)
     }
 }
 
+static bool is_affinity_routing()
+{
+    return REGB_READ32(gic.base, GICD(GICD_CTLR)) & GICD_CTRL__ARE;
+}
+
 static bool use_redist(gic_irq_type_t type)
 {
     return (type == GIC_IRQ_TYPE_SGI || type == GIC_IRQ_TYPE_PPI) &&
         // when affinity routing is enabled, use GICR registers
-        (REGB_READ32(gic.base, GICD(GICD_CTLR)) & GICD_CTRL__ARE);
+        is_affinity_routing();
 }
 
 static void check_irq(unsigned irq, gic_irq_type_t type)
@@ -162,7 +167,12 @@ void gic_int_disable(unsigned irq, gic_irq_type_t type) {
 
 void gic_disable_all()
 {
-    ASSERT(false && "not implemented");
+    if (is_affinity_routing()) {
+        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ICENABLER0), 0xffffffff);
+    } else {
+        for (int i = 0; i < gic.nregs; ++i)
+            REGB_WRITE32(gic.base, GICD(GICD_ICENABLERn) + i * 4, 0xffffff);
+    }
 }
 
 struct irq *gic_request(unsigned irqn, gic_irq_type_t type, gic_irq_cfg_t cfg)
