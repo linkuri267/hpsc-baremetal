@@ -1,23 +1,26 @@
 #define DEBUG 0
 
-#include "printf.h"
-#include "console.h"
-#include "float.h"
-#include "mailbox.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "arm.h"
 #include "command.h"
-#include "hwinfo.h"
-#include "panic.h"
-#include "mailbox-link.h"
-#include "mailbox-map.h"
+#include "console.h"
 #include "dma.h"
-#include "intc.h"
+#include "float.h"
 #include "gic.h"
 #include "gtimer.h"
-#include "watchdog.h"
-#include "sleep.h"
-#include "arm.h"
+#include "hwinfo.h"
+#include "intc.h"
+#include "mailbox-link.h"
+#include "mailbox-map.h"
+#include "mailbox.h"
+#include "panic.h"
+#include "printf.h"
 #include "rti-timer.h"
+#include "sleep.h"
 #include "test.h"
+#include "watchdog.h"
 
 extern unsigned char _text_start;
 extern unsigned char _text_end;

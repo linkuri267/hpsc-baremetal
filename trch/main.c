@@ -1,31 +1,31 @@
 #define DEBUG 0
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#include "printf.h"
-#include "console.h"
+#include "arm.h"
+#include "boot.h"
 #include "command.h"
-#include "mmu.h"
-#include "panic.h"
+#include "console.h"
+#include "dmas.h"
+#include "hwinfo.h"
 #include "llist.h"
-#include "mem-map.h"
 #include "mailbox-link.h"
-#include "shmem-link.h"
 #include "mailbox-map.h"
 #include "mailbox.h"
-#include "hwinfo.h"
-#include "nvic.h"
-#include "server.h"
-#include "watchdog.h"
+#include "mem-map.h"
+#include "mmu.h"
 #include "mmus.h"
-#include "dmas.h"
-#include "boot.h"
+#include "nvic.h"
+#include "panic.h"
+#include "printf.h"
+#include "server.h"
+#include "shmem-link.h"
+#include "sleep.h"
 #include "smc.h"
 #include "systick.h"
-#include "sleep.h"
-#include "arm.h"
 #include "test.h"
+#include "watchdog.h"
 
 #define SYSTICK_INTERVAL_MS     500
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
