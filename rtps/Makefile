@@ -91,13 +91,10 @@ OBJS = \
 	lib/sleep.o \
 	plat/console.o \
 	main.o \
+	server.o \
 
 ifeq ($(strip $(CONFIG_WDT)),1)
 OBJS += watchdog.o
-endif
-
-ifeq ($(strip $(CONFIG_HPPS_RTPS_MAILBOX)),1)
-OBJS += server.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)

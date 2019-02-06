@@ -32,8 +32,6 @@
 #define MAIN_LOOP_SILENT_ITERS 16
 
 #define SERVER_MAILBOXES (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
-#define SERVER_SHMEM (CONFIG_HPPS_TRCH_SHMEM || CONFIG_HPPS_TRCH_SHMEM_SSW)
-#define SERVER (SERVER_MAILBOXES || SERVER_SHMEM)
 
 typedef enum {
     ENDPOINT_HPPS = 0,
@@ -218,10 +216,8 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
-#if SERVER_SHMEM
     struct llist link_list;
     llist_init(&link_list);
-#endif // SERVER_SHMEM
 
 #if CONFIG_HPPS_TRCH_SHMEM
     struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
@@ -262,16 +258,14 @@ int main ( void )
     boot_request(SUBSYS_HPPS);
 #endif // CONFIG_BOOT_HPPS
 
-#if SERVER
-    server_init(endpoints, ENDPOINT_COUNT);
-    cmd_handler_register(server_process);
-#endif // SERVER
-
 #if CONFIG_TRCH_WDT
     watchdog_init_group(CPU_GROUP_TRCH);
     watchdog_start(COMP_CPU_TRCH);
     trch_wdt_started = true;
 #endif // CONFIG_TRCH_WDT
+
+    server_init(endpoints, ENDPOINT_COUNT);
+    cmd_handler_register(server_process);
 
     unsigned iter = 0;
     while (1) {
@@ -298,9 +292,7 @@ int main ( void )
             verbose = true; // to end log with 'waiting' msg
         }
 
-#if SERVER
         struct cmd cmd;
-#if SERVER_SHMEM
         struct link *link_curr;
         int sz;
         llist_iter_init(&link_list);
@@ -316,12 +308,10 @@ int main ( void )
                     panic("TRCH: failed to enqueue command");
             }
         } while (1);
-#endif // SERVER_SHMEM
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
         }
-#endif // SERVER
 
         int_disable(); // the check and the WFI must be atomic
         if (!cmd_pending() && !boot_pending()) {

@@ -137,6 +137,7 @@ OBJS = \
        isr.o \
        main.o \
        reset.o \
+       server.o \
        subsys.o \
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
@@ -153,14 +154,6 @@ ifeq ($(call cfg-or,\
 	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
 	$(CONFIG_RTPS_TRCH_MAILBOX)),1)
 OBJS += mailbox-isr.o
-endif
-ifeq ($(call cfg-or,\
-	$(CONFIG_HPPS_TRCH_MAILBOX) \
-	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
-	$(CONFIG_RTPS_TRCH_MAILBOX) \
-	$(CONFIG_HPPS_TRCH_SHMEM) \
-	$(CONFIG_HPPS_TRCH_SHMEM_SSW)),1)
-OBJS += server.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)

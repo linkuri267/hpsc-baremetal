@@ -202,13 +202,11 @@ int main(void)
         watchdog_kick();
 #endif // CONFIG_WDT
 
-#if CONFIG_HPPS_RTPS_MAILBOX
         struct cmd cmd;
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
         }
-#endif // CONFIG_HPPS_RTPS_MAILBOX
 
         int_disable(); // the check and the WFI must be atomic
         if (!cmd_pending()) {
