@@ -18,6 +18,7 @@
 #include "panic.h"
 #include "printf.h"
 #include "rti-timer.h"
+#include "server.h"
 #include "sleep.h"
 #include "test.h"
 #include "watchdog.h"
@@ -178,6 +179,9 @@ int main(void)
 #if CONFIG_WDT
     watchdog_init();
 #endif // CONFIG_WDT
+
+    server_init(NULL, 0);
+    cmd_handler_register(server_process);
 
     unsigned iter = 0;
     while (1) {

@@ -1,8 +1,14 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "printf.h"
 #include "command.h"
+#include "printf.h"
+#include "server.h"
+
+int server_init(struct endpoint *endpts, size_t num_endpts)
+{
+    return 0;
+}
 
 int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
 {
