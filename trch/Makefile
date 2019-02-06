@@ -103,40 +103,40 @@ LDFLAGS = \
 
 VPATH = ..
 OBJS = \
-       vectors.o \
-       isr.o \
-       lib/sha256.o \
-       lib/mem.o \
-       lib/str.o \
-       lib/bit.o \
-       lib/sleep.o \
-       lib/object.o \
+       drivers/cortex-m4.o \
+       drivers/dma.o \
+       drivers/etimer.o \
+       drivers/mailbox.o \
+       drivers/mmu.o \
+       drivers/ns16550.o \
+       drivers/nvic.o \
+       drivers/rti-timer.o \
+       drivers/smc.o \
+       drivers/systick.o \
+       drivers/wdt.o \
        lib/balloc.o \
-       lib/printf.o \
-       lib/panic.o \
-       lib/intc.o \
-       lib/mailbox-link.o \
+       lib/bit.o \
        lib/command.o \
+       lib/intc.o \
        lib/llist.o \
+       lib/mailbox-link.o \
+       lib/mem.o \
+       lib/object.o \
+       lib/panic.o \
+       lib/printf.o \
+       lib/sha256.o \
        lib/shmem.o \
        lib/shmem-link.o \
-       drivers/cortex-m4.o \
-       drivers/systick.o \
-       drivers/nvic.o \
-       drivers/ns16550.o \
-       drivers/smc.o \
-       drivers/wdt.o \
-       drivers/mmu.o \
-       drivers/dma.o \
-       drivers/mailbox.o \
-       drivers/etimer.o \
-       drivers/rti-timer.o \
+       lib/sleep.o \
+       lib/str.o \
        plat/console.o \
-       subsys.o \
-       reset.o \
        boot.o \
+       isr.o \
        isrs.o \
        main.o \
+       reset.o \
+       subsys.o \
+       vectors.o \
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
 OBJS += watchdog.o

@@ -68,28 +68,28 @@ CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
 
 VPATH = ..
 OBJS = \
-	startup.o \
 	drivers/cortex-r52.o \
-	drivers/ns16550.o \
-	drivers/gic.o \
-	drivers/mailbox.o \
 	drivers/dma.o \
-	drivers/mmu.o \
+	drivers/gic.o \
 	drivers/gtimer.o \
-	drivers/wdt.o \
+	drivers/mailbox.o \
+	drivers/mmu.o \
+	drivers/ns16550.o \
 	drivers/rti-timer.o \
-	lib/printf.o \
-	lib/panic.o \
-	lib/mem.o \
+	drivers/wdt.o \
+	lib/balloc.o \
 	lib/bit.o \
-	lib/sleep.o \
-	lib/object.o \
+	lib/command.o \
 	lib/intc.o \
 	lib/mailbox-link.o \
-	lib/balloc.o \
-	lib/command.o \
+	lib/mem.o \
+	lib/object.o \
+	lib/panic.o \
+	lib/printf.o \
+	lib/sleep.o \
 	plat/console.o \
 	main.o \
+	startup.o \
 
 ifeq ($(strip $(CONFIG_WDT)),1)
 OBJS += watchdog.o
