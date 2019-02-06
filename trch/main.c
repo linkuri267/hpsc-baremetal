@@ -35,19 +35,20 @@
 #define SERVER_SHMEM (CONFIG_HPPS_TRCH_SHMEM || CONFIG_HPPS_TRCH_SHMEM_SSW)
 #define SERVER (SERVER_MAILBOXES || SERVER_SHMEM)
 
-#if SERVER_MAILBOXES
 typedef enum {
     ENDPOINT_HPPS = 0,
     ENDPOINT_LSIO,
 } endpoint_t;
 
+// can't have empty array, so keep a NULL entry
 struct endpoint endpoints[] = {
+#if SERVER_MAILBOXES
     [ENDPOINT_HPPS] = { .base = MBOX_HPPS_TRCH__BASE },
     [ENDPOINT_LSIO] = { .base = MBOX_LSIO__BASE },
-};
-#elif SERVER
-    struct endpoint *endpoints = NULL;
 #endif // SERVER_MAILBOXES
+    { 0 }
+};
+#define ENDPOINT_COUNT (sizeof(endpoints) - sizeof(struct endpoint) / sizeof(struct endpoint))
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -262,7 +263,7 @@ int main ( void )
 #endif // CONFIG_BOOT_HPPS
 
 #if SERVER
-    server_init(endpoints, sizeof(endpoints) / sizeof(endpoints[0]));
+    server_init(endpoints, ENDPOINT_COUNT);
     cmd_handler_register(server_process);
 #endif // SERVER
 
