@@ -127,7 +127,7 @@ void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg) {
         }
         REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ISENABLER0), 1 << (intid % 32));
     } else {
-        REGB_SET32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, cfg_bit << (intid % 16));
+        REGB_SET32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, cfg_bit << (2 * (intid % 16) + 1));
         REGB_WRITE32(gic.base, GICD(GICD_ISENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
     }
 }
@@ -151,7 +151,7 @@ void gic_int_disable(unsigned irq, gic_irq_type_t type) {
         }
         REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ICENABLER0), 1 << (intid % 32));
     } else {
-        REGB_CLEAR32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, 1 << (intid % 16));
+        REGB_CLEAR32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, 1 << (2 * (intid % 16) + 1));
         REGB_WRITE32(gic.base, GICD(GICD_ICENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
     }
 }
