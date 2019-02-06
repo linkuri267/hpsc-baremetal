@@ -40,6 +40,9 @@
 #define GICD_CTRL__ARE_S        (1 << 4)
 #define GICD_CTRL__ARE_NS       (1 << 5)
 
+#define GICD_TYPER__IT_LINES_NUMBER__MASK       0xf
+#define GICD_TYPER__IT_LINES_NUMBER__SHIFT        0
+
 #define CORE 0 // Everything is for Core #0 for now
 
 // See GIC-500 TRM Section 3.2
@@ -60,6 +63,7 @@ struct irq {
 struct gic {
     volatile uint32_t *base;
     struct irq irqs[MAX_IRQS];
+    unsigned nregs;
 };
 
 static struct gic gic = {0}; // support only one, to make the interface simpler
@@ -209,6 +213,11 @@ static const struct intc_ops gic_ops = {
 
 void gic_init(volatile uint32_t *base)
 {
+    uint32_t typer = REGB_READ32(base, GICD(GICD_TYPER));
+
     gic.base = base;
+    gic.nregs = ((typer & GICD_TYPER__IT_LINES_NUMBER__MASK) >>
+                                GICD_TYPER__IT_LINES_NUMBER__SHIFT) + 1;
     intc_register(&gic_ops);
+    printf("GIC: base %p typer %x nregs %u\r\n", base, typer, gic.nregs);
 }
