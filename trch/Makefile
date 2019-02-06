@@ -151,7 +151,15 @@ ifeq ($(call cfg-or,\
 	$(CONFIG_HPPS_TRCH_MAILBOX) \
 	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
 	$(CONFIG_RTPS_TRCH_MAILBOX)),1)
-OBJS += mailbox-isr.o server.o
+OBJS += mailbox-isr.o
+endif
+ifeq ($(call cfg-or,\
+	$(CONFIG_HPPS_TRCH_MAILBOX) \
+	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
+	$(CONFIG_RTPS_TRCH_MAILBOX) \
+	$(CONFIG_HPPS_TRCH_SHMEM) \
+	$(CONFIG_HPPS_TRCH_SHMEM_SSW)),1)
+OBJS += server.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)

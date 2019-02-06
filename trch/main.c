@@ -31,9 +31,11 @@
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
 #define MAIN_LOOP_SILENT_ITERS 16
 
-#define SERVER (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
+#define SERVER_MAILBOXES (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
+#define SERVER_SHMEM (CONFIG_HPPS_TRCH_SHMEM || CONFIG_HPPS_TRCH_SHMEM_SSW)
+#define SERVER (SERVER_MAILBOXES || SERVER_SHMEM)
 
-#if SERVER
+#if SERVER_MAILBOXES
 typedef enum {
     ENDPOINT_HPPS = 0,
     ENDPOINT_LSIO,
@@ -43,7 +45,9 @@ struct endpoint endpoints[] = {
     [ENDPOINT_HPPS] = { .base = MBOX_HPPS_TRCH__BASE },
     [ENDPOINT_LSIO] = { .base = MBOX_LSIO__BASE },
 };
-#endif // SERVER
+#elif SERVER
+    struct endpoint *endpoints = NULL;
+#endif // SERVER_MAILBOXES
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -151,33 +155,23 @@ int main ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
-#if SERVER
-    struct endpoint *endpoint;
-    struct llist link_list;
-    llist_init(&link_list);
-#endif // SERVER
-
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 #define HPPS_RCV_IRQ_IDX MBOX_HPPS_TRCH__TRCH_RCV_INT
 #define HPPS_ACK_IRQ_IDX MBOX_HPPS_TRCH__TRCH_ACK_INT
-    struct irq *hpps_rcv_irq =
+    endpoints[ENDPOINT_HPPS].rcv_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_RCV_IRQ_IDX);
-    struct irq *hpps_ack_irq =
+    endpoints[ENDPOINT_HPPS].rcv_int_idx = HPPS_RCV_IRQ_IDX;
+    endpoints[ENDPOINT_HPPS].ack_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_ACK_IRQ_IDX);
-
-     endpoint = &endpoints[ENDPOINT_HPPS];
-     endpoint->rcv_irq = hpps_rcv_irq;
-     endpoint->rcv_int_idx = HPPS_RCV_IRQ_IDX;
-     endpoint->ack_irq = hpps_ack_irq;
-     endpoint->ack_int_idx = HPPS_ACK_IRQ_IDX;
+    endpoints[ENDPOINT_HPPS].ack_int_idx = HPPS_ACK_IRQ_IDX;
 #endif // CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
                     MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
-                    hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
-                    hpps_ack_irq, HPPS_ACK_IRQ_IDX,
+                    endpoints[ENDPOINT_HPPS].rcv_irq, HPPS_RCV_IRQ_IDX,
+                    endpoints[ENDPOINT_HPPS].ack_irq, HPPS_ACK_IRQ_IDX,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
@@ -190,8 +184,8 @@ int main ( void )
     struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
                     MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
-                    hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
-                    hpps_ack_irq, HPPS_ACK_IRQ_IDX,
+                    endpoints[ENDPOINT_HPPS].rcv_irq, HPPS_RCV_IRQ_IDX,
+                    endpoints[ENDPOINT_HPPS].ack_irq, HPPS_ACK_IRQ_IDX,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -203,20 +197,18 @@ int main ( void )
 #if CONFIG_RTPS_TRCH_MAILBOX
 #define LSIO_RCV_IRQ_IDX MBOX_LSIO__TRCH_RCV_INT
 #define LSIO_ACK_IRQ_IDX MBOX_LSIO__TRCH_ACK_INT
-     struct irq *lsio_rcv_irq = nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
-     struct irq *lsio_ack_irq = nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX);
-
-     endpoint = &endpoints[ENDPOINT_LSIO];
-     endpoint->rcv_irq = lsio_rcv_irq;
-     endpoint->rcv_int_idx = LSIO_RCV_IRQ_IDX;
-     endpoint->ack_irq = lsio_rcv_irq;
-     endpoint->ack_int_idx = LSIO_ACK_IRQ_IDX;
+    endpoints[ENDPOINT_LSIO].rcv_irq =
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
+    endpoints[ENDPOINT_LSIO].rcv_int_idx = LSIO_RCV_IRQ_IDX;
+    endpoints[ENDPOINT_LSIO].ack_irq =
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX);
+    endpoints[ENDPOINT_LSIO].ack_int_idx = LSIO_ACK_IRQ_IDX;
 
     struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
                     MBOX_LSIO__BASE,
                     MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
-                    lsio_rcv_irq, LSIO_RCV_IRQ_IDX,
-                    lsio_ack_irq, LSIO_ACK_IRQ_IDX,
+                    endpoints[ENDPOINT_LSIO].rcv_irq, LSIO_RCV_IRQ_IDX,
+                    endpoints[ENDPOINT_LSIO].ack_irq, LSIO_ACK_IRQ_IDX,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
@@ -224,6 +216,11 @@ int main ( void )
 
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
+
+#if SERVER_SHMEM
+    struct llist link_list;
+    llist_init(&link_list);
+#endif // SERVER_SHMEM
 
 #if CONFIG_HPPS_TRCH_SHMEM
     struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
@@ -302,6 +299,7 @@ int main ( void )
 
 #if SERVER
         struct cmd cmd;
+#if SERVER_SHMEM
         struct link *link_curr;
         int sz;
         llist_iter_init(&link_list);
@@ -317,6 +315,7 @@ int main ( void )
                     panic("TRCH: failed to enqueue command");
             }
         } while (1);
+#endif // SERVER_SHMEM
         while (!cmd_dequeue(&cmd)) {
             cmd_handle(&cmd);
             verbose = true; // to end log with 'waiting' msg
