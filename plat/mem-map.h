@@ -13,7 +13,7 @@
 
 // Binary images with executables for HPPS
 #define HPPS_DDR_LOW_ADDR   0x80000000
-#define HPPS_DDR_LOW_SIZE   0x3fe00000 // usable by the HPPS subsystem
+#define HPPS_DDR_LOW_SIZE   0x3fe00000 // excludes mem hidden from HPPS
 
 // Shared memory regions accessible to HPPS
 #define HPPS_SHM_ADDR 0xbf800000
