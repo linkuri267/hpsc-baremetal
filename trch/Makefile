@@ -102,7 +102,10 @@ LDFLAGS = \
 	-z max-page-size=4 \
 
 VPATH = ..
+# vectors.o and isrs.o must be first
 OBJS = \
+       vectors.o \
+       isrs.o \
        drivers/cortex-m4.o \
        drivers/dma.o \
        drivers/etimer.o \
@@ -132,11 +135,9 @@ OBJS = \
        plat/console.o \
        boot.o \
        isr.o \
-       isrs.o \
        main.o \
        reset.o \
        subsys.o \
-       vectors.o \
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
 OBJS += watchdog.o

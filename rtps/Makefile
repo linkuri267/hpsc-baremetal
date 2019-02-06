@@ -67,7 +67,9 @@ CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
 
 VPATH = ..
+# startup.o must be first
 OBJS = \
+	startup.o \
 	drivers/cortex-r52.o \
 	drivers/dma.o \
 	drivers/gic.o \
@@ -89,7 +91,6 @@ OBJS = \
 	lib/sleep.o \
 	plat/console.o \
 	main.o \
-	startup.o \
 
 ifeq ($(strip $(CONFIG_WDT)),1)
 OBJS += watchdog.o
