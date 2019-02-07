@@ -11,6 +11,8 @@
 #define OPT__BIN_LOC__MASK              (0x1 << OPT__BIN_LOC__SHIFT)
 #define OPT__RTPS_MODE__SHIFT           1
 #define OPT__RTPS_MODE__MASK            (0x3 << OPT__RTPS_MODE__SHIFT)
+#define OPT__SUBSYS__SHIFT              3
+#define OPT__SUBSYS__MASK               (0xf << OPT__SUBSYS__SHIFT)
 
 static subsys_t reboot_requests;
 
@@ -19,6 +21,7 @@ struct config {
         CFG__BIN_LOC__SRAM = 0x1, // load HPPS/RTPS binaries from SRAM
         CFG__BIN_LOC__DRAM = 0x2, // assume HPPS/RTPS binaries already in DRAM
     } bin_loc;
+    subsys_t subsystems; // bitmask of subsystems to boot
     enum {
         CFG__RTPS_MODE__SPLIT = 0x0,
         CFG__RTPS_MODE__LOCKSTEP = 0x1,
@@ -51,8 +54,10 @@ static void print_boot_cfg(struct config *bcfg)
 {
     printf("BOOT: cfg:\r\n"
            "\tbin loc:\t%s\r\n"
+           "\tubsystems:\t%s\r\n"
            "\trtps mode:\t%s\r\n",
            bin_loc_name(bcfg->bin_loc),
+           subsys_name(bcfg->subsystems),
            rtps_mode_name(bcfg->rtps_mode));
 }
 
@@ -166,6 +171,7 @@ int boot_config()
 
     cfg.bin_loc = (opts & OPT__BIN_LOC__MASK) >> OPT__BIN_LOC__SHIFT;
     cfg.rtps_mode = (opts & OPT__RTPS_MODE__MASK) >> OPT__RTPS_MODE__SHIFT;
+    cfg.subsystems = (opts & OPT__SUBSYS__MASK) >> OPT__SUBSYS__SHIFT;
 
     print_boot_cfg(&cfg);
     return 0;
