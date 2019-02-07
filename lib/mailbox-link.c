@@ -34,7 +34,7 @@ static void handle_ack(void *arg)
 {
     struct link *link = arg;
     struct mbox_link *mlink = link->priv;
-    printf("handle_ack: %s\r\n", link->name);
+    printf("%s: handle_ack\r\n", link->name);
     mlink->cmd_ctx.tx_acked = true;
 }
 
@@ -46,7 +46,7 @@ static void handle_cmd(void *arg)
     cmd.link = link;
     ASSERT(sizeof(cmd.msg) == HPSC_MBOX_DATA_SIZE); // o/w zero-fill rest of msg
 
-    printf("handle_cmd: %s\r\n", link->name);
+    printf("%s: handle_cmd\r\n", link->name);
     // read never fails if sizeof(cmd.msg) > 0
     mbox_read(mlink->mbox_from, cmd.msg, sizeof(cmd.msg));
     if (cmd_enqueue(&cmd))
@@ -57,7 +57,7 @@ static void handle_reply(void *arg)
 {
     struct link *link = arg;
     struct mbox_link *mlink = link->priv;
-    printf("handle_reply: %s\r\n", link->name);
+    printf("%s: handle_reply\r\n", link->name);
     mlink->cmd_ctx.reply_sz_read = mbox_read(mlink->mbox_from,
                                              mlink->cmd_ctx.reply,
                                              mlink->cmd_ctx.reply_sz);
@@ -66,7 +66,7 @@ static void handle_reply(void *arg)
 static int mbox_link_disconnect(struct link *link) {
     struct mbox_link *mlink = link->priv;
     int rc;
-    printf("mbox_link_disconnect: %s\r\n", link->name);
+    printf("%s: disconnect\r\n", link->name);
     // in case of failure, keep going and fwd code
     rc = mbox_release(mlink->mbox_from);
     rc |= mbox_release(mlink->mbox_to);
@@ -81,7 +81,6 @@ static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
     // TODO: timeout
     struct mbox_link *mlink = link->priv;
     mlink->cmd_ctx.tx_acked = false;
-    printf("mbox_link_send: %s\r\n", link->name);
     return mbox_send(mlink->mbox_to, buf, sz);
 }
 
@@ -95,9 +94,9 @@ static int mbox_link_poll(struct link *link, int timeout_ms)
 {
     // TODO: timeout
     struct mbox_link *mlink = link->priv;
-    printf("mbox_link_poll: %s: waiting for reply...\r\n", link->name);
+    printf("%s: poll: waiting for reply...\r\n", link->name);
     while (!mlink->cmd_ctx.reply_sz_read);
-    printf("mbox_link_poll: %s: reply received\r\n", link->name);
+    printf("%s: poll: reply received\r\n", link->name);
     return mlink->cmd_ctx.reply_sz_read;
 }
 
@@ -108,7 +107,7 @@ static int mbox_link_request(struct link *link,
     struct mbox_link *mlink = link->priv;
     int rc;
 
-    printf("mbox_link_request: %s\r\n", link->name);
+    printf("%s: request\r\n", link->name);
     mlink->cmd_ctx.reply_sz_read = 0;
     mlink->cmd_ctx.reply = rbuf;
     mlink->cmd_ctx.reply_sz = rsz / sizeof(uint32_t);
@@ -120,9 +119,9 @@ static int mbox_link_request(struct link *link,
     }
 
     // TODO: timeout on ACKs as part of rtimeout_ms
-    printf("mbox_link_request: %s: waiting for ACK...\r\n", link->name);
+    printf("%s: request: waiting for ACK...\r\n", link->name);
     while (!mlink->cmd_ctx.tx_acked);
-    printf("mbox_link_request: %s: ACK received\r\n", link->name);
+    printf("%s: request: ACK received\r\n", link->name);
 
     rc = mbox_link_poll(link, rtimeout_ms);
     if (!rc)
@@ -140,7 +139,7 @@ struct link *mbox_link_connect(
 {
     struct mbox_link *mlink;
     struct link *link;
-    printf("mbox_link_connect: %s\r\n", name);
+    printf("%s: connect\r\n", name);
     link = OBJECT_ALLOC(links);
     if (!link)
         return NULL;

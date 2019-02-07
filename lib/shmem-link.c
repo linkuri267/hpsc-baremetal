@@ -22,7 +22,7 @@ static struct shmem_link slinks[MAX_LINKS] = {0};
 static int shmem_link_disconnect(struct link *link)
 {
     struct shmem_link *slink = link->priv;
-    printf("shmem_link_disconnect: %s\r\n", link->name);
+    printf("%s: disconnect\r\n", link->name);
     shmem_close(slink->shmem_out);
     shmem_close(slink->shmem_in);
     OBJECT_FREE(slink);
@@ -43,7 +43,6 @@ static int shmem_link_send(struct link *link, int timeout_ms, void *buf,
 {
     struct shmem_link *slink = link->priv;
     int sleep_ms_rem = timeout_ms;
-    printf("shmem_link_send: %s\r\n", link->name);
     do {
         if (!shmem_get_status(slink->shmem_out)) {
             return shmem_send(slink->shmem_out, buf, sz);
@@ -65,7 +64,6 @@ static bool shmem_link_is_send_acked(struct link *link)
 static int shmem_link_recv(struct link *link, void *buf, size_t sz)
 {
     struct shmem_link *slink = link->priv;
-    // printf("shmem_link_recv: %s\r\n", link->name);
     if (shmem_get_status(slink->shmem_in))
         return shmem_recv(slink->shmem_in, buf, sz);
     return 0;
@@ -92,7 +90,7 @@ static int shmem_link_request(struct link *link,
                               int rtimeout_ms, void *rbuf, size_t rsz)
 {
     int rc;
-    printf("shmem_link_request: %s\r\n", link->name);
+    printf("%s: request\r\n", link->name);
     rc = shmem_link_send(link, wtimeout_ms, wbuf, wsz);
     if (!rc) {
         printf("shmem_link_request: send timed out\r\n");
@@ -108,7 +106,7 @@ struct link *shmem_link_connect(const char* name, void *addr_out, void *addr_in)
 {
     struct shmem_link *slink;
     struct link *link;
-    printf("shmem_link_connect: %s\r\n", name);
+    printf("%s: connect\r\n", name);
     printf("\taddr_out = 0x%x\r\n", (unsigned long) addr_out);
     printf("\taddr_in  = 0x%x\r\n", (unsigned long) addr_in);
     link = OBJECT_ALLOC(links);
