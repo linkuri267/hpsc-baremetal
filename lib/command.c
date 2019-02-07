@@ -101,14 +101,19 @@ void cmd_handle(struct cmd *cmd)
         return;
     }
 
-    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply, reply_sz);
+    printf("command: handle: %s: reply %u arg %u...\r\n", cmd->link->name,
+           reply[0], reply[CMD_MSG_PAYLOAD_OFFSET]);
+
+    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply, sizeof(reply));
     if (!rc) {
-        printf("%s: failed to send reply\r\n", cmd->link->name);
+        printf("command: handle: %s: failed to send reply\r\n", cmd->link->name);
     } else {
-        printf("%s: waiting for ACK for our reply\r\n", cmd->link->name);
+        printf("command: handle: %s: waiting for ACK for our reply\r\n",
+               cmd->link->name);
         do {
             if (cmd->link->is_send_acked(cmd->link)) {
-                printf("%s: ACK for our reply received\r\n", cmd->link->name);
+                printf("command: handle: %s: ACK for our reply received\r\n", 
+                       cmd->link->name);
                 break;
             }
             if (sleep_ms_rem) {
@@ -116,7 +121,8 @@ void cmd_handle(struct cmd *cmd)
                 sleep_ms_rem -= sleep_ms_rem < CMD_TIMEOUT_MS_RECV ?
                     sleep_ms_rem : CMD_TIMEOUT_MS_RECV;
             } else {
-                printf("%s: timed out waiting for ACK\r\n", cmd->link->name);
+                printf("command: handle: %s: timed out waiting for ACK\r\n",
+                       cmd->link->name);
                 break;
             }
         } while (1);
