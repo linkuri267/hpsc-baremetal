@@ -65,18 +65,22 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             printf("PONG ...\r\n");
             return 0;
         case CMD_WATCHDOG_TIMEOUT: {
-            unsigned int cpu = *((unsigned int *)(&cmd->msg[4]));
+            unsigned int cpu =
+                *((unsigned int *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]));
             printf("WATCHDOG_TIMEOUT ...\r\n");
             printf("\tCPU = %u\r\n", cpu);
             return 0;
         }
-        case CMD_LIFECYCLE:
+        case CMD_LIFECYCLE: {
+            struct cmd_lifecycle *pl =
+                (struct cmd_lifecycle *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("LIFECYCLE ...\r\n");
-            printf("\tstatus = %s\r\n", cmd->msg[4] ? "DOWN" : "UP");
-            printf("\tinfo = '%s'\r\n", (char*) &cmd->msg[8]);
+            printf("\tstatus = %s\r\n", pl->status ? "DOWN" : "UP");
+            printf("\tinfo = '%s'\r\n", pl->info);
             return 0;
+        }
         case CMD_ACTION: {
-            uint8_t action = cmd->msg[4];
+            uint8_t action = cmd->msg[CMD_MSG_PAYLOAD_OFFSET];
             printf("ACTION ...\r\n");
             switch (action) {
                 case CMD_ACTION_RESET_HPPS:
@@ -90,22 +94,21 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             return 0;
         }
         case CMD_MBOX_LINK_CONNECT: {
-            uint8_t endpoint_idx = cmd->msg[4];
-            uint8_t idx_from = cmd->msg[5];
-            uint8_t idx_to = cmd->msg[6];
+            struct cmd_mbox_link_connect *pl =
+                (struct cmd_mbox_link_connect *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("MBOX_LINK_CONNECT ...\r\n");
-            printf("\tendpoint_idx = %u\r\n", endpoint_idx);
-            printf("\tindex_from = %u\r\n", idx_from);
-            printf("\tindex_to = %u\r\n", idx_to);
+            printf("\tendpoint_idx = %u\r\n", pl->endpoint_idx);
+            printf("\tindex_from = %u\r\n", pl->idx_from);
+            printf("\tindex_to = %u\r\n", pl->idx_to);
 
-            if (endpoint_idx >= num_endpoints) {
+            if (pl->endpoint_idx >= num_endpoints) {
                 reply_u8[0] = -1;
                 return 1;
             }
-            struct endpoint *endpt = &endpoints[endpoint_idx];
+            struct endpoint *endpt = &endpoints[pl->endpoint_idx];
 
             struct link *link = mbox_link_connect("CMD_MBOX_LINK", endpt->base,
-                            idx_from, idx_to,
+                            pl->idx_from, pl->idx_to,
                             endpt->rcv_irq, endpt->rcv_int_idx,
                             endpt->ack_irq, endpt->ack_int_idx,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
@@ -122,7 +125,7 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
         case CMD_MBOX_LINK_DISCONNECT: {
             printf("MBOX_LINK_DISCONNECT ...\r\n");
             int rc;
-            uint8_t index = cmd->msg[4];
+            uint8_t index = cmd->msg[CMD_MSG_PAYLOAD_OFFSET];
             if (index >= MAX_MBOX_LINKS) {
                 rc = -1;
             } else {
@@ -136,7 +139,7 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             return 1;
         }
         case CMD_MBOX_LINK_PING: {
-            uint8_t index = cmd->msg[4];
+            uint8_t index = cmd->msg[CMD_MSG_PAYLOAD_OFFSET];
             printf("MBOX_LINK_PING ...\r\n");
             printf("\tindex = %u\r\n", index);
             if (index >= MAX_MBOX_LINKS) {
@@ -147,7 +150,8 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             struct link *link = links[index];
             uint8_t msg[] = { CMD_PING, 0, 0, 0, 43 };
             uint8_t reqr[8];
-            printf("request: cmd %x arg %x..\r\n", msg[0], msg[4]);
+            printf("request: cmd %x arg %x..\r\n",
+                   msg[0], msg[CMD_MSG_PAYLOAD_OFFSET]);
             int rc = link->request(link,
                                    CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
                                    CMD_TIMEOUT_MS_RECV, reqr, sizeof(reqr));

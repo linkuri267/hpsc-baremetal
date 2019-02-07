@@ -7,6 +7,7 @@
 
 #define CMD_MSG_SZ 64
 #define CMD_MSG_PAYLOAD_OFFSET 4
+#define CMD_MSG_PAYLOAD_SIZE (CMD_MSG_SZ - CMD_MSG_PAYLOAD_OFFSET)
 
 #define CMD_NOP                         0
 #define CMD_PING                        1
@@ -27,9 +28,25 @@
 
 struct cmd {
     // the first byte of the message is the type, the next 3 bytes are reserved
-    // the remainder of the msg is avaialble for the payload
+    // the remainder of the msg is available for the payload
     uint8_t msg[CMD_MSG_SZ];
     struct link *link;
+};
+
+struct cmd_lifecycle {
+    uint32_t status;
+    char info[CMD_MSG_PAYLOAD_SIZE - sizeof(uint32_t)];
+};
+
+struct cmd_mbox_link_connect {
+    // TODO: The use of endpoint_idx means that the remote has more detailed
+    // knowledge of our inner workings than should be allowed
+    // It also means they have the endpoint hardcoded, when it should be dynamic
+    // based on our boot configuration
+    // Perhaps use CPU or IP Block ID instead, which we can map to a subsystem?
+    uint8_t endpoint_idx;
+    uint8_t idx_from;
+    uint8_t idx_to;
 };
 
 typedef int (cmd_handler_t)(struct cmd *cmd, void *reply, size_t reply_sz);
