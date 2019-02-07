@@ -15,6 +15,8 @@ struct endpoint { // Mailbox info
 };
 
 int server_init(struct endpoint *endpoints, size_t num_endpoints);
-int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_len);
+
+// Compatible with cmd_handler_t function
+int server_process(struct cmd *cmd, void *reply, size_t reply_sz);
 
 #endif // SERVER_H

@@ -8,7 +8,7 @@
 #include "command.h"
 
 #define CMD_QUEUE_LEN 4
-#define REPLY_SIZE CMD_MSG_LEN
+#define REPLY_SIZE CMD_MSG_SZ
 
 static size_t cmdq_head = 0;
 static size_t cmdq_tail = 0;
@@ -38,7 +38,7 @@ int cmd_enqueue(struct cmd *cmd)
 
     // cmdq[cmdq_head] = *cmd; // can't because GCC inserts a memcpy
     cmdq[cmdq_head].link = cmd->link;
-    for (i = 0; i < CMD_MSG_LEN; ++i)
+    for (i = 0; i < CMD_MSG_SZ; ++i)
         cmdq[cmdq_head].msg[i] = cmd->msg[i];
 
     printf("enqueue command (tail %u head %u): cmd %u arg %u...\r\n",
@@ -60,10 +60,10 @@ int cmd_dequeue(struct cmd *cmd)
 
     // *cmd = cmdq[cmdq_tail].cmd; // can't because GCC inserts a memcpy
     cmd->link = cmdq[cmdq_tail].link;
-    for (i = 0; i < CMD_MSG_LEN; ++i)
+    for (i = 0; i < CMD_MSG_SZ; ++i)
         cmd->msg[i] = cmdq[cmdq_tail].msg[i];
     printf("dequeue command (tail %u head %u): cmd %u arg %u...\r\n",
-           cmdq_tail, cmdq_head, cmdq[cmdq_tail].msg[0], cmdq[cmdq_tail].msg[1]);
+           cmdq_tail, cmdq_head, cmdq[cmdq_tail].msg[0], cmdq[cmdq_tail].msg[4]);
     return 0;
 }
 
@@ -74,32 +74,29 @@ bool cmd_pending()
 
 void cmd_handle(struct cmd *cmd)
 {
-    uint32_t reply[REPLY_SIZE];
-    int reply_len;
+    uint8_t reply[REPLY_SIZE];
+    int reply_sz;
     size_t rc;
     unsigned sleep_ms_rem = CMD_TIMEOUT_MS_REPLY;
 
-    printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[1]);
+    printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[4]);
 
     if (!cmd_handler) {
         printf("CMD: no handler registered\r\n");
         return;
     }
 
-    reply_len = cmd_handler(cmd, &reply[0], REPLY_SIZE - 1); // 1 word for header
-
-    if (reply_len < 0) {
+    reply_sz = cmd_handler(cmd, reply, sizeof(reply));
+    if (reply_sz < 0) {
         printf("ERROR: failed to process request: server error\r\n");
         return;
     }
-
-    if (!reply_len) {
+    if (!reply_sz) {
         printf("server did not produce a reply for the request\r\n");
         return;
     }
 
-    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply,
-                         reply_len * sizeof(uint32_t));
+    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply, reply_sz);
     if (!rc) {
         printf("%s: failed to send reply\r\n", cmd->link->name);
     } else {

@@ -1,12 +1,13 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "printf.h"
+#include "boot.h"
 #include "command.h"
+#include "hwinfo.h"
 #include "link.h"
 #include "mailbox-link.h"
-#include "hwinfo.h"
-#include "boot.h"
+#include "panic.h"
+#include "printf.h"
 #include "server.h"
 
 #define ENDPOINT_HPPS 0
@@ -41,10 +42,12 @@ int server_init(struct endpoint *endpts, size_t num_endpts)
     return 0;
 }
 
-int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
+int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
 {
     size_t i;
     int rc;
+    uint8_t *reply_u8 = (uint8_t *)reply;
+    ASSERT(reply_sz <= CMD_MSG_SZ);
     switch (cmd->msg[0]) {
         case CMD_NOP:
             printf("NOP ...\r\n");
@@ -52,38 +55,51 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
             return 0;
         case CMD_PING:
             printf("PING ...\r\n");
-            reply[0] = CMD_PONG;
-            for (i = 1; i < CMD_MSG_LEN && i < reply_size; ++i)
-                reply[i] = cmd->msg[i];
-            return i;
+            reply_u8[0] = CMD_PONG;
+            for (i = 1; i < CMD_MSG_PAYLOAD_OFFSET && i < reply_sz; i++)
+                reply_u8[i] = 0;
+            for (i = CMD_MSG_PAYLOAD_OFFSET; i < reply_sz; i++)
+                reply_u8[i] = cmd->msg[i];
+            return reply_sz;
         case CMD_PONG:
             printf("PONG ...\r\n");
             return 0;
-        case CMD_WATCHDOG_TIMEOUT:
+        case CMD_WATCHDOG_TIMEOUT: {
+            unsigned int cpu = *((unsigned int *)(&cmd->msg[4]));
             printf("WATCHDOG_TIMEOUT ...\r\n");
-            printf("\tCPU = %u\r\n", (unsigned int) cmd->msg[1]);
+            printf("\tCPU = %u\r\n", cpu);
             return 0;
+        }
         case CMD_LIFECYCLE:
             printf("LIFECYCLE ...\r\n");
-            printf("\tstatus = %s\r\n", cmd->msg[1] ? "DOWN" : "UP");
-            printf("\tinfo = '%s'\r\n", (char*) &cmd->msg[2]);
+            printf("\tstatus = %s\r\n", cmd->msg[4] ? "DOWN" : "UP");
+            printf("\tinfo = '%s'\r\n", (char*) &cmd->msg[8]);
             return 0;
-        case CMD_RESET_HPPS:
-            printf("RESET_HPPS ...\r\n");
-            boot_request(SUBSYS_HPPS);
-            reply[0] = 0;
-            return 1;
+        case CMD_ACTION: {
+            uint8_t action = cmd->msg[4];
+            printf("ACTION ...\r\n");
+            switch (action) {
+                case CMD_ACTION_RESET_HPPS:
+                    printf("\tRESET_HPPS ...\r\n");
+                    boot_request(SUBSYS_HPPS);
+                    break;
+                default:
+                    printf("\tUnknown action: %u\r\n", action);
+                    return -1;
+            }
+            return 0;
+        }
         case CMD_MBOX_LINK_CONNECT: {
-            unsigned endpoint_idx = cmd->msg[1];
-            unsigned idx_from = cmd->msg[2];
-            unsigned idx_to = cmd->msg[3];
+            uint8_t endpoint_idx = cmd->msg[4];
+            uint8_t idx_from = cmd->msg[5];
+            uint8_t idx_to = cmd->msg[6];
             printf("MBOX_LINK_CONNECT ...\r\n");
             printf("\tendpoint_idx = %u\r\n", endpoint_idx);
             printf("\tindex_from = %u\r\n", idx_from);
             printf("\tindex_to = %u\r\n", idx_to);
 
             if (endpoint_idx >= num_endpoints) {
-                reply[0] = -1;
+                reply_u8[0] = -1;
                 return 1;
             }
             struct endpoint *endpt = &endpoints[endpoint_idx];
@@ -99,13 +115,14 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
                 rc = linkp_alloc(link);
             }
             printf("link connect rc: %u\r\n", rc);
-            reply[0] = rc;
+            // TODO: Use a real return status message with its own message type
+            reply_u8[0] = rc;
             return 1;
         }
         case CMD_MBOX_LINK_DISCONNECT: {
             printf("MBOX_LINK_DISCONNECT ...\r\n");
             int rc;
-            unsigned index = cmd->msg[1];
+            uint8_t index = cmd->msg[4];
             if (index >= MAX_MBOX_LINKS) {
                 rc = -1;
             } else {
@@ -114,31 +131,32 @@ int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
                 linkp_free(index);
             }
             printf("link disconnect rc: %u\r\n", rc);
-            reply[0] = rc;
+            // TODO: Use a real return status message with its own message type
+            reply_u8[0] = rc;
             return 1;
         }
         case CMD_MBOX_LINK_PING: {
-            unsigned index = cmd->msg[1];
+            uint8_t index = cmd->msg[4];
             printf("MBOX_LINK_PING ...\r\n");
             printf("\tindex = %u\r\n", index);
             if (index >= MAX_MBOX_LINKS) {
-                reply[0] = -1;
+                reply_u8[0] = -1;
                 return 1;
             }
 
             struct link *link = links[index];
-            uint32_t msg[] = { CMD_PING, 43 };
-            uint32_t reply[2];
-            printf("request: cmd %x arg %x..\r\n", msg[0], msg[1]);
+            uint8_t msg[] = { CMD_PING, 0, 0, 0, 43 };
+            uint8_t reqr[8];
+            printf("request: cmd %x arg %x..\r\n", msg[0], msg[4]);
             int rc = link->request(link,
                                    CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
-                                   CMD_TIMEOUT_MS_RECV, reply, sizeof(reply));
+                                   CMD_TIMEOUT_MS_RECV, reqr, sizeof(reqr));
             if (rc <= 0) {
-                reply[0] = -2;
+                reply_u8[0] = -2;
                 return 1;
             }
-
-            reply[0] = 0;
+            // TODO: Use a real return status message with its own message type
+            reply_u8[0] = 0;
             return 1;
         }
         default:

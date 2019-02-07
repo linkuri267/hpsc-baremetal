@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "command.h"
+#include "panic.h"
 #include "printf.h"
 #include "server.h"
 
@@ -10,19 +11,23 @@ int server_init(struct endpoint *endpts, size_t num_endpts)
     return 0;
 }
 
-int server_process(struct cmd *cmd, uint32_t *reply, size_t reply_size)
+int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
 {
     size_t i;
+    uint8_t *reply_u8 = (uint8_t *)reply;
+    ASSERT(reply_sz <= CMD_MSG_SZ);
     switch (cmd->msg[0]) {
         case CMD_NOP:
             // do nothing and reply nothing command
             return 0;
         case CMD_PING:
             printf("PING ...\r\n");
-            reply[0] = CMD_PONG;
-            for (i = 1; i < CMD_MSG_LEN && i < reply_size; ++i)
-                reply[i] = cmd->msg[i];
-            return i;
+            reply_u8[0] = CMD_PONG;
+            for (i = 1; i < CMD_MSG_PAYLOAD_OFFSET && i < reply_sz; i++)
+                reply_u8[i] = 0;
+            for (i = CMD_MSG_PAYLOAD_OFFSET; i < reply_sz; i++)
+                reply_u8[i] = cmd->msg[i];
+            return reply_sz;
         case CMD_PONG:
             printf("PONG ...\r\n");
             return 0;
