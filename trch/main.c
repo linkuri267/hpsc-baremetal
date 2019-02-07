@@ -26,6 +26,7 @@
 #include "systick.h"
 #include "test.h"
 #include "watchdog.h"
+#include "syscfg.h"
 
 #define SYSTICK_INTERVAL_MS     500
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
@@ -51,6 +52,8 @@ struct mbox_link_dev mbox_devs[] = {
     { 0 }
 };
 #define MBOX_DEV_COUNT (sizeof(mbox_devs) - sizeof(struct mbox_link_dev) / sizeof(struct mbox_link_dev))
+
+static struct syscfg syscfg;
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -234,20 +237,9 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
 
-    if (boot_config())
-        panic("BOOT CFG");
-
-#if CONFIG_BOOT_RTPS_R52
-    boot_request(SUBSYS_RTPS_R52);
-#endif // CONFIG_BOOT_RTPS
-
-#if CONFIG_BOOT_RTPS_A53
-    boot_request(SUBSYS_RTPS_A53);
-#endif // CONFIG_BOOT_RTPS_A53
-
-#if CONFIG_BOOT_HPPS
-    boot_request(SUBSYS_HPPS);
-#endif // CONFIG_BOOT_HPPS
+    if (syscfg_load(&syscfg))
+        panic("SYS CFG");
+    boot_request(syscfg.subsystems);
 
 #if CONFIG_TRCH_WDT
     watchdog_init_group(CPU_GROUP_TRCH);
@@ -279,7 +271,7 @@ int main ( void )
 
         subsys_t subsys;
         while (!boot_handle(&subsys)) {
-            boot_reboot(subsys);
+            boot_reboot(subsys, &syscfg);
             verbose = true; // to end log with 'waiting' msg
         }
 

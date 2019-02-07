@@ -24,9 +24,6 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_WDT \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
-	CONFIG_BOOT_RTPS_R52 \
-	CONFIG_BOOT_RTPS_A53 \
-	CONFIG_BOOT_HPPS \
 
 # Enable/disable standalone tests here:
 TEST_FLOAT 			= 1
@@ -53,9 +50,6 @@ CONFIG_RTPS_A53_WDT 		= 1
 CONFIG_HPPS_WDT 		= 1
 CONFIG_TRCH_DMA 		= 1
 CONFIG_RT_MMU 			= 1 # RTPS/TRCH->HPPS MMU
-CONFIG_BOOT_RTPS_R52 		= 1
-CONFIG_BOOT_RTPS_A53 		= 0
-CONFIG_BOOT_HPPS 		= 1
 CONFIG_CONSOLE			= NS16550
 
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
@@ -138,6 +132,7 @@ OBJS = \
        main.o \
        reset.o \
        server.o \
+       syscfg.o \
        subsys.o \
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)

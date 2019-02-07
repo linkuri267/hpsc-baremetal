@@ -3,10 +3,6 @@
 
 // This file indicates the resource allocations in memory
 
-// In TRCH SRAM
-#define TRCH_BOOT_CFG_ADDR  0x000ff000
-#define TRCH_BOOT_CFG_SIZE  0x00000001
-
 // Binary images with executables for HPPS
 #define HPPS_DDR_LOW_ADDR   0x80000000
 #define HPPS_DDR_LOW_SIZE   0x3fe00000 // excludes mem hidden from HPPS
