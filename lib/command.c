@@ -32,7 +32,7 @@ int cmd_enqueue(struct cmd *cmd)
     size_t i;
 
     if (cmdq_head + 1 % CMD_QUEUE_LEN == cmdq_tail) {
-        printf("cannot enqueue command: queue full\r\n");
+        printf("command: enqueue failed: queue full\r\n");
         return 1;
     }
     cmdq_head = (cmdq_head + 1) % CMD_QUEUE_LEN;
@@ -42,8 +42,9 @@ int cmd_enqueue(struct cmd *cmd)
     for (i = 0; i < CMD_MSG_SZ; ++i)
         cmdq[cmdq_head].msg[i] = cmd->msg[i];
 
-    printf("enqueue command (tail %u head %u): cmd %u arg %u...\r\n",
-           cmdq_tail, cmdq_head, cmdq[cmdq_head].msg[0], cmdq[cmdq_head].msg[1]);
+    printf("command: enqueue (tail %u head %u): cmd %u arg %u...\r\n",
+           cmdq_tail, cmdq_head,
+           cmdq[cmdq_head].msg[0], cmdq[cmdq_head].msg[CMD_MSG_PAYLOAD_OFFSET]);
 
     // TODO: SEV (to prevent race between queue check and WFE in main loop)
 
@@ -63,8 +64,9 @@ int cmd_dequeue(struct cmd *cmd)
     cmd->link = cmdq[cmdq_tail].link;
     for (i = 0; i < CMD_MSG_SZ; ++i)
         cmd->msg[i] = cmdq[cmdq_tail].msg[i];
-    printf("dequeue command (tail %u head %u): cmd %u arg %u...\r\n",
-           cmdq_tail, cmdq_head, cmdq[cmdq_tail].msg[0], cmdq[cmdq_tail].msg[4]);
+    printf("command: dequeue (tail %u head %u): cmd %u arg %u...\r\n",
+           cmdq_tail, cmdq_head,
+           cmdq[cmdq_tail].msg[0], cmdq[cmdq_tail].msg[CMD_MSG_PAYLOAD_OFFSET]);
     return 0;
 }
 
@@ -80,21 +82,22 @@ void cmd_handle(struct cmd *cmd)
     size_t rc;
     unsigned sleep_ms_rem = CMD_TIMEOUT_MS_REPLY;
 
-    printf("CMD handle cmd %x arg %x...\r\n", cmd->msg[0], cmd->msg[4]);
+    printf("command: handle: cmd %u arg %u...\r\n",
+           cmd->msg[0], cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
 
     if (!cmd_handler) {
-        printf("CMD: no handler registered\r\n");
+        printf("command: handle: no handler registered\r\n");
         return;
     }
 
     bzero(reply, sizeof(reply));
     reply_sz = cmd_handler(cmd, reply, sizeof(reply));
     if (reply_sz < 0) {
-        printf("ERROR: failed to process request: server error\r\n");
+        printf("ERROR: command: handle: server failed to process request\r\n");
         return;
     }
     if (!reply_sz) {
-        printf("server did not produce a reply for the request\r\n");
+        printf("command: handle: server did not produce a reply\r\n");
         return;
     }
 
