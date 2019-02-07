@@ -1,7 +1,8 @@
 #include <stdint.h>
 
-#include "printf.h"
 #include "mailbox.h"
+#include "mem.h"
+#include "printf.h"
 #include "server.h"
 #include "sleep.h"
 
@@ -86,6 +87,7 @@ void cmd_handle(struct cmd *cmd)
         return;
     }
 
+    bzero(reply, sizeof(reply));
     reply_sz = cmd_handler(cmd, reply, sizeof(reply));
     if (reply_sz < 0) {
         printf("ERROR: failed to process request: server error\r\n");
