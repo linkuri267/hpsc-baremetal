@@ -7,8 +7,10 @@
 #include "boot.h"
 
 // Fields in the 32-bit value specifying the boot config
-#define OPT__BIN_LOC__MASK              0x1
-#define OPT__BIN_LOC__SHIFT               0
+#define OPT__BIN_LOC__SHIFT             0
+#define OPT__BIN_LOC__MASK              (0x1 << OPT__BIN_LOC__SHIFT)
+#define OPT__RTPS_MODE__SHIFT           1
+#define OPT__RTPS_MODE__MASK            (0x3 << OPT__RTPS_MODE__SHIFT)
 
 static subsys_t reboot_requests;
 
@@ -43,6 +45,15 @@ static const char *rtps_mode_name(unsigned m)
         case CFG__RTPS_MODE__SMP:      return "SMP";
         default:                       return "?";
     };
+}
+
+static void print_boot_cfg(struct config *bcfg)
+{
+    printf("BOOT: cfg:\r\n"
+           "\tbin loc:\t%s\r\n"
+           "\trtps mode:\t%s\r\n",
+           bin_loc_name(bcfg->bin_loc),
+           rtps_mode_name(bcfg->rtps_mode));
 }
 
 static int boot_load(subsys_t subsys)
@@ -151,12 +162,12 @@ static int boot_reset(subsys_t subsys)
 
 int boot_config()
 {
-    uint32_t opts = *(uint32_t *)TRCH_BOOT_CFG__BOOT_MODE;
-    cfg.bin_loc = (opts & OPT__BIN_LOC__MASK) >> OPT__BIN_LOC__SHIFT;
-    cfg.rtps_mode = *(uint32_t *)TRCH_BOOT_CFG__RTPS_MODE;
+    uint32_t opts = *(uint32_t *)TRCH_BOOT_CFG_ADDR;
 
-    printf("BOOT: cfg: boot mode %s rtps mode %s\r\n",
-           bin_loc_name(cfg.bin_loc), rtps_mode_name(cfg.rtps_mode));
+    cfg.bin_loc = (opts & OPT__BIN_LOC__MASK) >> OPT__BIN_LOC__SHIFT;
+    cfg.rtps_mode = (opts & OPT__RTPS_MODE__MASK) >> OPT__RTPS_MODE__SHIFT;
+
+    print_boot_cfg(&cfg);
     return 0;
 }
 
