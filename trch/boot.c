@@ -6,13 +6,17 @@
 
 #include "boot.h"
 
+// Fields in the 32-bit value specifying the boot config
+#define OPT__BIN_LOC__MASK              0x1
+#define OPT__BIN_LOC__SHIFT               0
+
 static subsys_t reboot_requests;
 
 struct config {
     enum {
-        CFG__BOOT_MODE__SRAM = 0x1, // load HPPS/RTPS binaries from SRAM
-        CFG__BOOT_MODE__DRAM = 0x2, // assume HPPS/RTPS binaries already in DRAM
-    } boot_mode;
+        CFG__BIN_LOC__SRAM = 0x1, // load HPPS/RTPS binaries from SRAM
+        CFG__BIN_LOC__DRAM = 0x2, // assume HPPS/RTPS binaries already in DRAM
+    } bin_loc;
     enum {
         CFG__RTPS_MODE__SPLIT = 0x0,
         CFG__RTPS_MODE__LOCKSTEP = 0x1,
@@ -22,11 +26,11 @@ struct config {
 
 static struct config cfg;
 
-static const char *boot_mode_name(unsigned m)
+static const char *bin_loc_name(unsigned m)
 {
     switch (m) {
-        case CFG__BOOT_MODE__SRAM: return "SRAM";
-        case CFG__BOOT_MODE__DRAM: return "DRAM";
+        case CFG__BIN_LOC__SRAM: return "SRAM";
+        case CFG__BIN_LOC__DRAM: return "DRAM";
         default:                   return "?";
     };
 }
@@ -43,12 +47,12 @@ static const char *rtps_mode_name(unsigned m)
 
 static int boot_load(subsys_t subsys)
 {
-    if (cfg.boot_mode == CFG__BOOT_MODE__DRAM) {
+    if (cfg.bin_loc == CFG__BIN_LOC__DRAM) {
         printf("BOOT: nothing to load, according to boot cfg\r\n");
         return 0;
     }
 
-    if (cfg.boot_mode != CFG__BOOT_MODE__SRAM) {
+    if (cfg.bin_loc != CFG__BIN_LOC__SRAM) {
         printf("BOOT: don't know how to load: invalid boot cfg\r\n");
         return 1;
     }
@@ -147,11 +151,12 @@ static int boot_reset(subsys_t subsys)
 
 int boot_config()
 {
-    cfg.boot_mode = *(uint32_t *)TRCH_BOOT_CFG__BOOT_MODE;
+    uint32_t opts = *(uint32_t *)TRCH_BOOT_CFG__BOOT_MODE;
+    cfg.bin_loc = (opts & OPT__BIN_LOC__MASK) >> OPT__BIN_LOC__SHIFT;
     cfg.rtps_mode = *(uint32_t *)TRCH_BOOT_CFG__RTPS_MODE;
 
     printf("BOOT: cfg: boot mode %s rtps mode %s\r\n",
-           boot_mode_name(cfg.boot_mode), rtps_mode_name(cfg.rtps_mode));
+           bin_loc_name(cfg.bin_loc), rtps_mode_name(cfg.rtps_mode));
     return 0;
 }
 
