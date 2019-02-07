@@ -5,7 +5,7 @@
 
 // In TRCH SRAM
 #define TRCH_BOOT_CFG_ADDR  0x000ff000
-#define TRCH_BOOT_CFG_SIZE  0x000ff000
+#define TRCH_BOOT_CFG_SIZE  0x00000002
 
 // TODO: turn this into a key-value env file
 #define TRCH_BOOT_CFG__BOOT_MODE  0x000ff000
