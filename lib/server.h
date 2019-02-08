@@ -5,14 +5,7 @@
 #include <stdlib.h>
 
 #include "command.h"
-
-struct mbox_link_dev {
-    volatile uint32_t *base;
-    struct irq *rcv_irq;
-    unsigned rcv_int_idx;
-    struct irq *ack_irq;
-    unsigned ack_int_idx;
-};
+#include "mailbox-link.h"
 
 int server_init(struct mbox_link_dev *devs, size_t ndevs);
 

@@ -6,6 +6,14 @@
 #include "intc.h"
 #include "link.h"
 
+struct mbox_link_dev {
+    volatile uint32_t *base;
+    struct irq *rcv_irq;
+    unsigned rcv_int_idx;
+    struct irq *ack_irq;
+    unsigned ack_int_idx;
+};
+
 // We use 'owner' to indicate both the ID (arbitrary value) to which the
 // mailbox should be claimed (i.e. OWNER HW register should be set) and whether
 // the connection originator is a server or a client: owner!=0 ==> server;
