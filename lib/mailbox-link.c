@@ -129,13 +129,9 @@ static int mbox_link_request(struct link *link,
     return rc;
 }
 
-struct link *mbox_link_connect(
-        const char *name,
-        volatile uint32_t *base,
-        unsigned idx_from, unsigned idx_to,
-        struct irq *rcv_irq, unsigned rcv_int_idx, /* int index within IP block */
-        struct irq *ack_irq, unsigned ack_int_idx,
-        unsigned server, unsigned client)
+struct link *mbox_link_connect(const char *name, struct mbox_link_dev *ldev,
+                               unsigned idx_from, unsigned idx_to,
+                               unsigned server, unsigned client)
 {
     struct mbox_link *mlink;
     struct link *link;
@@ -154,7 +150,8 @@ struct link *mbox_link_connect(
     mlink->idx_to = idx_to;
 
     union mbox_cb rcv_cb = { .rcv_cb = server ? handle_cmd : handle_reply };
-    mlink->mbox_from = mbox_claim(base, idx_from, rcv_irq, rcv_int_idx,
+    mlink->mbox_from = mbox_claim(ldev->base, idx_from,
+                                  ldev->rcv_irq, ldev->rcv_int_idx,
                                   server, client, server, MBOX_INCOMING,
                                   rcv_cb, link);
     if (!mlink->mbox_from) {
@@ -163,7 +160,8 @@ struct link *mbox_link_connect(
     }
 
     union mbox_cb ack_cb = { .ack_cb = handle_ack };
-    mlink->mbox_to = mbox_claim(base, idx_to, ack_irq, ack_int_idx,
+    mlink->mbox_to = mbox_claim(ldev->base, idx_to,
+                                ldev->ack_irq, ldev->ack_int_idx,
                                 server, server, client, MBOX_OUTGOING,
                                 ack_cb, link);
     if (!mlink->mbox_to) {

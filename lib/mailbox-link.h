@@ -9,7 +9,7 @@
 struct mbox_link_dev {
     volatile uint32_t *base;
     struct irq *rcv_irq;
-    unsigned rcv_int_idx;
+    unsigned rcv_int_idx; /* interrupt index within IP block */
     struct irq *ack_irq;
     unsigned ack_int_idx;
 };
@@ -22,12 +22,8 @@ struct mbox_link_dev {
 //
 // To claim as server: set both server and client to non-zero ID
 // To claim as client: set server to 0 and set client to non-zero ID
-struct link *mbox_link_connect(
-        const char *name,
-        volatile uint32_t *base,
-        unsigned idx_from, unsigned idx_to,
-        struct irq *rcv_irq, unsigned rcv_int_idx, /* interrupt index within IP block */
-        struct irq *ack_irq, unsigned ack_int_idx,
-        unsigned server, unsigned client);
+struct link *mbox_link_connect(const char *name, struct mbox_link_dev *ldev,
+                               unsigned idx_from, unsigned idx_to,
+                               unsigned server, unsigned client);
 
 #endif // MAILBOX_LINK_H

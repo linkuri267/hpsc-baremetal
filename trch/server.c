@@ -105,12 +105,9 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
                 reply_u8[0] = -1;
                 return 1;
             }
-            struct mbox_link_dev *mdev = &mbox_devs[pl->mbox_dev_idx];
-
-            struct link *link = mbox_link_connect("CMD_MBOX_LINK", mdev->base,
+            struct link *link = mbox_link_connect("CMD_MBOX_LINK",
+                            &mbox_devs[pl->mbox_dev_idx],
                             pl->idx_from, pl->idx_to,
-                            mdev->rcv_irq, mdev->rcv_int_idx,
-                            mdev->ack_irq, mdev->ack_int_idx,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
             if (!link) {
                 rc = -2;

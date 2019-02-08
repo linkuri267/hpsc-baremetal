@@ -12,20 +12,18 @@ int test_rtps_trch_mailbox()
 {
 #define LSIO_RCV_IRQ_IDX  MBOX_LSIO__RTPS_RCV_INT
 #define LSIO_ACK_IRQ_IDX  MBOX_LSIO__RTPS_ACK_INT
-    struct irq *lsio_rcv_irq =
-        gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX,
-                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    struct irq *lsio_ack_irq =
-        gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX,
-                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    struct mbox_link_dev mdev;
+    mdev.base = MBOX_LSIO__BASE;
+    mdev.rcv_irq = gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mdev.rcv_int_idx = LSIO_RCV_IRQ_IDX;
+    mdev.ack_irq = gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mdev.ack_int_idx = LSIO_ACK_IRQ_IDX;
 
     struct link *rtps_link = mbox_link_connect("RTPS_TRCH_MBOX_TEST_LINK",
-                    MBOX_LSIO__BASE,
-                    MBOX_LSIO__TRCH_RTPS, MBOX_LSIO__RTPS_TRCH, 
-                    lsio_rcv_irq, LSIO_RCV_IRQ_IDX,
-                    lsio_ack_irq, LSIO_ACK_IRQ_IDX,
-                    /* server */ 0,
-                    /* client */ MASTER_ID_RTPS_CPU0);
+                    &mdev, MBOX_LSIO__TRCH_RTPS, MBOX_LSIO__RTPS_TRCH, 
+                    /* server */ 0, /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
         return 1;
 

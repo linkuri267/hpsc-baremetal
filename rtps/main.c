@@ -144,18 +144,17 @@ int main(void)
 #if CONFIG_HPPS_RTPS_MAILBOX
 #define HPPS_RCV_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_RCV_INT
 #define HPPS_ACK_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_ACK_INT
-    struct irq *hpps_rcv_irq =
-        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_RCV_IRQ_IDX,
-                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    struct irq *hpps_ack_irq =
-        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_ACK_IRQ_IDX,
-                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    struct mbox_link_dev mdev;
+    mdev.base = MBOX_HPPS_RTPS__BASE;
+    mdev.rcv_irq = gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_RCV_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mdev.rcv_int_idx = HPPS_RCV_IRQ_IDX;
+    mdev.ack_irq = gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_ACK_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mdev.ack_int_idx = HPPS_ACK_IRQ_IDX;
 
-    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
-                    MBOX_HPPS_RTPS__BASE,
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mdev,
                     MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
-                    hpps_rcv_irq, HPPS_RCV_IRQ_IDX,
-                    hpps_ack_irq, HPPS_ACK_IRQ_IDX,
                     /* server */ MASTER_ID_RTPS_CPU0,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
