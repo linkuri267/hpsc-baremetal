@@ -42,9 +42,9 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg)
                     printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
                     break;
                 case SYSCFG__RTPS_MODE__LOCKSTEP:
-                    if (smc_sram_load("rtps-bl"))
+                    if (smc_sram_load("rtps-bl", NULL))
                         return 1;
-                    if (smc_sram_load("rtps-os"))
+                    if (smc_sram_load("rtps-os", NULL))
                         return 1;
                     break;
                 case SYSCFG__RTPS_MODE__SMP: // TODO
@@ -69,13 +69,13 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg)
                 return 0;
             }
 
-            if (smc_sram_load("hpps-fw"))
+            if (smc_sram_load("hpps-fw", NULL))
                 return 1;
-            if (smc_sram_load("hpps-bl"))
+            if (smc_sram_load("hpps-bl", NULL))
                 return 1;
-            if (smc_sram_load("hpps-dt"))
+            if (smc_sram_load("hpps-dt", NULL))
                 return 1;
-            if (smc_sram_load("hpps-os"))
+            if (smc_sram_load("hpps-os", NULL))
                 return 1;
             break;
         default:

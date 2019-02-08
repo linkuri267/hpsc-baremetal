@@ -81,7 +81,7 @@ static int load_memcpy(uint32_t *sram_addr, uint32_t *load_addr, unsigned size)
     return 0;
 }
 
-int smc_sram_load(const char *fname)
+int smc_sram_load(const char *fname, uint32_t **addr)
 {
     global_table gt;
     unsigned i;
@@ -123,6 +123,9 @@ int smc_sram_load(const char *fname)
         rc = load_dma(sram_addr_32, load_addr_32, fd_buf->size);
     else
         rc = load_memcpy(sram_addr_32, load_addr_32, fd_buf->size);
+
+    if (addr)
+        *addr = load_addr_32;
     return rc;
 }
 
