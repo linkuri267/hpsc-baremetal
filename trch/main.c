@@ -31,7 +31,11 @@
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
 #define MAIN_LOOP_SILENT_ITERS 16
 
-#define SERVER_MAILBOXES (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
+// inferred CONFIG settings
+#define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX)
+#define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
+
+#define SERVER_MAILBOXES (CONFIG_MBOX_DEV_HPPS || CONFIG_MBOX_DEV_LSIO)
 
 typedef enum {
     MBOX_DEV_HPPS = 0,
@@ -154,16 +158,23 @@ int main ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
-#if CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
-#define HPPS_RCV_IRQ_IDX MBOX_HPPS_TRCH__TRCH_RCV_INT
-#define HPPS_ACK_IRQ_IDX MBOX_HPPS_TRCH__TRCH_ACK_INT
+#if CONFIG_MBOX_DEV_HPPS
     mbox_devs[MBOX_DEV_HPPS].rcv_irq =
-        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_RCV_IRQ_IDX);
-    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx = HPPS_RCV_IRQ_IDX;
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT);
+    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
     mbox_devs[MBOX_DEV_HPPS].ack_irq =
-        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_ACK_IRQ_IDX);
-    mbox_devs[MBOX_DEV_HPPS].ack_int_idx = HPPS_ACK_IRQ_IDX;
-#endif // CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT);
+    mbox_devs[MBOX_DEV_HPPS].ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
+#endif // CONFIG_MBOX_DEV_HPPS
+
+#if CONFIG_MBOX_DEV_LSIO
+    mbox_devs[MBOX_DEV_LSIO].rcv_irq =
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_RCV_INT);
+    mbox_devs[MBOX_DEV_LSIO].rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
+    mbox_devs[MBOX_DEV_LSIO].ack_irq =
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_ACK_INT);
+    mbox_devs[MBOX_DEV_LSIO].ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
+#endif // CONFIG_MBOX_DEV_LSIO
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
@@ -173,7 +184,6 @@ int main ( void )
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
         panic("HPPS_MBOX_SSW_LINK");
-
     // Never release the link, because we listen on it in main loop
 #endif
 
@@ -185,20 +195,10 @@ int main ( void )
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
         panic("HPPS_MBOX_LINK");
-
     // Never release the link, because we listen on it in main loop
 #endif
 
 #if CONFIG_RTPS_TRCH_MAILBOX
-#define LSIO_RCV_IRQ_IDX MBOX_LSIO__TRCH_RCV_INT
-#define LSIO_ACK_IRQ_IDX MBOX_LSIO__TRCH_ACK_INT
-    mbox_devs[MBOX_DEV_LSIO].rcv_irq =
-        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
-    mbox_devs[MBOX_DEV_LSIO].rcv_int_idx = LSIO_RCV_IRQ_IDX;
-    mbox_devs[MBOX_DEV_LSIO].ack_irq =
-        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX);
-    mbox_devs[MBOX_DEV_LSIO].ack_int_idx = LSIO_ACK_IRQ_IDX;
-
     struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
                     &mbox_devs[MBOX_DEV_LSIO],
                     MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
@@ -206,7 +206,6 @@ int main ( void )
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
         panic("RTPS_MBOX_LINK");
-
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
@@ -221,7 +220,6 @@ int main ( void )
         panic("HPPS_SHMEM_LINK");
     if (llist_insert(&link_list, hpps_link_shmem))
         panic("HPPS_SHMEM_LINK: llist_insert");
-
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM
 
@@ -233,7 +231,6 @@ int main ( void )
         panic("HPPS_SHMEM_SSW_LINK");
     if (llist_insert(&link_list, hpps_link_shmem_ssw))
         panic("HPPS_SHMEM_SSW_LINK: llist_insert");
-
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
 
