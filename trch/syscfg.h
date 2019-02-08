@@ -12,11 +12,19 @@
 #define SYSCFG__SUBSYS__SHIFT              5
 #define SYSCFG__SUBSYS__MASK               (0xf << SYSCFG__SUBSYS__SHIFT)
 
+enum memdev {
+    MEMDEV_TRCH_SMC_SRAM = 0x0,
+    MEMDEV_TRCH_SMC_NAND = 0x1,
+    MEMDEV_HPPS_SMC_SRAM = 0x2,
+    MEMDEV_HPPS_SMC_NAND = 0x3,
+    MEMDEV_HPPS_DRAM     = 0x4,
+    MEMDEV_RTPS_DRAM     = 0x5,
+    MEMDEV_RTPS_TCM      = 0x6,
+    MEMDEV_TRCH_SRAM     = 0x7,
+};
+
 struct syscfg {
-    enum {
-        SYSCFG__BIN_LOC__SRAM = 0x1, // load HPPS/RTPS binaries from SRAM
-        SYSCFG__BIN_LOC__DRAM = 0x2, // assume HPPS/RTPS binaries already in DRAM
-    } bin_loc;
+    enum memdev bin_loc;
     subsys_t subsystems; // bitmask of subsystems to boot
     enum {
         SYSCFG__RTPS_MODE__SPLIT    = 0x0,
@@ -28,4 +36,5 @@ struct syscfg {
 int syscfg_load(struct syscfg *cfg);
 void syscfg_print(struct syscfg *cfg);
 
+const char *memdev_name(enum memdev d);
 #endif // SYSCFG_H

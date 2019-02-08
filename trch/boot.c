@@ -10,14 +10,9 @@ static subsys_t reboot_requests;
 
 static int boot_load(subsys_t subsys, struct syscfg *cfg)
 {
-    if (cfg->bin_loc == CFG__BIN_LOC__DRAM) {
-        printf("BOOT: nothing to load, according to boot cfg\r\n");
+    if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
+        printf("BOOT: syscfg says binaries not in SMC SRAM, not loading\r\n");
         return 0;
-    }
-
-    if (cfg->bin_loc != CFG__BIN_LOC__SRAM) {
-        printf("BOOT: don't know how to load: invalid boot cfg\r\n");
-        return 1;
     }
 
     switch (subsys) {

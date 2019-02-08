@@ -5,15 +5,6 @@
 #include "smc.h"
 #include "syscfg.h"
 
-static const char *bin_loc_name(unsigned m)
-{
-    switch (m) {
-        case SYSCFG__BIN_LOC__SRAM: return "SRAM";
-        case SYSCFG__BIN_LOC__DRAM: return "DRAM";
-        default:                   return "?";
-    };
-}
-
 static const char *rtps_mode_name(unsigned m)
 {
     switch (m) {
@@ -24,13 +15,28 @@ static const char *rtps_mode_name(unsigned m)
     };
 }
 
+const char *memdev_name(enum memdev d)
+{
+    switch (d) {
+        case MEMDEV_TRCH_SMC_SRAM:       return "TRCH_SMC_SRAM";
+        case MEMDEV_TRCH_SMC_NAND:       return "TRCH_SMC_NAND";
+        case MEMDEV_HPPS_SMC_SRAM:       return "HPPS_SMC_SRAM";
+        case MEMDEV_HPPS_SMC_NAND:       return "HPPS_SMC_NAND";
+        case MEMDEV_HPPS_DRAM:           return "HPPS_DRAM";
+        case MEMDEV_RTPS_DRAM:           return "RTPS_DRAM";
+        case MEMDEV_RTPS_TCM:            return "RTPS_TCM";
+        case MEMDEV_TRCH_SRAM:           return "TRCH_SRAM";
+        default:                         return "?";
+    };
+}
+
 void syscfg_print(struct syscfg *cfg)
 {
     printf("SYSTEM CONFIG:\r\n"
            "\tbin loc:\t%s\r\n"
-           "\tubsystems:\t%s\r\n"
-           "\trtps mode:\t%s\r\n",
-           bin_loc_name(cfg->bin_loc),
+           "\tsubsystems:\t%s\r\n"
+           "\trtps mode:\t%s\r\n"
+           memdev_name(cfg->bin_loc),
            subsys_name(cfg->subsystems),
            rtps_mode_name(cfg->rtps_mode));
 }
