@@ -10,14 +10,9 @@
 #include "printf.h"
 #include "server.h"
 
-#define ENDPOINT_HPPS 0
-#define ENDPOINT_RTPS 1
-
 #define MAX_MBOX_LINKS          8
 
 static struct link *links[MAX_MBOX_LINKS] = {0};
-static struct mbox_link_dev *mbox_devs = NULL;
-static size_t n_mbox_devs = 0;
 
 static int linkp_alloc(struct link *link)
 {
@@ -33,13 +28,6 @@ static int linkp_alloc(struct link *link)
 static void linkp_free(int index)
 {
      links[index] = NULL;
-}
-
-int server_init(struct mbox_link_dev *devs, size_t ndevs)
-{
-    mbox_devs = devs;
-    n_mbox_devs = ndevs;
-    return 0;
 }
 
 int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
@@ -101,12 +89,17 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             printf("\tindex_from = %u\r\n", pl->idx_from);
             printf("\tindex_to = %u\r\n", pl->idx_to);
 
-            if (pl->mbox_dev_idx >= n_mbox_devs) {
+            if (pl->mbox_dev_idx >= MBOX_DEV_COUNT) {
                 reply_u8[0] = -1;
                 return 1;
             }
-            struct link *link = mbox_link_connect("CMD_MBOX_LINK",
-                            &mbox_devs[pl->mbox_dev_idx],
+            struct mbox_link_dev *mldev = mbox_link_dev_get(pl->mbox_dev_idx);
+            if (!mldev) {
+                // requested a device that isn't initialized
+                reply_u8[0] = -2;
+                return 1;
+            }
+            struct link *link = mbox_link_connect("CMD_MBOX_LINK", mldev,
                             pl->idx_from, pl->idx_to,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
             if (!link) {

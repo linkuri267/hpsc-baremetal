@@ -36,18 +36,6 @@
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX)
 #define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
 
-#define SERVER_MAILBOXES (CONFIG_MBOX_DEV_HPPS || CONFIG_MBOX_DEV_LSIO)
-
-// can't have empty array, so keep a NULL entry
-struct mbox_link_dev mbox_devs[] = {
-#if SERVER_MAILBOXES
-    [MBOX_DEV_HPPS] = { .base = MBOX_HPPS_TRCH__BASE },
-    [MBOX_DEV_LSIO] = { .base = MBOX_LSIO__BASE },
-#endif // SERVER_MAILBOXES
-    { 0 }
-};
-#define MBOX_DEV_COUNT (sizeof(mbox_devs) - sizeof(struct mbox_link_dev) / sizeof(struct mbox_link_dev))
-
 static struct syscfg syscfg;
 
 #if CONFIG_TRCH_WDT
@@ -157,26 +145,32 @@ int main ( void )
 #endif // TEST_RT_MMU
 
 #if CONFIG_MBOX_DEV_HPPS
-    mbox_devs[MBOX_DEV_HPPS].rcv_irq =
+    struct mbox_link_dev mldev_hpps;
+    mldev_hpps.base = MBOX_HPPS_TRCH__BASE;
+    mldev_hpps.rcv_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT);
-    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
-    mbox_devs[MBOX_DEV_HPPS].ack_irq =
+    mldev_hpps.rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
+    mldev_hpps.ack_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT);
-    mbox_devs[MBOX_DEV_HPPS].ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
+    mldev_hpps.ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
+    mbox_link_dev_add(MBOX_DEV_HPPS, &mldev_hpps);
 #endif // CONFIG_MBOX_DEV_HPPS
 
 #if CONFIG_MBOX_DEV_LSIO
-    mbox_devs[MBOX_DEV_LSIO].rcv_irq =
+    struct mbox_link_dev mldev_lsio;
+    mldev_lsio.base = MBOX_LSIO__BASE;
+    mldev_lsio.rcv_irq =
         nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_RCV_INT);
-    mbox_devs[MBOX_DEV_LSIO].rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
-    mbox_devs[MBOX_DEV_LSIO].ack_irq =
+    mldev_lsio.rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
+    mldev_lsio.ack_irq =
         nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_ACK_INT);
-    mbox_devs[MBOX_DEV_LSIO].ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
+    mldev_lsio.ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
+    mbox_link_dev_add(MBOX_DEV_LSIO, &mldev_lsio);
 #endif // CONFIG_MBOX_DEV_LSIO
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
-                    &mbox_devs[MBOX_DEV_HPPS],
+                    &mldev_hpps,
                     MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
@@ -186,8 +180,7 @@ int main ( void )
 #endif
 
 #if CONFIG_HPPS_TRCH_MAILBOX
-    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
-                    &mbox_devs[MBOX_DEV_HPPS],
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mldev_hpps,
                     MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
@@ -197,8 +190,7 @@ int main ( void )
 #endif
 
 #if CONFIG_RTPS_TRCH_MAILBOX
-    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
-                    &mbox_devs[MBOX_DEV_LSIO],
+    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK", &mldev_lsio,
                     MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
@@ -242,7 +234,6 @@ int main ( void )
     trch_wdt_started = true;
 #endif // CONFIG_TRCH_WDT
 
-    server_init(mbox_devs, MBOX_DEV_COUNT);
     cmd_handler_register(server_process);
 
     unsigned iter = 0;
