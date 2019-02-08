@@ -38,11 +38,6 @@
 
 #define SERVER_MAILBOXES (CONFIG_MBOX_DEV_HPPS || CONFIG_MBOX_DEV_LSIO)
 
-typedef enum {
-    MBOX_DEV_HPPS = 0,
-    MBOX_DEV_LSIO,
-} mbox_dev_t;
-
 // can't have empty array, so keep a NULL entry
 struct mbox_link_dev mbox_devs[] = {
 #if SERVER_MAILBOXES

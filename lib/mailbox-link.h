@@ -18,6 +18,20 @@ struct mbox_link_dev {
     unsigned ack_int_idx;
 };
 
+// It would be nice to keep mailbox device tracking more dynamic, but without
+// advanced data structures readily available, we'll settle for a static count
+typedef enum {
+    MBOX_DEV_HPPS = 0,
+    MBOX_DEV_LSIO,
+    MBOX_DEV_COUNT
+} mbox_dev_id;
+
+int mbox_link_dev_add(mbox_dev_id id, struct mbox_link_dev *dev);
+
+void mbox_link_dev_remove(mbox_dev_id id);
+
+struct mbox_link_dev *mbox_link_dev_get(mbox_dev_id id);
+
 // We use 'owner' to indicate both the ID (arbitrary value) to which the
 // mailbox should be claimed (i.e. OWNER HW register should be set) and whether
 // the connection originator is a server or a client: owner!=0 ==> server;

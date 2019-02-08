@@ -27,8 +27,32 @@ struct mbox_link {
     struct cmd_ctx cmd_ctx;
 };
 
+static struct mbox_link_dev *devs[MBOX_DEV_COUNT] = {0};
 static struct link links[MAX_LINKS] = {0};
 static struct mbox_link mlinks[MAX_LINKS] = {0};
+
+int mbox_link_dev_add(mbox_dev_id id, struct mbox_link_dev *dev)
+{
+    ASSERT(id < MBOX_DEV_COUNT);
+    if (devs[id]) {
+        printf("ERROR: mbox_link_dev_add: already added id=%u\r\n", id);
+        return -1;
+    }
+    devs[id] = dev;
+    return 0;
+}
+
+void mbox_link_dev_remove(mbox_dev_id id)
+{
+    ASSERT(id < MBOX_DEV_COUNT);
+    devs[id] = NULL;
+}
+
+struct mbox_link_dev *mbox_link_dev_get(mbox_dev_id id)
+{
+    ASSERT(id < MBOX_DEV_COUNT);
+    return devs[id];
+}
 
 static void handle_ack(void *arg)
 {
