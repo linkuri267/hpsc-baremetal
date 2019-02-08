@@ -36,9 +36,11 @@ void syscfg_print(struct syscfg *cfg)
            "\tbin loc:\t%s\r\n"
            "\tsubsystems:\t%s\r\n"
            "\trtps mode:\t%s\r\n"
+           "\thpps rootfs loc:\t%s\r\n",
            memdev_name(cfg->bin_loc),
            subsys_name(cfg->subsystems),
-           rtps_mode_name(cfg->rtps_mode));
+           rtps_mode_name(cfg->rtps_mode),
+           memdev_name(cfg->hpps_rootfs_loc));
 }
 
 int syscfg_load(struct syscfg *cfg)
@@ -55,6 +57,8 @@ int syscfg_load(struct syscfg *cfg)
     cfg->bin_loc = (opts & SYSCFG__BIN_LOC__MASK) >> SYSCFG__BIN_LOC__SHIFT;
     cfg->rtps_mode = (opts & SYSCFG__RTPS_MODE__MASK) >> SYSCFG__RTPS_MODE__SHIFT;
     cfg->subsystems = (opts & SYSCFG__SUBSYS__MASK) >> SYSCFG__SUBSYS__SHIFT;
+    cfg->hpps_rootfs_loc = (opts & SYSCFG__HPPS_ROOTFS_LOC__MASK)
+                                >> SYSCFG__HPPS_ROOTFS_LOC__SHIFT;
 
     syscfg_print(cfg);
     return 0;

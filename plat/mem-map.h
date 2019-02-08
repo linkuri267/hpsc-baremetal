@@ -7,6 +7,9 @@
 #define HPPS_DDR_LOW_ADDR   0x80000000
 #define HPPS_DDR_LOW_SIZE   0x3fe00000 // excludes mem hidden from HPPS
 
+// Boot config (TODO: to be replaced by u-boot env/script)
+#define HPPS_BOOT_MODE_ADDR 0x9f000000
+
 // Shared memory regions accessible to HPPS
 #define HPPS_SHM_ADDR 0xbf800000
 #define HPPS_SHM_SIZE   0x400000

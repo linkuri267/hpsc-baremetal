@@ -11,6 +11,8 @@
 #define SYSCFG__RTPS_MODE__MASK            (0x3 << SYSCFG__RTPS_MODE__SHIFT)
 #define SYSCFG__SUBSYS__SHIFT              5
 #define SYSCFG__SUBSYS__MASK               (0xf << SYSCFG__SUBSYS__SHIFT)
+#define SYSCFG__HPPS_ROOTFS_LOC__SHIFT     9
+#define SYSCFG__HPPS_ROOTFS_LOC__MASK      (0x7 << SYSCFG__HPPS_ROOTFS_LOC__SHIFT)
 
 enum memdev {
     MEMDEV_TRCH_SMC_SRAM = 0x0,
@@ -31,6 +33,7 @@ struct syscfg {
         SYSCFG__RTPS_MODE__LOCKSTEP = 0x1,
         SYSCFG__RTPS_MODE__SMP	    = 0x2,
     } rtps_mode;
+    enum memdev hpps_rootfs_loc;
 };
 
 int syscfg_load(struct syscfg *cfg);

@@ -3,21 +3,40 @@
 #include "smc.h"
 #include "watchdog.h"
 #include "syscfg.h"
+#include "mem-map.h"
 
 #include "boot.h"
 
 static subsys_t reboot_requests;
 
+// For legacy way to configure HPPS u-boot, until have u-boot env/script.
+#define HPPS_BOOT_MODE__DRAM 0x0
+#define HPPS_BOOT_MODE__NAND 0xf
+static int hpps_boot_mode(enum memdev rootfs_loc, volatile uint32_t *mode)
+{
+    switch (rootfs_loc) {
+        case MEMDEV_HPPS_DRAM:     *mode = HPPS_BOOT_MODE__DRAM; break;
+        case MEMDEV_HPPS_SMC_NAND: *mode = HPPS_BOOT_MODE__NAND; break;
+        default:
+                printf("ERROR: BOOT: unsupported HPPS rootfs loc: %s\r\n",
+                       memdev_name(rootfs_loc));
+                return 1;
+    };
+    printf("BOOT: set hpps boot mode: %p <- 0x%x", mode, *mode);
+    return 0;
+}
+
 static int boot_load(subsys_t subsys, struct syscfg *cfg)
 {
-    if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
-        printf("BOOT: syscfg says binaries not in SMC SRAM, not loading\r\n");
-        return 0;
-    }
-
     switch (subsys) {
         case SUBSYS_RTPS_R52:
             printf("BOOT: load RTPS mode: %x\r\n", cfg->rtps_mode);
+
+            if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
+                printf("BOOT: syscfg'ed bins not in SMC SRAM, not loading\r\n");
+                return 0;
+            }
+
             switch (cfg->rtps_mode) {
                 case SYSCFG__RTPS_MODE__SPLIT: // TODO
                     printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
@@ -38,6 +57,18 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg)
             break;
         case SUBSYS_HPPS:
             printf("BOOT: load HPPS\r\n");
+
+            // For legacy config of HPPS u-boot, until have u-boot env/script.
+            int rc = hpps_boot_mode(cfg->hpps_rootfs_loc,
+                                    (volatile uint32_t *)HPPS_BOOT_MODE_ADDR);
+            if (rc)
+                return 1;
+
+            if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
+                printf("BOOT: syscfg'ed bins not in SMC SRAM, not loading\r\n");
+                return 0;
+            }
+
             if (smc_sram_load("hpps-fw"))
                 return 1;
             if (smc_sram_load("hpps-bl"))
