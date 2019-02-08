@@ -39,12 +39,12 @@ struct cmd_lifecycle {
 };
 
 struct cmd_mbox_link_connect {
-    // TODO: The use of endpoint_idx means that the remote has more detailed
+    // TODO: The use of mbox_dev_idx means that the remote has more detailed
     // knowledge of our inner workings than should be allowed
     // It also means they have the endpoint hardcoded, when it should be dynamic
     // based on our boot configuration
     // Perhaps use CPU or IP Block ID instead, which we can map to a subsystem?
-    uint8_t endpoint_idx;
+    uint8_t mbox_dev_idx;
     uint8_t idx_from;
     uint8_t idx_to;
 };

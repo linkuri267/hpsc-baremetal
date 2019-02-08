@@ -34,19 +34,19 @@
 #define SERVER_MAILBOXES (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX)
 
 typedef enum {
-    ENDPOINT_HPPS = 0,
-    ENDPOINT_LSIO,
-} endpoint_t;
+    MBOX_DEV_HPPS = 0,
+    MBOX_DEV_LSIO,
+} mbox_dev_t;
 
 // can't have empty array, so keep a NULL entry
-struct endpoint endpoints[] = {
+struct mbox_link_dev mbox_devs[] = {
 #if SERVER_MAILBOXES
-    [ENDPOINT_HPPS] = { .base = MBOX_HPPS_TRCH__BASE },
-    [ENDPOINT_LSIO] = { .base = MBOX_LSIO__BASE },
+    [MBOX_DEV_HPPS] = { .base = MBOX_HPPS_TRCH__BASE },
+    [MBOX_DEV_LSIO] = { .base = MBOX_LSIO__BASE },
 #endif // SERVER_MAILBOXES
     { 0 }
 };
-#define ENDPOINT_COUNT (sizeof(endpoints) - sizeof(struct endpoint) / sizeof(struct endpoint))
+#define MBOX_DEV_COUNT (sizeof(mbox_devs) - sizeof(struct mbox_link_dev) / sizeof(struct mbox_link_dev))
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -157,20 +157,22 @@ int main ( void )
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 #define HPPS_RCV_IRQ_IDX MBOX_HPPS_TRCH__TRCH_RCV_INT
 #define HPPS_ACK_IRQ_IDX MBOX_HPPS_TRCH__TRCH_ACK_INT
-    endpoints[ENDPOINT_HPPS].rcv_irq =
+    mbox_devs[MBOX_DEV_HPPS].rcv_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_RCV_IRQ_IDX);
-    endpoints[ENDPOINT_HPPS].rcv_int_idx = HPPS_RCV_IRQ_IDX;
-    endpoints[ENDPOINT_HPPS].ack_irq =
+    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx = HPPS_RCV_IRQ_IDX;
+    mbox_devs[MBOX_DEV_HPPS].ack_irq =
         nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_ACK_IRQ_IDX);
-    endpoints[ENDPOINT_HPPS].ack_int_idx = HPPS_ACK_IRQ_IDX;
+    mbox_devs[MBOX_DEV_HPPS].ack_int_idx = HPPS_ACK_IRQ_IDX;
 #endif // CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
                     MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
-                    endpoints[ENDPOINT_HPPS].rcv_irq, HPPS_RCV_IRQ_IDX,
-                    endpoints[ENDPOINT_HPPS].ack_irq, HPPS_ACK_IRQ_IDX,
+                    mbox_devs[MBOX_DEV_HPPS].rcv_irq,
+                    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx,
+                    mbox_devs[MBOX_DEV_HPPS].ack_irq,
+                    mbox_devs[MBOX_DEV_HPPS].ack_int_idx,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
@@ -183,8 +185,10 @@ int main ( void )
     struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
                     MBOX_HPPS_TRCH__BASE,
                     MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
-                    endpoints[ENDPOINT_HPPS].rcv_irq, HPPS_RCV_IRQ_IDX,
-                    endpoints[ENDPOINT_HPPS].ack_irq, HPPS_ACK_IRQ_IDX,
+                    mbox_devs[MBOX_DEV_HPPS].rcv_irq,
+                    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx,
+                    mbox_devs[MBOX_DEV_HPPS].ack_irq,
+                    mbox_devs[MBOX_DEV_HPPS].ack_int_idx,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -196,18 +200,20 @@ int main ( void )
 #if CONFIG_RTPS_TRCH_MAILBOX
 #define LSIO_RCV_IRQ_IDX MBOX_LSIO__TRCH_RCV_INT
 #define LSIO_ACK_IRQ_IDX MBOX_LSIO__TRCH_ACK_INT
-    endpoints[ENDPOINT_LSIO].rcv_irq =
+    mbox_devs[MBOX_DEV_LSIO].rcv_irq =
         nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX);
-    endpoints[ENDPOINT_LSIO].rcv_int_idx = LSIO_RCV_IRQ_IDX;
-    endpoints[ENDPOINT_LSIO].ack_irq =
+    mbox_devs[MBOX_DEV_LSIO].rcv_int_idx = LSIO_RCV_IRQ_IDX;
+    mbox_devs[MBOX_DEV_LSIO].ack_irq =
         nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX);
-    endpoints[ENDPOINT_LSIO].ack_int_idx = LSIO_ACK_IRQ_IDX;
+    mbox_devs[MBOX_DEV_LSIO].ack_int_idx = LSIO_ACK_IRQ_IDX;
 
     struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
                     MBOX_LSIO__BASE,
                     MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
-                    endpoints[ENDPOINT_LSIO].rcv_irq, LSIO_RCV_IRQ_IDX,
-                    endpoints[ENDPOINT_LSIO].ack_irq, LSIO_ACK_IRQ_IDX,
+                    mbox_devs[MBOX_DEV_LSIO].rcv_irq,
+                    mbox_devs[MBOX_DEV_LSIO].rcv_int_idx,
+                    mbox_devs[MBOX_DEV_LSIO].ack_irq,
+                    mbox_devs[MBOX_DEV_LSIO].ack_int_idx,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
@@ -264,7 +270,7 @@ int main ( void )
     trch_wdt_started = true;
 #endif // CONFIG_TRCH_WDT
 
-    server_init(endpoints, ENDPOINT_COUNT);
+    server_init(mbox_devs, MBOX_DEV_COUNT);
     cmd_handler_register(server_process);
 
     unsigned iter = 0;

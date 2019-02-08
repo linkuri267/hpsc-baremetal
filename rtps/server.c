@@ -2,11 +2,12 @@
 #include <unistd.h>
 
 #include "command.h"
+#include "mailbox-link.h"
 #include "panic.h"
 #include "printf.h"
 #include "server.h"
 
-int server_init(struct endpoint *endpts, size_t num_endpts)
+int server_init(struct mbox_link_dev *devs, size_t ndevs)
 {
     return 0;
 }

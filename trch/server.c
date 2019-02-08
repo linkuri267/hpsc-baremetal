@@ -16,8 +16,8 @@
 #define MAX_MBOX_LINKS          8
 
 static struct link *links[MAX_MBOX_LINKS] = {0};
-static struct endpoint *endpoints = NULL;
-static size_t num_endpoints = 0;
+static struct mbox_link_dev *mbox_devs = NULL;
+static size_t n_mbox_devs = 0;
 
 static int linkp_alloc(struct link *link)
 {
@@ -35,10 +35,10 @@ static void linkp_free(int index)
      links[index] = NULL;
 }
 
-int server_init(struct endpoint *endpts, size_t num_endpts)
+int server_init(struct mbox_link_dev *devs, size_t ndevs)
 {
-    endpoints = endpts;
-    num_endpoints = num_endpts;
+    mbox_devs = devs;
+    n_mbox_devs = ndevs;
     return 0;
 }
 
@@ -97,20 +97,20 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             struct cmd_mbox_link_connect *pl =
                 (struct cmd_mbox_link_connect *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("MBOX_LINK_CONNECT ...\r\n");
-            printf("\tendpoint_idx = %u\r\n", pl->endpoint_idx);
+            printf("\tmbox_dev_idx = %u\r\n", pl->mbox_dev_idx);
             printf("\tindex_from = %u\r\n", pl->idx_from);
             printf("\tindex_to = %u\r\n", pl->idx_to);
 
-            if (pl->endpoint_idx >= num_endpoints) {
+            if (pl->mbox_dev_idx >= n_mbox_devs) {
                 reply_u8[0] = -1;
                 return 1;
             }
-            struct endpoint *endpt = &endpoints[pl->endpoint_idx];
+            struct mbox_link_dev *mdev = &mbox_devs[pl->mbox_dev_idx];
 
-            struct link *link = mbox_link_connect("CMD_MBOX_LINK", endpt->base,
+            struct link *link = mbox_link_connect("CMD_MBOX_LINK", mdev->base,
                             pl->idx_from, pl->idx_to,
-                            endpt->rcv_irq, endpt->rcv_int_idx,
-                            endpt->ack_irq, endpt->ack_int_idx,
+                            mdev->rcv_irq, mdev->rcv_int_idx,
+                            mdev->ack_irq, mdev->ack_int_idx,
                             /* server */ 0, /* client */ MASTER_ID_TRCH_CPU);
             if (!link) {
                 rc = -2;
