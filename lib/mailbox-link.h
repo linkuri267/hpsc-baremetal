@@ -6,6 +6,10 @@
 #include "intc.h"
 #include "link.h"
 
+// An abstract device which describes the mailbox IP block properties and
+// configured interrupts that cover both inbound and outbound mailbox channels.
+// These properties are configured externally from the mailbox driver and
+// mailbox-link library, hence the separate data structure.
 struct mbox_link_dev {
     volatile uint32_t *base;
     struct irq *rcv_irq;
