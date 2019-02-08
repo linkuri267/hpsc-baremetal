@@ -42,6 +42,26 @@ static uint32_t sys_timer_interval; // in cycles
 // Main is the owner of these pointers because the ISR accesses them
 static struct rti_timer *rti_timer; // only one since this BM code is not SMP
 
+// inferred CONFIG settings
+#define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_RTPS_MAILBOX)
+#define CONFIG_MBOX_DEV_LSIO 0 // TODO: not currently used
+
+#define SERVER_MAILBOXES (CONFIG_MBOX_DEV_HPPS || CONFIG_MBOX_DEV_LSIO)
+
+typedef enum {
+    MBOX_DEV_HPPS = 0,
+    MBOX_DEV_LSIO,
+} mbox_dev_t;
+
+// can't have empty array, so keep a NULL entry
+struct mbox_link_dev mbox_devs[] = {
+#if SERVER_MAILBOXES
+    [MBOX_DEV_HPPS] = { .base = MBOX_HPPS_RTPS__BASE },
+    [MBOX_DEV_LSIO] = { .base = 0 }, // TODO
+#endif // SERVER_MAILBOXES
+    { 0 }
+};
+
 void enable_interrupts (void)
 {
 	unsigned long temp;
@@ -141,19 +161,20 @@ int main(void)
         panic("RTPS->TRCH mailbox");
 #endif // TEST_RTPS_TRCH_MAILBOX
 
-#if CONFIG_HPPS_RTPS_MAILBOX
-#define HPPS_RCV_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_RCV_INT
-#define HPPS_ACK_IRQ_IDX  MBOX_HPPS_RTPS__RTPS_ACK_INT
-    struct mbox_link_dev mdev;
-    mdev.base = MBOX_HPPS_RTPS__BASE;
-    mdev.rcv_irq = gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_RCV_IRQ_IDX,
-                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    mdev.rcv_int_idx = HPPS_RCV_IRQ_IDX;
-    mdev.ack_irq = gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_ACK_IRQ_IDX,
-                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    mdev.ack_int_idx = HPPS_ACK_IRQ_IDX;
+#if CONFIG_MBOX_DEV_HPPS
+    mbox_devs[MBOX_DEV_HPPS].rcv_irq =
+        gic_request(RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mbox_devs[MBOX_DEV_HPPS].rcv_int_idx = MBOX_HPPS_RTPS__RTPS_RCV_INT;
+    mbox_devs[MBOX_DEV_HPPS].ack_irq =
+        gic_request(RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT,
+                    GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mbox_devs[MBOX_DEV_HPPS].ack_int_idx = MBOX_HPPS_RTPS__RTPS_ACK_INT;
+#endif
 
-    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mdev,
+#if CONFIG_HPPS_RTPS_MAILBOX
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
+                    &mbox_devs[MBOX_DEV_HPPS],
                     MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
                     /* server */ MASTER_ID_RTPS_CPU0,
                     /* client */ MASTER_ID_HPPS_CPU0);
