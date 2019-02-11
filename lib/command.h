@@ -12,6 +12,7 @@
 #define CMD_NOP                         0
 #define CMD_PING                        1
 #define CMD_PONG                        2
+#define CMD_PSCI			3
 #define CMD_WATCHDOG_TIMEOUT            11
 #define CMD_LIFECYCLE                   13
 #define CMD_ACTION                      14

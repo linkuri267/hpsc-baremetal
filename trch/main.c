@@ -33,7 +33,7 @@
 #define MAIN_LOOP_SILENT_ITERS 16
 
 // inferred CONFIG settings
-#define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX)
+#define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_HPPS_TRCH_MAILBOX_ATF)
 #define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
 
 static struct syscfg syscfg;
@@ -186,6 +186,17 @@ int main ( void )
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
         panic("HPPS_MBOX_LINK");
+    // Never release the link, because we listen on it in main loop
+#endif
+
+#if CONFIG_HPPS_TRCH_MAILBOX_ATF
+    struct link *hpps_atf_link = mbox_link_connect("HPPS_MBOX_ATF_LINK", &mldev_hpps,
+                    MBOX_HPPS_TRCH__HPPS_ATF_TRCH, MBOX_HPPS_TRCH__TRCH_ATF_HPPS,
+                    /* server */ MASTER_ID_TRCH_CPU,
+                    /* client */ MASTER_ID_HPPS_CPU0);
+    if (!hpps_atf_link)
+        panic("HPPS_MBOX_ATF_LINK");
+
     // Never release the link, because we listen on it in main loop
 #endif
 
