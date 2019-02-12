@@ -127,7 +127,7 @@ endif
 
 TARGET=rtps
 
-.DEFAULT_GOAL := $(BLDDIR)/$(TARGET).uimg
+.DEFAULT_GOAL := $(BLDDIR)/$(TARGET).itb
 
 clean:
 	rm -rf $(BLDDIR)
@@ -184,6 +184,8 @@ $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 %.uimg: %.bin.gz %.elf
 	mkimage -n "RTPS Bare-Metal App" -A arm -T kernel -O rtems -C gzip \
 		-a $$(readelf -h $*.elf | grep -i 'Entry point' | cut -d: -f2) -d $< $@
+$(BLDDIR)/%.itb: %.its $(BLDDIR)/%.bin.gz
+	mkimage -f $< $@
 
 $(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
 
