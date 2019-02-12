@@ -55,10 +55,11 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
         case CMD_PSCI:
             printf("PSCI ...\r\n");
             uint32_t *action = (uint32_t *) &(cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
+            printf("\t");
             for (i = 0; i < 5; ++i) {
                  printf("%d ", action[i]);
-	    }
-            printf("\n");
+            }
+            printf("\r\n");
             return 0;
         case CMD_WATCHDOG_TIMEOUT: {
             unsigned int cpu =
