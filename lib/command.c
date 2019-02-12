@@ -3,7 +3,6 @@
 #include "mailbox.h"
 #include "mem.h"
 #include "printf.h"
-#include "server.h"
 #include "sleep.h"
 
 #include "command.h"
