@@ -3,9 +3,7 @@
 
 #include "wdt.h"
 
-extern struct wdt *wdt; // must be in global scope since needed by global ISR
-
-int watchdog_init();
+int watchdog_init(struct wdt **wdt_ptr);
 void watchdog_deinit();
 void watchdog_kick();
 

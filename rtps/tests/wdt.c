@@ -35,8 +35,9 @@ static bool check_expiration(unsigned expired_stage, unsigned expected)
     return true;
 }
 
-int test_wdt()
+int test_wdt(struct wdt **wdt_ptr)
 {
+    struct wdt *wdt;
     int rc = 1;
 
     volatile unsigned expired_stage = 0;
@@ -44,6 +45,7 @@ int test_wdt()
                             wdt_tick, (void *)&expired_stage);
     if (!wdt)
         return 1;
+    *wdt_ptr = wdt;
 
     wdt_enable(wdt);
 
@@ -76,7 +78,7 @@ cleanup:
     // NOTE: order is important, since ISR may be called during destroy
     gic_int_disable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
-    wdt = NULL;
+    *wdt_ptr = NULL;
     // NOTE: timer is still running! target subsystem not allowed to disable it
     return rc;
 }

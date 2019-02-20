@@ -6,10 +6,8 @@
 
 #include "watchdog.h"
 
-struct wdt *wdt; // must be in global scope since needed by global ISR
-
-// TODO: watchdogs for both cores
-//struct wdt *wdts[NUM_CORES]; // must be in global scope since needed by global ISR
+static struct wdt *wdt;
+static struct wdt **wdt_ptr;
 
 static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
 {
@@ -17,13 +15,14 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
     // nothing to do: main loop will return from WFI/WFE and kick
 }
 
-int watchdog_init()
+int watchdog_init(struct wdt **wdt_ptr)
 {
     volatile unsigned expired_stage = 0;
     wdt = wdt_create_target("RTPS0", WDT_RTPS_R52_0_RTPS_BASE,
                             handle_timeout, (void *)&expired_stage);
     if (!wdt)
         return 1;
+    *wdt_ptr = wdt;
 
     wdt_enable(wdt);
 
@@ -37,7 +36,7 @@ void watchdog_deinit()
     // NOTE: order: ISR might be called during destroy if IRQ is not disabled
     gic_int_disable(PPI_IRQ__WDT, GIC_IRQ_TYPE_PPI);
     wdt_destroy(wdt);
-    wdt = NULL;
+    *wdt_ptr = NULL;
 }
 
 void watchdog_kick()

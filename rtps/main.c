@@ -44,6 +44,9 @@ static struct rti_timer *rti_timer; // only one since this BM code is not SMP
 #if TEST_RTPS_DMA
 static struct dma *rtps_dma;
 #endif // TEST_RTPS_DMA
+#if CONFIG_WDT || TEST_WDT
+static struct wdt *wdt;
+#endif // {CONFIG,TEST}_WDT
 
 // inferred CONFIG settings
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_RTPS_MAILBOX)
@@ -180,13 +183,13 @@ int main(void)
 #endif // TEST_SOFT_RESET
 
 #if TEST_WDT
-    if (test_wdt())
+    if (test_wdt(&wdt))
         panic("wdt test");
     // NOTE: watchdog remains enabled after this test, not allowed to disable
 #endif // TEST_WDT
 
 #if CONFIG_WDT
-    watchdog_init();
+    watchdog_init(&wdt);
 #endif // CONFIG_WDT
 
     cmd_handler_register(server_process);
