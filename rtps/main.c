@@ -41,6 +41,9 @@ static uint32_t sys_timer_interval; // in cycles
 
 // Main is the owner of these pointers because the ISR accesses them
 static struct rti_timer *rti_timer; // only one since this BM code is not SMP
+#if TEST_RTPS_DMA
+static struct dma *rtps_dma;
+#endif // TEST_RTPS_DMA
 
 // inferred CONFIG settings
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_RTPS_MAILBOX)
@@ -136,7 +139,7 @@ int main(void)
 #endif // TEST_RT_MMU
 
 #if TEST_RTPS_DMA
-    if (test_rtps_dma())
+    if (test_rtps_dma(&rtps_dma))
         panic("RTPS DMA test");
 #endif // TEST_RTPS_DMA
 

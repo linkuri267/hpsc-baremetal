@@ -11,8 +11,6 @@
 
 #define RTPS_DMA_WORDS (RTPS_DMA_SIZE / sizeof(uint32_t))
 
-struct dma *rtps_dma; // must be exposed for the ISR
-
 #if TEST_RTPS_DMA_CB
 static void dma_tx_completed(void *arg, int rc)
 {
@@ -30,14 +28,14 @@ static bool cmp_buf(uint32_t *src, uint32_t *dst)
     return true;
 }
 
-static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
+static int do_copy(struct dma *d, uint32_t *src, uint32_t *dst, unsigned sz)
 {
 #if TEST_RTPS_DMA_CB
     bool dma_done = false;
 #endif
 
     struct dma_tx *dma_tx =
-        dma_transfer(rtps_dma, /* chan */ 0,
+        dma_transfer(d, /* chan */ 0,
                      src, dst, RTPS_DMA_SIZE,
 #if TEST_RTPS_DMA_CB
                      dma_tx_completed, &dma_done);
@@ -60,15 +58,21 @@ static int do_copy(uint32_t *src, uint32_t *dst, unsigned sz)
     return 0;
 }
 
-int test_rtps_dma()
+int test_rtps_dma(struct dma **rtps_dma_ptr)
 {
+    struct dma *rtps_dma;
+    int rc = 0;
+
     gic_int_enable(RTPS_IRQ__RTPS_DMA_ABORT, GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_EDGE);
     gic_int_enable(RTPS_IRQ__RTPS_DMA_EV0, GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_EDGE);
 
     rtps_dma = dma_create("RTPS", RTPS_DMA_BASE,
                           (uint8_t *)RTPS_DMA_MCODE_ADDR, RTPS_DMA_MCODE_SIZE);
-    if (!rtps_dma)
-	return 1;
+    if (!rtps_dma) {
+	rc = 1;
+        goto int_disable;
+    }
+    *rtps_dma_ptr = rtps_dma;
 
     uint32_t *src_buf = (uint32_t *)RTPS_DMA_SRC_ADDR;
     uint32_t *dst_buf = (uint32_t *)RTPS_DMA_DST_ADDR;
@@ -77,13 +81,14 @@ int test_rtps_dma()
         src_buf[i] = 0xf00d0000 | i;
     dump_buf("src", src_buf, RTPS_DMA_WORDS);
 
-    int rc = do_copy(src_buf, dst_buf, RTPS_DMA_SIZE);
+    rc = do_copy(rtps_dma, src_buf, dst_buf, RTPS_DMA_SIZE);
     if (rc)
-        return rc;
+        goto destroy;
     dump_buf("dst", dst_buf, RTPS_DMA_WORDS);
     if (!cmp_buf(src_buf, dst_buf)) {
         printf("DMA test: dst data mismatches src\r\n");
-        return 1;
+        rc = 2;
+        goto destroy;
     }
 
 #if TEST_RTPS_MMU // Additional test of MMU remapping:
@@ -92,24 +97,30 @@ int test_rtps_dma()
     bzero(dst_buf, RTPS_DMA_SIZE);
     if (cmp_buf(src_buf, dst_buf)) {
         printf("DMA test: erase of dst buf failed\r\n");
-        return 1;
+        rc = 3;
+        goto destroy;
     }
 
     // MMU maps RTPS_DMA_DST_REMAP_ADDR to RTPS_DMA_DST_ADDR
     rc = do_copy(src_buf, (uint32_t *)RTPS_DMA_DST_REMAP_ADDR, RTPS_DMA_SIZE);
     if (rc)
-        return rc;
+        goto destroy;
     dump_buf("dst", dst_buf, RTPS_DMA_WORDS);
     if (!cmp_buf(src_buf, dst_buf)) {
         printf("DMA test (remap): dst data mismatches src\r\n");
-        return 1;
+        rc = 4;
+        goto destroy;
     }
 #endif // TEST_RTPS_MMU
 
+destroy:
     dma_destroy(rtps_dma);
+    *rtps_dma_ptr = NULL;
 
+int_disable:
     gic_int_disable(RTPS_IRQ__RTPS_DMA_ABORT, GIC_IRQ_TYPE_SPI);
     gic_int_disable(RTPS_IRQ__RTPS_DMA_EV0, GIC_IRQ_TYPE_SPI);
 
-    return 0;
+exit:
+    return rc;
 }
