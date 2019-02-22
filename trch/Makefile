@@ -123,6 +123,7 @@ OBJS = \
        lib/object.o \
        lib/panic.o \
        lib/printf.o \
+       lib/psci.o \
        lib/sha256.o \
        lib/shmem.o \
        lib/shmem-link.o \

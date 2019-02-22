@@ -9,6 +9,8 @@
 #include "panic.h"
 #include "printf.h"
 #include "server.h"
+#include "pm_defs.h"
+#include "psci.h"
 
 #define MAX_MBOX_LINKS          8
 
@@ -56,11 +58,11 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             printf("PSCI ...\r\n");
             uint32_t *action = (uint32_t *) &(cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("\t");
-            for (i = 0; i < 5; ++i) {
-                 printf("%d ", action[i]);
+            for (i = 0; i < 6; ++i) {
+                 printf("0x%x ", action[i]);
             }
             printf("\r\n");
-            return 0;
+	    return handle_psci(cmd, reply); 
         case CMD_WATCHDOG_TIMEOUT: {
             unsigned int cpu =
                 *((unsigned int *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]));
