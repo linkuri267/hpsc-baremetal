@@ -3,3 +3,5 @@ vectors.s.gen
 isr.c.gen
 vectors.s
 isr.c
+
+Makefile.config.overlay

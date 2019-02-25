@@ -27,6 +27,7 @@ CONFIG_FLAGS = \
 	CONFIG_RT_MMU \
 
 include Makefile.config
+-include Makefile.config.overlay
 
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
 ifneq ($(strip $(CONFIG_SYSTICK)),1)
