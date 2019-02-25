@@ -29,25 +29,7 @@ CONFIG_FLAGS = \
 	CONFIG_WDT \
 	CONFIG_HPPS_RTPS_MAILBOX \
 
-# Enable disable tests here:
-TEST_FLOAT 			= 1
-TEST_SORT 			= 1
-TEST_GTIMER			= 1
-TEST_WDT			= 1
-TEST_RTI_TIMER			= 1
-TEST_RTPS_TRCH_MAILBOX  	= 1
-TEST_RTPS_DMA 			= 1
-TEST_RTPS_DMA_CB 		= 1
-TEST_RTPS_MMU 			= 1
-TEST_RT_MMU 			= 1
-TEST_SOFT_RESET 		= 0
-
-# Set build configuration here
-CONFIG_GTIMER 			= 1
-CONFIG_SLEEP_TIMER 		= 1 # implement sleep() using a timer
-CONFIG_WDT 			= 1
-CONFIG_HPPS_RTPS_MAILBOX  	= 1
-CONFIG_CONSOLE			= NS16550
+include Makefile.config
 
 # Most tests are standalone, but these are exceptions
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
