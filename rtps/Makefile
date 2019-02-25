@@ -30,6 +30,7 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_RTPS_MAILBOX \
 
 include Makefile.config
+-include Makefile.config.overlay
 
 # Most tests are standalone, but these are exceptions
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
