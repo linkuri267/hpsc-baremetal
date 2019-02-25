@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 import argparse
 import re
@@ -17,7 +17,7 @@ def parse_defs(fname, incpaths):
                     val = m.group(2)
                     defs[key] = val
             break # first found file only
-        except FileNotFoundError:
+        except IOError:
                 pass
     return defs
 
