@@ -22,7 +22,7 @@ static int hpps_boot_mode(enum memdev rootfs_loc, volatile uint32_t *mode)
                        memdev_name(rootfs_loc));
                 return 1;
     };
-    printf("BOOT: set hpps boot mode: %p <- 0x%x", mode, *mode);
+    printf("BOOT: set hpps boot mode: %p <- 0x%x\r\n", mode, *mode);
     return 0;
 }
 
