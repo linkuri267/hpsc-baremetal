@@ -102,7 +102,7 @@ int test_rtps_dma(struct dma **rtps_dma_ptr)
     }
 
     // MMU maps RTPS_DMA_DST_REMAP_ADDR to RTPS_DMA_DST_ADDR
-    rc = do_copy(src_buf, (uint32_t *)RTPS_DMA_DST_REMAP_ADDR, RTPS_DMA_SIZE);
+    rc = do_copy(rtps_dma, src_buf, (uint32_t *)RTPS_DMA_DST_REMAP_ADDR, RTPS_DMA_SIZE);
     if (rc)
         goto destroy;
     dump_buf("dst", dst_buf, RTPS_DMA_WORDS);
