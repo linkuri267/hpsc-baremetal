@@ -161,6 +161,6 @@ $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 	mkimage -n "RTPS Bare-Metal App" -A arm -T kernel -O rtems -C gzip \
 		-a $$(readelf -h $*.elf | grep -i 'Entry point' | cut -d: -f2) -d $< $@
 
-$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.config
 
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))

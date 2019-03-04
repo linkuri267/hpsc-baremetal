@@ -186,6 +186,6 @@ $(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
 $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 	$(ARM_NONE_EABI)-objcopy -O binary $< $@
 
-$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.config
 
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))
