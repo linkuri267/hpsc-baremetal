@@ -6,12 +6,10 @@
 #include "sleep.h"
 #include "gtimer.h"
 
-#define FREQ_HZ 1000000
-
 #define TICKS_TO_TEST 3
 
-#define INTERVAL_MS 2000
-#define INTERVAL_CYCLES (INTERVAL_MS * (FREQ_HZ / 1000))
+#define INTERVAL_MS 1000
+#define INTERVAL_CYCLES (INTERVAL_MS * (GTIMER_FREQ_HZ / 1000))
 
 struct context {
     enum gtimer timer;
@@ -58,11 +56,11 @@ int test_gtimer()
     // TODO: test frq against measured tick rate
 
 #if 0 // only allowed from EL2
-    gtimer_set_frq(FREQ_HZ);
+    gtimer_set_frq(GTIMER_FREQ_HZ);
     frq = gtimer_get_frq();
-    if (frq != FREQ_HZ) {
+    if (frq != GTIMER_FREQ_HZ) {
         printf("ERROR: gtimer test: failed to set counter frq: %u != %u\r\n",
-               frq, FREQ_HZ);
+               frq, GTIMER_FREQ_HZ);
         return 1;
     }
 #endif

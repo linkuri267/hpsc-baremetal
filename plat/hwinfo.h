@@ -82,9 +82,14 @@
 #define WDT_MAX_DIVIDER                32
 #define WDT_MIN_FREQ_HZ (WDT_CLK_FREQ_HZ / WDT_MAX_DIVIDER)
 
+// SW should normally get this value from gtimer_get_frq(), which gets it from
+// a register set by SW (the bootloader). But, for some parts of our code,
+// i.e. tests, we don't want to rely on the bootloader, so it's defined here.
+#define GTIMER_FREQ_HZ		125000000
+
 // When timing is implemented by a busyloop instead of by a HW timer,
 // we need to convert seconds to interations (empirically calibrated).
-#define RTPS_R52_BUSYLOOP_FACTOR	100000
+#define RTPS_R52_BUSYLOOP_FACTOR       1000000
 #define TRCH_M4_BUSYLOOP_FACTOR		800000
 
 #endif // HWINFO_H
