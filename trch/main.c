@@ -73,7 +73,7 @@ int main ( void )
 
     nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
 
-    sleep_set_busyloop_factor(800000); // empirically calibrarted
+    sleep_set_busyloop_factor(TRCH_M4_BUSYLOOP_FACTOR);
 
 #if TEST_SYSTICK
     if (test_systick())

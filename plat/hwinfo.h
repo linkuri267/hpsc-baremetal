@@ -82,4 +82,9 @@
 #define WDT_MAX_DIVIDER                32
 #define WDT_MIN_FREQ_HZ (WDT_CLK_FREQ_HZ / WDT_MAX_DIVIDER)
 
+// When timing is implemented by a busyloop instead of by a HW timer,
+// we need to convert seconds to interations (empirically calibrated).
+#define RTPS_R52_BUSYLOOP_FACTOR	100000
+#define TRCH_M4_BUSYLOOP_FACTOR		800000
+
 #endif // HWINFO_H

@@ -92,7 +92,7 @@ int main(void)
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
-    sleep_set_busyloop_factor(100000); // empirically calibrarted
+    sleep_set_busyloop_factor(RTPS_R52_BUSYLOOP_FACTOR);
 
 #if TEST_GTIMER
     if (test_gtimer())
