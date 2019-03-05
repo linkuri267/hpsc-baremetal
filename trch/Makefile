@@ -37,7 +37,7 @@ TEST_RT_MMU			= 1
 TEST_ETIMER			= 1
 TEST_RTI_TIMER			= 1
 TEST_SHMEM			= 1
-TEST_R52_SMP			= 1
+TEST_R52_SMP			= 0
 
 # Set build configuration here
 CONFIG_SYSTICK			= 1
