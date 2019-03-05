@@ -15,6 +15,7 @@
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 #include "mailbox.h"
+#include "mutex.h"
 #include "panic.h"
 #include "printf.h"
 #include "rti-timer.h"
@@ -76,10 +77,45 @@ static void sys_tick(void *arg)
 }
 #endif // CONFIG_GTIMER
 
+#if TEST_R52_SMP
+unsigned int start_r52_1 = 0;
+uint32_t smp_mutex = unlocked;
+#endif
 int main(void)
 {
     console_init();
     printf("\r\n\r\nRTPS\r\n");
+#if TEST_R52_SMP
+    int id;
+    asm volatile ("mrc p15, 0, %0, c0, c0, 5":"=r" (id) :);
+    if (id > 0) { /* SMP CPU-1 */
+        printf("RTPS-1 is up and about to wake up RTPS-0\r\n");
+        lock_mutex(&smp_mutex);
+        start_r52_1 = 1;
+        asm volatile ("dmb ");
+        unlock_mutex(&smp_mutex);
+        printf("RTPS-1 changes 'start_r52_1' value to %d, and goes to sleep\r\n", start_r52_1);
+        while(1) {
+            asm volatile ("wfi");
+	};
+    } else {	/* SMP CPU-0 */
+        lock_mutex(&smp_mutex);
+        start_r52_1 = 0;
+        unlock_mutex(&smp_mutex);
+        printf("RTPS R52 SMP test\r\n");
+        printf("RTPS-0: start_rt2_1 = %d\r\n", start_r52_1);
+        printf("RTPS-0 starts and waits for RTPS-1's changing 'start_52_1' value to '1'\r\n");
+        while (1) {
+            asm volatile ("dmb ");
+            lock_mutex(&smp_mutex);
+            if (start_r52_1 == 1)
+                break;
+            unlock_mutex(&smp_mutex);
+        }
+        unlock_mutex(&smp_mutex);
+        printf("\r\n\r\nRTPS-0 is waked up: start_r52_1 = %d\r\n\r\n", start_r52_1);
+    }
+#endif
 
     enable_caches();
     enable_interrupts();

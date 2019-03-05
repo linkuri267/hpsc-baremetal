@@ -19,6 +19,7 @@
 #include "nvic.h"
 #include "panic.h"
 #include "printf.h"
+#include "reset.h"
 #include "server.h"
 #include "shmem-link.h"
 #include "sleep.h"
@@ -248,6 +249,9 @@ int main ( void )
     cmd_handler_register(server_process);
 
     unsigned iter = 0;
+#if TEST_R52_SMP
+    bool r52_1_init = false;
+#endif
     while (1) {
         bool verbose = iter++ % MAIN_LOOP_SILENT_ITERS == 0;
         if (verbose)
@@ -299,6 +303,15 @@ int main ( void )
                 printf("[%u] Waiting for interrupt...\r\n", iter);
             asm("wfi"); // ignores PRIMASK set by int_disable
         }
+#if TEST_R52_SMP
+	if (iter > 20 && r52_1_init == false) {
+            printf("Reset RTPS_R52_1\r\n");
+            reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
+            reset_release(COMP_CPU_RTPS_R52_1);
+	    iter = 0;
+            r52_1_init = true;
+	}
+#endif
         int_enable();
     }
 }

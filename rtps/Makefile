@@ -24,6 +24,7 @@ CONFIG_FLAGS = \
 	TEST_RTPS_DMA \
 	TEST_RTPS_DMA_CB \
 	TEST_SOFT_RESET \
+	TEST_R52_SMP \
 	CONFIG_GTIMER \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_WDT \
@@ -41,6 +42,7 @@ TEST_RTPS_DMA_CB 		= 1
 TEST_RTPS_MMU 			= 1
 TEST_RT_MMU 			= 1
 TEST_SOFT_RESET 		= 0
+TEST_R52_SMP			= 1
 
 # Set build configuration here
 CONFIG_GTIMER 			= 1
@@ -85,6 +87,7 @@ OBJS = \
 	lib/intc.o \
 	lib/mailbox-link.o \
 	lib/mem.o \
+	lib/mutex.o \
 	lib/object.o \
 	lib/panic.o \
 	lib/printf.o \
