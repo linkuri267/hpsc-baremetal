@@ -172,19 +172,19 @@ isr.c: isr.c.gen isrs
 	cp $< $@
 
 $(BLDDIR)/%.o : %.s | dirs
-	$(ARM_NONE_EABI)-as $(AOPS) $< -o $@
+	$(CROSS_COMPILE)as $(AOPS) $< -o $@
 
 $(BLDDIR)/%.o : %.c | dirs
-	$(ARM_NONE_EABI)-gcc -MMD $(COPS) -c $< -o $@
+	$(CROSS_COMPILE)gcc -MMD $(COPS) -c $< -o $@
 
 $(BLDDIR)/$(TARGET).dbg.elf: trch.ld $(addprefix $(BLDDIR)/,$(OBJS))
-	$(ARM_NONE_EABI)-ld $(LDFLAGS) -o $@ -T $^
+	$(CROSS_COMPILE)ld $(LDFLAGS) -o $@ -T $^
 
 $(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
-	$(ARM_NONE_EABI)-strip -x -s -R .comment -R '.ARM.*' -o $@ $<
+	$(CROSS_COMPILE)strip -x -s -R .comment -R '.ARM.*' -o $@ $<
 
 $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
-	$(ARM_NONE_EABI)-objcopy -O binary $< $@
+	$(CROSS_COMPILE)objcopy -O binary $< $@
 
 $(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.config
 

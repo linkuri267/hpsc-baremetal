@@ -1,6 +1,6 @@
 # GNU ARM Embedded Toolchain (min version required for RTPS: 7-2018-q2-update)
 # Either add toolchain install dir to PATH or override this var
-ARM_NONE_EABI ?= arm-none-eabi
+CROSS_COMPILE ?= arm-none-eabi-
 
 BLDDIR = bld
 SUBDIRS = \
