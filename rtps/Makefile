@@ -42,7 +42,7 @@ TEST_RTPS_DMA_CB 		= 1
 TEST_RTPS_MMU 			= 1
 TEST_RT_MMU 			= 1
 TEST_SOFT_RESET 		= 0
-TEST_R52_SMP			= 1
+TEST_R52_SMP			= 0
 
 # Set build configuration here
 CONFIG_GTIMER 			= 1
