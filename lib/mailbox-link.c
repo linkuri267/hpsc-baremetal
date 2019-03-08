@@ -147,6 +147,7 @@ static int mbox_link_request(struct link *link,
     while (!mlink->cmd_ctx.tx_acked);
     printf("%s: request: ACK received\r\n", link->name);
 
+    if (mlink->cmd_ctx.reply_sz == 0) return 1;
     rc = mbox_link_poll(link, rtimeout_ms);
     if (!rc)
         printf("mbox_link_request: recv failed\r\n");

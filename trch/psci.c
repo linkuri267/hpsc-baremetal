@@ -1,11 +1,11 @@
-
 #include <stdint.h>
 #include <unistd.h>
 
 #include "command.h"
+#include "sleep.h"
 #include "pm_defs.h"
 #include "printf.h"
-
+#include "reset.h"
 
 struct pm_state {
     uint32_t power_state;
@@ -15,6 +15,28 @@ struct pm_state {
 
 struct pm_state hpsc_nodes[PM_API_MAX];
 
+#define SUBSYS_RTPS 0x10
+#define SUBSYS_HPPS 0x20
+
+static int pm_node_to_cpu_id(uint32_t pm_node_id, comp_t * cpu_id)
+{
+    int id;
+    if (pm_node_id > NODE_RPU) {
+        id = pm_node_id - NODE_RPU_0;
+        if (id >= RTPS_R52_NUM_CORES + RTPS_A53_NUM_CORES) 
+            return -1;
+        *cpu_id = 0x1 << (COMP_CPUS_SHIFT_RTPS + id);
+    } else if (pm_node_id >= NODE_APU_0) {
+        id = pm_node_id - NODE_APU_0;
+        if (id >= HPPS_NUM_CORES) return -1;
+        *cpu_id = 0x1 << (COMP_CPUS_SHIFT_HPPS + id);
+printf("%s: id(%d), cpu_id(0x%x)\r\n", __func__, id, *cpu_id);
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 static int pm_self_suspend(uint32_t sender, uint32_t * data)
 {
     uint32_t target = data[0];
@@ -22,14 +44,21 @@ static int pm_self_suspend(uint32_t sender, uint32_t * data)
     uint32_t state = data[2];
     uint32_t addr_low = data[3];
     uint32_t addr_high = data[4];
+    comp_t cpu_id;
     printf("%s: sender(%d), target(%d), latency(%d), state(%d), addr_low(0x%x), addr_high(0x%x)\r\n", __func__, 
 		sender, target, latency, state, addr_low, addr_high);
     if (addr_low & 0x1) { /* save address */
         hpsc_nodes[target].addr_low = addr_low;
         hpsc_nodes[target].addr_high = addr_high;
     }
+
+    if (pm_node_to_cpu_id(target, &cpu_id) < 0) 
+        return 0;
+    mdelay(30);
+    reset_assert(cpu_id);
     return 0;
 }
+
 
 static int pm_req_suspend(uint32_t sender, uint32_t * data)
 {
@@ -37,8 +66,15 @@ static int pm_req_suspend(uint32_t sender, uint32_t * data)
     uint32_t ack = data[1];
     uint32_t latency = data[2];
     uint32_t state = data[3];
-    printf("%s: not implemented yet: target(%d), ack(%d), latency(%d), state(%d)\r\n", __func__, 
-		target, ack, latency, state);
+    comp_t cpu_id;
+
+    printf("%s: sender(%d), target(%d), latency(%d), ack(%d), state(0x%x)\r\n", __func__, 
+		sender, target, latency, ack, state);
+    if (pm_node_to_cpu_id(target, &cpu_id) < 0) 
+        return 0;
+    mdelay(30);
+    reset_assert(cpu_id);
+
     return 0;
 }
 
@@ -106,8 +142,13 @@ static int pm_req_wakeup(uint32_t sender, uint32_t * data)
     uint32_t addr_low = data[1];
     uint32_t addr_high = data[2];
     uint32_t ack = data[3];
-    printf("%s: not implemented yet: target(%d), addr_low(0x%x), addr_high(0x%x), ack(%d)\r\n", 
+    comp_t cpu_id;
+    printf("%s: is called: target(%d), addr_low(0x%x), addr_high(0x%x), ack(%d)\r\n", 
 		__func__, target, addr_low, addr_high, ack);
+
+    if (pm_node_to_cpu_id(target, &cpu_id) < 0) 
+        return 0;
+    reset_release(cpu_id);
     return 0;
 }
 

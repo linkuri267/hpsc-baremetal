@@ -72,14 +72,20 @@ int reset_assert(comp_t comps)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT);
 
     if (comps & COMP_CPUS_HPPS) {
+        volatile uint8_t * apu = APU;
+        uint32_t shift = COMP_CPUS_SHIFT_HPPS;
         REGB_SET32(CRF, CRF__RST_FPD_APU,
                    (CRF__RST_FPD_APU__ACPUx_RESET &
                     (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
                         << CRF__RST_FPD_APU__ACPUx_RESET__SHIFT)) |
-                   CRF__RST_FPD_APU__GIC_RESET);
-        REGB_SET32(APU, APU__PWRCTL,
+                   (((comps & COMP_CPUS_HPPS) == COMP_CPUS_HPPS) ? CRF__RST_FPD_APU__GIC_RESET : 0x0));
+        if (comps & COMP_CPUS_HPPS_CL1) { 
+            apu = APU1;
+            shift = COMP_CPUS_SHIFT_HPPS_CL1;
+        }
+        REGB_SET32(apu, APU__PWRCTL,
                (APU__PWRCTL__CPUxPWRDWNREQ &
-                (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
+                (((comps & COMP_CPUS_HPPS) >> shift)
                     << APU__PWRCTL__CPUxPWRDWNREQ__SHIFT)));
     }
     return 0;
@@ -93,8 +99,9 @@ int reset_release(comp_t comps)
 
     if (comps & COMP_CPU_RTPS_R52_0)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_0_CFG, RPU_CTRL__RPU_0_CFG__NCPUHALT);
-    if (comps & COMP_CPU_RTPS_R52_1)
+    if (comps & COMP_CPU_RTPS_R52_1) {
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_1_CFG, RPU_CTRL__RPU_1_CFG__NCPUHALT);
+    }
     if (comps & COMP_CPU_RTPS_A53_0)
         REGB_SET32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT); 
 
@@ -114,14 +121,31 @@ int reset_release(comp_t comps)
     }
 
     if (comps & COMP_CPUS_HPPS) {
-        REGB_CLEAR32(APU, APU__PWRCTL,
+        volatile uint8_t * apu = APU;
+        uint32_t shift = COMP_CPUS_SHIFT_HPPS;
+        if (comps & COMP_CPUS_HPPS_CL1) { 
+            apu = APU1;
+            shift = COMP_CPUS_SHIFT_HPPS_CL1;
+        }
+        REGB_CLEAR32(apu, APU__PWRCTL,
                 (APU__PWRCTL__CPUxPWRDWNREQ &
-                 (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
+                 (((comps & COMP_CPUS_HPPS) >> shift)
                   << APU__PWRCTL__CPUxPWRDWNREQ__SHIFT)));
 
         REGB_CLEAR32(CRF, CRF__RST_FPD_APU, CRF__RST_FPD_APU__GIC_RESET);
         mdelay(1); // wait for GIC at least 5 cycles (GIC-500 TRM Table A-1)
 
+        /* DK: added in case reset is not zero */
+	uint32_t value = REGB_READ32(CRF, CRF__RST_FPD_APU); 
+        if (!(value & (CRF__RST_FPD_APU__ACPUx_RESET &
+                    (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
+                        << CRF__RST_FPD_APU__ACPUx_RESET__SHIFT)))) {
+
+            REGB_SET32(CRF, CRF__RST_FPD_APU,
+                   (CRF__RST_FPD_APU__ACPUx_RESET &
+                    (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)
+                        << CRF__RST_FPD_APU__ACPUx_RESET__SHIFT)));
+        }
         REGB_CLEAR32(CRF, CRF__RST_FPD_APU,
                 (CRF__RST_FPD_APU__ACPUx_RESET &
                  (((comps & COMP_CPUS_HPPS) >> COMP_CPUS_SHIFT_HPPS)

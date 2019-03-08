@@ -42,7 +42,7 @@ TEST_RTPS_DMA_CB 		= 1
 TEST_RTPS_MMU 			= 1
 TEST_RT_MMU 			= 1
 TEST_SOFT_RESET 		= 0
-TEST_R52_SMP			= 0
+TEST_R52_SMP			= 1
 
 # Set build configuration here
 CONFIG_GTIMER 			= 1
@@ -126,6 +126,9 @@ OBJS += tests/mailbox.o
 endif
 ifeq ($(strip $(TEST_RTPS_DMA)),1)
 OBJS += tests/dma.o
+endif
+ifeq ($(strip $(TEST_R52_SMP)),1)
+OBJS += tests/smp.o
 endif
 
 TARGET=rtps

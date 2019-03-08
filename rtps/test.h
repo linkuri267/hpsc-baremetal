@@ -17,5 +17,6 @@ int test_rtps_trch_mailbox();
 int test_rtps_dma();
 int test_wdt();
 int test_core_rti_timer(struct rti_timer **tmr_ptr);
+int test_r52_smp();
 
 #endif // TEST_H

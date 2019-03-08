@@ -11,13 +11,13 @@ CONFIG_FLAGS = \
 	TEST_ETIMER \
 	TEST_RTI_TIMER \
 	TEST_SHMEM \
-	TEST_R52_SMP \
 	CONFIG_SYSTICK \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_HPPS_TRCH_MAILBOX \
 	CONFIG_HPPS_TRCH_MAILBOX_ATF \
 	CONFIG_HPPS_TRCH_MAILBOX_SSW \
 	CONFIG_RTPS_TRCH_MAILBOX \
+	CONFIG_RTPS_TRCH_MAILBOX_PSCI \
 	CONFIG_TRCH_WDT \
 	CONFIG_HPPS_TRCH_SHMEM \
 	CONFIG_HPPS_TRCH_SHMEM_SSW \
@@ -37,7 +37,6 @@ TEST_RT_MMU			= 1
 TEST_ETIMER			= 1
 TEST_RTI_TIMER			= 1
 TEST_SHMEM			= 1
-TEST_R52_SMP			= 0
 
 # Set build configuration here
 CONFIG_SYSTICK			= 1
@@ -46,6 +45,7 @@ CONFIG_HPPS_TRCH_MAILBOX 	= 1
 CONFIG_HPPS_TRCH_MAILBOX_ATF	= 1
 CONFIG_HPPS_TRCH_MAILBOX_SSW 	= 1
 CONFIG_RTPS_TRCH_MAILBOX 	= 1
+CONFIG_RTPS_TRCH_MAILBOX_PSCI	= 1
 CONFIG_HPPS_TRCH_SHMEM		= 1
 CONFIG_HPPS_TRCH_SHMEM_SSW 	= 1
 CONFIG_TRCH_WDT 		= 1
@@ -125,7 +125,6 @@ OBJS = \
        lib/object.o \
        lib/panic.o \
        lib/printf.o \
-       lib/psci.o \
        lib/sha256.o \
        lib/shmem.o \
        lib/shmem-link.o \
@@ -135,6 +134,7 @@ OBJS = \
        boot.o \
        isr.o \
        main.o \
+       psci.o \
        reset.o \
        server.o \
        syscfg.o \
@@ -153,6 +153,7 @@ ifeq ($(call cfg-or,\
 	$(CONFIG_HPPS_TRCH_MAILBOX) \
 	$(CONFIG_HPPS_TRCH_MAILBOX_ATF) \
 	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
+	$(CONFIG_HPPS_TRCH_MAILBOX_PSCI) \
 	$(CONFIG_RTPS_TRCH_MAILBOX)),1)
 OBJS += mailbox-isr.o
 endif
