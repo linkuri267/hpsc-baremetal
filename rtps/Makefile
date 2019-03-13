@@ -136,23 +136,23 @@ LDFLAGS = \
 	-Wl,-z,max-page-size=4 \
 
 $(BLDDIR)/%.o : %.s | dirs
-	$(CROSS_COMPILE)-gcc -c $(CCOPT) -x assembler-with-cpp -o $@ $<
-#	$(CROSS_COMPILE)-as $(AOPT) -o $@ $^
+	$(CROSS_COMPILE)gcc -c $(CCOPT) -x assembler-with-cpp -o $@ $<
+#	$(CROSS_COMPILE)as $(AOPT) -o $@ $^
 
 $(BLDDIR)/%.o : %.c | dirs
-	$(CROSS_COMPILE)-gcc -MMD -c $(CCOPT) -o $@ $<
+	$(CROSS_COMPILE)gcc -MMD -c $(CCOPT) -o $@ $<
 
 $(BLDDIR)/$(TARGET).dbg.elf : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
-	$(CROSS_COMPILE)-gcc $(LDFLAGS) -o $@ -T $^
+	$(CROSS_COMPILE)gcc $(LDFLAGS) -o $@ -T $^
 
 $(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
-	$(CROSS_COMPILE)-strip -x -s -R .comment -R '.ARM.*' -o $@ $<
+	$(CROSS_COMPILE)strip -x -s -R .comment -R '.ARM.*' -o $@ $<
 
 $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
-	$(CROSS_COMPILE)-objcopy -O binary $< $@
+	$(CROSS_COMPILE)objcopy -O binary $< $@
 
 %.dis.s: %.o
-	$(CROSS_COMPILE)-objdump $<  -D > $@
+	$(CROSS_COMPILE)objdump $<  -D > $@
 
 %.gz: %
 	gzip -9 -c $^ > $@
