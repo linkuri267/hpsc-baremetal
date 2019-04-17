@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "mem.h"
@@ -7,20 +8,14 @@
 
 #define MAX_SHMEMS 16
 
-// All subsystems must understand this structure and its protocol
-struct hpsc_shmem_region {
-    uint8_t data[SHMEM_MSG_SIZE];
-    uint32_t is_new;
-};
-
 struct shmem {
     struct object obj;
-    void *addr;
+    volatile void *addr;
 };
 
 static struct shmem shmems[MAX_SHMEMS] = {0};
 
-struct shmem *shmem_open(void *addr)
+struct shmem *shmem_open(volatile void *addr)
 {
     struct shmem *s = OBJECT_ALLOC(shmems);
     if (s)
@@ -41,14 +36,32 @@ size_t shmem_send(struct shmem *s, void *msg, size_t sz)
     vmem_cpy(shm->data, msg, sz);
     if (sz_rem)
         vmem_set(shm->data + sz, 0, sz_rem);
-    shm->is_new = 1;
+    shm->status = shm->status | HPSC_SHMEM_STATUS_BIT_NEW;
     return sz;
 }
 
 uint32_t shmem_get_status(struct shmem *s)
 {
     volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
-    return shm->is_new;
+    return shm->status;
+}
+
+bool shmem_is_new(struct shmem *s)
+{
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
+    return shm->status & HPSC_SHMEM_STATUS_BIT_NEW;
+}
+
+bool shmem_is_ack(struct shmem *s)
+{
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
+    return shm->status & HPSC_SHMEM_STATUS_BIT_ACK;
+}
+
+void shmem_clear_ack(struct shmem *s)
+{
+    volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
+    shm->status &= ~HPSC_SHMEM_STATUS_BIT_ACK;
 }
 
 size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
@@ -56,6 +69,7 @@ size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
     volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
     ASSERT(sz >= SHMEM_MSG_SIZE);
     mem_vcpy(msg, shm->data, SHMEM_MSG_SIZE);
-    shm->is_new = 0;
+    shm->status = shm->status & ~HPSC_SHMEM_STATUS_BIT_NEW; // clear new
+    shm->status = shm->status | HPSC_SHMEM_STATUS_BIT_ACK; // set ACK
     return SHMEM_MSG_SIZE;
 }

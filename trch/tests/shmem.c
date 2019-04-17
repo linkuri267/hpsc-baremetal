@@ -6,16 +6,19 @@
 
 static char *msg = "Test Message";
 // double the size just to make sure it works
-static char buf[SHMEM_MSG_SIZE * 2] = {0};
+static char buf[HPSC_SHMEM_REGION_SZ] = {0};
+// a dummy shared memory region
+static char shmem_reg[HPSC_SHMEM_REGION_SZ] = {0};
 
 int test_shmem()
 {
     size_t sz;
     int ret = 0;
     uint32_t status;
-    struct shmem *shm = shmem_open((void *)HPPS_SHM_ADDR__TRCH_HPPS);
+    struct shmem *shm = shmem_open(shmem_reg);
     if (!shm)
         return 1;
+    // no flags should be set at this point
     status = shmem_get_status(shm);
     if (status) {
         printf("ERROR: TEST: shmem: initial status failed\r\n");
@@ -28,9 +31,9 @@ int test_shmem()
         ret = 1;
         goto out;
     }
-    status = shmem_get_status(shm);
-    if (!status) {
-        printf("ERROR: TEST: shmem: intermediate status failed\r\n");
+    // NEW flag should be set
+    if (!shmem_is_new(shm)) {
+        printf("ERROR: TEST: shmem: intermediate status failed\n");
         ret = 1;
         goto out;
     }
@@ -40,9 +43,17 @@ int test_shmem()
         ret = 1;
         goto out;
     }
+    // NEW flag should be off, ACK flag should be set
+    if (shmem_is_new(shm) || !shmem_is_ack(shm)) {
+        printf("ERROR: TEST: shmem: final status failed\n");
+        ret = 1;
+        goto out;
+    }
+    shmem_clear_ack(shm);
+    // no flags should be set anymore
     status = shmem_get_status(shm);
     if (status) {
-        printf("ERROR: TEST: shmem: final status failed\r\n");
+        printf("ERROR: TEST: shmem: initial status failed\n");
         ret = 1;
         goto out;
     }
