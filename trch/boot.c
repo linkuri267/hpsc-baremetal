@@ -73,6 +73,10 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg)
                 return 1;
             if (smc_sram_load("hpps-bl", NULL))
                 return 1;
+            if (smc_sram_load("hpps-bl-dt", NULL))
+                return 1;
+            if (smc_sram_load("hpps-bl-env", NULL))
+                return 1;
             if (smc_sram_load("hpps-dt", NULL))
                 return 1;
             if (smc_sram_load("hpps-os", NULL))
