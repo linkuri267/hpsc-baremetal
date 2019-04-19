@@ -81,6 +81,8 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg)
                 return 1;
             if (smc_sram_load("hpps-os", NULL))
                 return 1;
+            if (smc_sram_load("hpps-initramfs", NULL))
+                return 1;
             break;
         default:
             printf("BOOT: ERROR: unknown subsystem %x\r\n", subsys);
