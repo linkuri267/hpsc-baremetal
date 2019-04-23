@@ -26,8 +26,8 @@ CONFIG_FLAGS = \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
 
+include Makefile.defconfig
 include Makefile.config
--include Makefile.config.overlay
 
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
 ifneq ($(strip $(CONFIG_SYSTICK)),1)
@@ -186,6 +186,10 @@ $(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
 $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 	$(CROSS_COMPILE)objcopy -O binary $< $@
 
-$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.config
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.defconfig Makefile.config
+
+# Empty config means all settings come from defconfig
+Makefile.config:
+	touch $@
 
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))

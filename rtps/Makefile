@@ -29,8 +29,8 @@ CONFIG_FLAGS = \
 	CONFIG_WDT \
 	CONFIG_HPPS_RTPS_MAILBOX \
 
+include Makefile.defconfig
 include Makefile.config
--include Makefile.config.overlay
 
 # Most tests are standalone, but these are exceptions
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
@@ -161,6 +161,10 @@ $(BLDDIR)/$(TARGET).bin : $(BLDDIR)/$(TARGET).elf
 	mkimage -n "RTPS Bare-Metal App" -A arm -T kernel -O rtems -C gzip \
 		-a $$(readelf -h $*.elf | grep -i 'Entry point' | cut -d: -f2) -d $< $@
 
-$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.config
+$(addprefix $(BLDDIR)/,$(OBJS)) : Makefile Makefile.defconfig Makefile.config
+
+# Empty config means all settings come from defconfig
+Makefile.config:
+	touch $@
 
 -include $(addprefix $(BLDDIR)/,$(OBJS:.o=.d))
