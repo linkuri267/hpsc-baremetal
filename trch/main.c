@@ -224,6 +224,17 @@ int main ( void )
     struct llist link_list;
     llist_init(&link_list);
 
+#if CONFIG_RTPS_TRCH_SHMEM
+    struct link *rtps_link_shmem = shmem_link_connect("RTPS_SHMEM_LINK",
+                    (void *)RTPS_R52_SHM_ADDR__TRCH_RTPS_REPLY,
+                    (void *)RTPS_R52_SHM_ADDR__RTPS_TRCH_SEND);
+    if (!rtps_link_shmem)
+        panic("RTMS_SHMEM_LINK");
+    if (llist_insert(&link_list, rtps_link_shmem))
+        panic("RTMS_SHMEM_LINK: llist_insert");
+    // Never disconnect the link, because we listen on it in main loop
+#endif // CONFIG_RTPS_TRCH_SHMEM
+
 #if CONFIG_HPPS_TRCH_SHMEM
     struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
                     (void *)HPPS_SHM_ADDR__TRCH_HPPS,
