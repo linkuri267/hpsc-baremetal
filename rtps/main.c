@@ -92,6 +92,10 @@ int main(void)
 
     gic_init((volatile uint32_t *)RTPS_GIC_BASE);
 
+#if TEST_R52_SMP
+    test_r52_smp();
+#endif
+
     sleep_set_busyloop_factor(RTPS_R52_BUSYLOOP_FACTOR);
 
 #if TEST_GTIMER

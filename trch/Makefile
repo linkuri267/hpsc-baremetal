@@ -17,7 +17,9 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_TRCH_MAILBOX_ATF \
 	CONFIG_HPPS_TRCH_MAILBOX_SSW \
 	CONFIG_RTPS_TRCH_MAILBOX \
+	CONFIG_RTPS_TRCH_MAILBOX_PSCI \
 	CONFIG_TRCH_WDT \
+	CONFIG_RTPS_TRCH_SHMEM \
 	CONFIG_HPPS_TRCH_SHMEM \
 	CONFIG_HPPS_TRCH_SHMEM_SSW \
 	CONFIG_RTPS_R52_WDT \
@@ -107,6 +109,7 @@ OBJS = \
        boot.o \
        isr.o \
        main.o \
+       psci.o \
        reset.o \
        server.o \
        syscfg.o \
@@ -125,6 +128,7 @@ ifeq ($(call cfg-or,\
 	$(CONFIG_HPPS_TRCH_MAILBOX) \
 	$(CONFIG_HPPS_TRCH_MAILBOX_ATF) \
 	$(CONFIG_HPPS_TRCH_MAILBOX_SSW) \
+	$(CONFIG_HPPS_TRCH_MAILBOX_PSCI) \
 	$(CONFIG_RTPS_TRCH_MAILBOX)),1)
 OBJS += mailbox-isr.o
 endif

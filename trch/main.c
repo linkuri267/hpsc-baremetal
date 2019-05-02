@@ -19,6 +19,7 @@
 #include "nvic.h"
 #include "panic.h"
 #include "printf.h"
+#include "reset.h"
 #include "server.h"
 #include "shmem-link.h"
 #include "sleep.h"
@@ -210,8 +211,29 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
+#if CONFIG_RTPS_TRCH_MAILBOX_PSCI
+    struct link *rtps_psci_link = mbox_link_connect("RTPS_PSCI_MBOX_LINK", &mldev_lsio,
+                    MBOX_LSIO__RTPS_TRCH_PSCI, MBOX_LSIO__TRCH_RTPS_PSCI,
+                    /* server */ MASTER_ID_TRCH_CPU,
+                    /* client */ MASTER_ID_RTPS_CPU0);
+    if (!rtps_psci_link)
+        panic("RTPS_PSCI_MBOX_LINK");
+    // Never disconnect the link, because we listen on it in main loop
+#endif // CONFIG_RTPS_TRCH_MAILBOX_PSCI
+
     struct llist link_list;
     llist_init(&link_list);
+
+#if CONFIG_RTPS_TRCH_SHMEM
+    struct link *rtps_link_shmem = shmem_link_connect("RTPS_SHMEM_LINK",
+                    (void *)RTPS_R52_SHM_ADDR__TRCH_RTPS_REPLY,
+                    (void *)RTPS_R52_SHM_ADDR__RTPS_TRCH_SEND);
+    if (!rtps_link_shmem)
+        panic("RTMS_SHMEM_LINK");
+    if (llist_insert(&link_list, rtps_link_shmem))
+        panic("RTMS_SHMEM_LINK: llist_insert");
+    // Never disconnect the link, because we listen on it in main loop
+#endif // CONFIG_RTPS_TRCH_SHMEM
 
 #if CONFIG_HPPS_TRCH_SHMEM
     struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
@@ -248,6 +270,9 @@ int main ( void )
     cmd_handler_register(server_process);
 
     unsigned iter = 0;
+#if TEST_R52_SMP
+    bool r52_1_init = false;
+#endif
     while (1) {
         bool verbose = iter++ % MAIN_LOOP_SILENT_ITERS == 0;
         if (verbose)
@@ -299,6 +324,15 @@ int main ( void )
                 printf("[%u] Waiting for interrupt...\r\n", iter);
             asm("wfi"); // ignores PRIMASK set by int_disable
         }
+#if TEST_R52_SMP
+        if (iter > 20 && r52_1_init == false) {
+            printf("Reset RTPS_R52_1\r\n");
+            reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
+            reset_release(COMP_CPU_RTPS_R52_1);
+            iter = 0;
+            r52_1_init = true;
+        }
+#endif
         int_enable();
     }
 }

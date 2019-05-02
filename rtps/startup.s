@@ -7,8 +7,6 @@
 // and your compliance with all applicable terms and conditions of such licence agreement.
 //----------------------------------------------------------------
 
-#define DK_GIC
-#ifdef DK_GIC
 #include "hwinfo.h"
 
 /* See GIC-500 TRM Section 3.2 */
@@ -39,7 +37,6 @@
 #define GICR_IGROUPRn           0x0080
 #define GICR_ISENABLERn         0x0100
 #define GICR_IGROUPMODRn        0x0d00
-#endif
 // MPU region defines
 
 // Protection Base Address Register
@@ -558,14 +555,10 @@ Finished:
         VMSR    FPEXC, r0                   // Write FPEXC register, EN bit set
 #endif
 
-
-#ifdef DK_GIC /* gotten from U-boot for GICV3 */
-/*	B ret_secure_percpu */
 	B	gic_init_secure
 ret_secure:
 	B 	gic_init_secure_percpu
 ret_secure_percpu:
-#endif
 //----------------------------------------------------------------
 // Enable MPU and branch to C library init
 // Leaving the caches disabled until after scatter loading.
@@ -584,6 +577,7 @@ ret_secure_percpu:
 //        ANDS r0, r0, 0xF		// DK: Original code
         BEQ cpu0                        // If CPU0 then initialise C runtime
         CMP r0, #1
+        BEQ cpu0                        // SMP test
         BEQ loop_wfi                    // If CPU1 then jump to loop_wfi
         CMP r0, #2
         BEQ loop_wfi                    // If CPU2 then jump to loop_wfi
@@ -620,14 +614,20 @@ bss_zero_loop:
         cmp r0, r1
         bne bss_zero_loop
 
-        LDR     r13, =__stack_end__ - 0x2000 /* 0x200 (STACKSIZE) * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
+        MRC p15, 0, r4, c0, c0, 5       // Read MPIDR
+	ANDS r4, r4, #0x3
+	// Core#0
+        LDR     r13, =__stack_end__ - 0x4000 /* 0x200 (STACKSIZE) * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
+	CMP r4, #0
+	BEQ goto_main
+	SUB	r13, r13, #0xf000	/* stack For Core#1 */
+goto_main:
         BL      main
 hang:
         B hang
 
 //    .size Reset_Handler, . - Reset_Handler	// Original
 
-#ifdef DK_GIC
 gic_init_secure:
 	/*
 	 * Initialize Distributor
@@ -665,15 +665,23 @@ gic_init_secure_percpu:
 	ldr	r0, =GICR_BASE
 //	mrs	r10, mpidr
         MRC p15, 0, r10, c0, c0, 5       // Read MPIDR
+#ifdef AARCH64
 	lsr	r9, r10, #32
 	bfi	r10, r9, #24, #8	/* r5 is aff3:aff2:aff1:aff0 */
 	mov	r9, r0
 1:	ldr	r11, [r9, #GICR_TYPER]
 	lsr	r11, r11, #32		/* r6 is aff3:aff2:aff1:aff0 */
-	cmp	r10, r11
+	cmp	r10, r11	/* DK: r10 (Aff3), r11( ) */
 	beq	2f
 	add	r9, r9, #(2 << 16)
 	b	1b
+#else
+	mov	r9, r0
+	and	r11, r10, #0x03
+	cmp	r11, #0
+	beq	2f			/* Core 0 */
+	add	r9, r9, #(2 << 16)	/* Core 1 */
+#endif
 
 	/* r9: ReDistributor Base Address of Current CPU */
 2:	mov	r5, #~0x2
@@ -697,14 +705,6 @@ gic_init_secure_percpu:
 	str	r6, [r10, #GICR_ISENABLERn]
 
 	/* Initialize Cpu Interface */
-#ifdef GIC_ORG__
-	mrs	r10, ICC_SRE
-	orr	r10, r10, #0x7		/* SRE & Disable IRQ/FIQ Bypass & */
-					/* Allow EL1 access to ICC_SRE_EL1 */
-/*	msr	ICC_SRE, r10 */
-	MCR p15, 0, r10, c12, c12, 5		// coproc, #opcode1, Rt, CRn, CRm{, #opcode2}	
-	isb
-#endif
 	mov	r10, #0x1		/* DK added: EnableGrp0NS */
 /*	msr	ICC_IGRPEN0, r10 */
 	MCR p15, 0, r10, c12, c12, 6		// coproc, #opcode1, Rt, CRn, CRm{, #opcode2}	
@@ -726,7 +726,6 @@ gic_init_secure_percpu:
 	isb
 	b	ret_secure_percpu
 
-#endif
 //----------------------------------------------------------------
 // Global Enable for Instruction and Data Caching
 //----------------------------------------------------------------
