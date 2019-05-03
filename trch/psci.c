@@ -257,7 +257,7 @@ static int pm_init_finalize(uint32_t sender, uint32_t *data)
     return 0;
 }
 
-static int not_implemented(char * fname, int return_size)
+static int not_implemented(const char * fname, int return_size)
 {
     printf("%s: not implemented yet: )\r\n", fname);
     return return_size;
