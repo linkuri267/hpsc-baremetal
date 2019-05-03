@@ -54,7 +54,7 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
         case CMD_PONG:
             printf("PONG ...\r\n");
             return 0;
-        case CMD_PSCI:
+        case CMD_PSCI: {
             printf("PSCI ...\r\n");
             uint32_t *action = (uint32_t *) &(cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("\t");
@@ -62,7 +62,8 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
                  printf("0x%x ", action[i]);
             }
             printf("\r\n");
-	    return handle_psci(cmd, reply); 
+            return handle_psci(cmd, reply);
+        }
         case CMD_WATCHDOG_TIMEOUT: {
             unsigned int cpu =
                 *((unsigned int *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]));
@@ -125,7 +126,6 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
         }
         case CMD_MBOX_LINK_DISCONNECT: {
             printf("MBOX_LINK_DISCONNECT ...\r\n");
-            int rc;
             uint8_t index = cmd->msg[CMD_MSG_PAYLOAD_OFFSET];
             if (index >= MAX_MBOX_LINKS) {
                 rc = -1;
@@ -153,9 +153,9 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             uint8_t reqr[8];
             printf("request: cmd %x arg %x..\r\n",
                    msg[0], msg[CMD_MSG_PAYLOAD_OFFSET]);
-            int rc = link->request(link,
-                                   CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
-                                   CMD_TIMEOUT_MS_RECV, reqr, sizeof(reqr));
+            rc = link->request(link,
+                               CMD_TIMEOUT_MS_SEND, msg, sizeof(msg),
+                               CMD_TIMEOUT_MS_RECV, reqr, sizeof(reqr));
             if (rc <= 0) {
                 reply_u8[0] = -2;
                 return 1;
