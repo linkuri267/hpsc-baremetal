@@ -33,7 +33,7 @@ volatile void *vmem_cpy(volatile void *restrict dest, void *restrict src,
     uint8_t *bs;
     for (wd = dest, ws = src; n >= sizeof(*wd); n -= sizeof(*wd))
         *wd++ = *ws++;
-    for (bd = (uint8_t *) wd, bs = (uint8_t *) ws; n > 0; n--)
+    for (bd = (volatile uint8_t *) wd, bs = (uint8_t *) ws; n > 0; n--)
         *bd++ = *bs++;
     return dest;
 }
@@ -47,7 +47,7 @@ void *mem_vcpy(void *restrict dest, volatile void *restrict src, unsigned n)
     volatile uint8_t *bs;
     for (wd = dest, ws = src; n >= sizeof(*wd); n -= sizeof(*wd))
         *wd++ = *ws++;
-    for (bd = (uint8_t *) wd, bs = (uint8_t *) ws; n > 0; n--)
+    for (bd = (uint8_t *) wd, bs = (volatile uint8_t *) ws; n > 0; n--)
         *bd++ = *bs++;
     return dest;
 }
