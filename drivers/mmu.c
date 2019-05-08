@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define DEBUG 0
+
 #include "printf.h"
 #include "object.h"
 #include "regops.h"
@@ -182,7 +184,7 @@ static uint64_t *pt_alloc(struct mmu_context *ctx, unsigned level)
     struct mmu *m = ctx->mmu;
 
     struct level *levp = &ctx->levels[level];
-    printf("MMU %s: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
+    DPRINTF("MMU %s: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
            m->name, ctx->obj.index, level, levp->pt_size, ctx->granule->page_bits);
 
     uint64_t *pt = balloc_alloc(ctx->balloc, levp->pt_size, ctx->granule->page_bits);
@@ -192,7 +194,7 @@ static uint64_t *pt_alloc(struct mmu_context *ctx, unsigned level)
     for (uint32_t i = 0; i < levp->pt_entries; ++i)
         pt[i] = ~VMSA8_DESC__VALID;
 
-    printf("MMU %s: pt_alloc: allocated level %u pt at %p, cleared %u entries\r\n",
+    DPRINTF("MMU %s: pt_alloc: allocated level %u pt at %p, cleared %u entries\r\n",
            m->name, level, pt, levp->pt_entries);
     return pt;
 }
@@ -202,7 +204,7 @@ static int pt_free(struct mmu_context *ctx, uint64_t *pt, unsigned level)
     ASSERT(ctx);
     ASSERT(ctx->mmu);
     struct mmu *m = ctx->mmu;
-    printf("MMU %s: pt_free: ctx %u level %u pt %p\r\n",
+    DPRINTF("MMU %s: pt_free: ctx %u level %u pt %p\r\n",
            m->name, ctx->obj.index, level, pt);
 
     int rc;
@@ -221,6 +223,7 @@ static int pt_free(struct mmu_context *ctx, uint64_t *pt, unsigned level)
     return balloc_free(ctx->balloc, pt, levp->pt_size);
 }
 
+#if DEBUG
 static void dump_pt(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 {
     ASSERT(ctx);
@@ -256,6 +259,7 @@ static void dump_pt(struct mmu_context *ctx, uint64_t *pt, unsigned level)
         }
     }
 }
+#endif
 
 struct mmu *mmu_create(const char *name, volatile uint32_t *base)
 {
@@ -371,7 +375,7 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
 
     do { // iterate over pages or blocks
 
-        printf("MMU: map: vaddr %08x%08x paddr %08x%08x sz 0x%x\r\n",
+        DPRINTF("MMU: map: vaddr %08x%08x paddr %08x%08x sz 0x%x\r\n",
                 (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
                 (uint32_t)(paddr >> 32), (uint32_t)paddr, sz);
 
@@ -387,12 +391,12 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
             desc = pt[index];
             next_pt = NULL;
 
-            printf("MMU: map: walk: level %u pt %p: %u: %p: desc %08x%08x\r\n",
+            DPRINTF("MMU: map: walk: level %u pt %p: %u: %p: desc %08x%08x\r\n",
                     level, pt, index, &pt[index],
                     (uint32_t)(desc >> 32), (uint32_t)desc);
 
             if (ALIGNED(vaddr, levp->lsb_bit) && sz >= levp->block_size) {
-                printf("MMU: map: walk: level %u: vaddr %08x%08x block of size 0x%x\r\n",
+                DPRINTF("MMU: map: walk: level %u: vaddr %08x%08x block of size 0x%x\r\n",
                         level, (uint32_t)(vaddr >> 32), (uint32_t)vaddr,
                         levp->block_size);
                 break; // insert a block mapping at this level
@@ -401,14 +405,14 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
             if  ((desc & VMSA8_DESC__VALID) &&
                     ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
                 next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
-                printf("MMU: map: walk: level %u: next pt %p\r\n", level, next_pt);
+                DPRINTF("MMU: map: walk: level %u: next pt %p\r\n", level, next_pt);
             }
 
             if (!next_pt) { // need to alloc a new PT
                 next_pt = pt_alloc(ctx, level + 1);
                 pt[index] = (uint64_t)(uint32_t)next_pt |
                     VMSA8_DESC__VALID | VMSA8_DESC__TYPE__TABLE;
-                printf("MMU: map: walk: level %u: pt pointer desc: %u: %p: <- %08x%08x\r\n",
+                DPRINTF("MMU: map: walk: level %u: pt pointer desc: %u: %p: <- %08x%08x\r\n",
                         level, index, &pt[index],
                         (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
             }
@@ -436,7 +440,7 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
             VMSA8_DESC__AP__RW |
             VMSA8_DESC__AF; // set Access flag (otherwise we need to handle fault)
 
-        printf("MMU: map: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
+        DPRINTF("MMU: map: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
                 &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
 
         vaddr += levp->block_size;
@@ -444,7 +448,9 @@ int mmu_map(struct mmu_context *ctx, uint64_t vaddr, uint64_t paddr, unsigned sz
         sz -= levp->block_size;
     } while (sz > 0);
 
+#if DEBUG
     dump_pt(ctx, ctx->pt, ctx->granule->start_level);
+#endif
     return 0;
 }
 
@@ -481,7 +487,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
             index = pt_index(levp, vaddr);
             desc = pt[index];
 
-            printf("MMU: unmap: walk: level %u pt %p %u: %p: %08x%08x\r\n",
+            DPRINTF("MMU: unmap: walk: level %u pt %p %u: %p: %08x%08x\r\n",
                     level, pt, index, &pt[index],
                     (uint32_t)(desc >> 32), (uint32_t)desc);
 
@@ -489,7 +495,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
             walk[level].index = index;
 
             if (ALIGNED(vaddr, levp->lsb_bit) && sz >= levp->block_size) {
-                printf("MMU: unmap: walk: level %u: pt %p: block of size 0x%x\r\n",
+                DPRINTF("MMU: unmap: walk: level %u: pt %p: block of size 0x%x\r\n",
                         level, pt, levp->block_size);
                 break; // it's has to be a block mapping at this level, delete it below
             }
@@ -497,7 +503,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
             if  ((desc & VMSA8_DESC__VALID) &&
                     ((desc & VMSA8_DESC__TYPE_MASK) == VMSA8_DESC__TYPE__TABLE)) {
                 pt = NEXT_TABLE_PTR(desc, ctx->granule);
-                printf("MMU: unmap: walk: level %u: next pt %p\r\n", level, pt);
+                DPRINTF("MMU: unmap: walk: level %u: next pt %p\r\n", level, pt);
             } else {
                 printf("ERROR: MMU: expected page descriptor does not exist\r\n");
                 return -1;
@@ -514,10 +520,10 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
             return -1;
         }
 
-        printf("MMU: unmap: level %u: desc: %04u: 0x%p: 0x%08x%08x\r\n", level, index,
+        DPRINTF("MMU: unmap: level %u: desc: %04u: 0x%p: 0x%08x%08x\r\n", level, index,
                 &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
         pt[index] = ~VMSA8_DESC__VALID;
-        printf("MMU: unmap: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
+        DPRINTF("MMU: unmap: level %u: desc: %04u: 0x%p: <- 0x%08x%08x\r\n", level, index,
                 &pt[index], (uint32_t)(pt[index] >> 32), (uint32_t)pt[index]);
 
         // Walk the levels backwards and destroy empty tables
@@ -532,7 +538,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
 
             uint64_t *next_pt = NEXT_TABLE_PTR(desc, ctx->granule);
 
-            printf("MMU: unmap: backwalk: level %u: %04u: 0x%p: 0x%08x%08x\r\n",
+            DPRINTF("MMU: unmap: backwalk: level %u: %04u: 0x%p: 0x%08x%08x\r\n",
                     level, step->index, &step->pt[index],
                     (uint32_t)(desc >> 32), (uint32_t)desc);
 
@@ -549,7 +555,7 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
 
             step->pt[step->index] = ~VMSA8_DESC__VALID;
 
-            printf("MMU: unmap: backwalk: level %u: %04u: 0x%p: <- 0x%08x%08x\r\n",
+            DPRINTF("MMU: unmap: backwalk: level %u: %04u: 0x%p: <- 0x%08x%08x\r\n",
                     level, step->index, &step->pt[index],
                     (uint32_t)(step->pt[step->index] >> 32),
                     (uint32_t)step->pt[step->index]);
@@ -562,7 +568,9 @@ int mmu_unmap(struct mmu_context *ctx, uint64_t vaddr, unsigned sz)
         vaddr += levp->block_size;
         sz -= levp->block_size;
     } while (sz > 0);
+#if DEBUG
     dump_pt(ctx, ctx->pt, ctx->granule->start_level);
+#endif
     return 0;
 }
 
