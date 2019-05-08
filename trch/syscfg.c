@@ -4,6 +4,7 @@
 #include "subsys.h"
 #include "smc.h"
 #include "syscfg.h"
+#include "memfs.h"
 
 static const char *rtps_mode_name(unsigned m)
 {
@@ -43,12 +44,12 @@ void syscfg_print(struct syscfg *cfg)
            memdev_name(cfg->hpps_rootfs_loc));
 }
 
-int syscfg_load(struct syscfg *cfg)
+int syscfg_load(struct syscfg *cfg, struct memfs *fs)
 {
     uint32_t *addr;
     uint32_t opts;
 
-    if (smc_sram_load("syscfg", &addr))
+    if (memfs_load(fs, "syscfg", &addr))
         return 1;
 
     opts = *addr;

@@ -3,6 +3,8 @@
 
 #include "subsys.h"
 
+struct memfs;
+
 // Fields in the 32-bit value specifying the boot config
 // Exposing since it's an external-facing interface
 #define SYSCFG__BIN_LOC__SHIFT             0
@@ -36,7 +38,7 @@ struct syscfg {
     enum memdev hpps_rootfs_loc;
 };
 
-int syscfg_load(struct syscfg *cfg);
+int syscfg_load(struct syscfg *cfg, struct memfs *fs);
 void syscfg_print(struct syscfg *cfg);
 
 const char *memdev_name(enum memdev d);

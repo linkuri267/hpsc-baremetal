@@ -6,6 +6,7 @@
 #include "arm.h"
 #include "boot.h"
 #include "command.h"
+#include "board.h"
 #include "console.h"
 #include "dmas.h"
 #include "hwinfo.h"
@@ -14,6 +15,7 @@
 #include "mailbox-map.h"
 #include "mailbox.h"
 #include "mem-map.h"
+#include "memfs.h"
 #include "mmu.h"
 #include "mmus.h"
 #include "nvic.h"
@@ -128,9 +130,6 @@ int main ( void )
 #else // !CONFIG_TRCH_DMA
     struct dma *trch_dma = NULL;
 #endif // !CONFIG_TRCH_DMA
-
-    if (smc_init(trch_dma))
-        panic("SMC init");
 
 #if CONFIG_RT_MMU
     if (rt_mmu_init())
@@ -257,7 +256,15 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
 
-    if (syscfg_load(&syscfg))
+    struct smc *lsio_smc = smc_init(SMC_BASE, &trch_smc_mem_cfg);
+    if (!lsio_smc)
+        panic("LSIO SMC");
+
+    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BASE, trch_dma);
+    if (!trch_fs)
+        panic("TRCH SMC SRAM FS mount");
+
+    if (syscfg_load(&syscfg, trch_fs))
         panic("SYS CFG");
     boot_request(syscfg.subsystems);
 
@@ -293,7 +300,7 @@ int main ( void )
 
         subsys_t subsys;
         while (!boot_handle(&subsys)) {
-            boot_reboot(subsys, &syscfg);
+            boot_reboot(subsys, &syscfg, trch_fs);
             verbose = true; // to end log with 'waiting' msg
         }
 

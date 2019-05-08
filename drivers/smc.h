@@ -1,12 +1,34 @@
 #ifndef SMC_H
 #define SMC_H
 
-#include "dma.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-int smc_init(struct dma *dma);
-void smc_deinit();
+#define SMC_INTERFACES 2
 
-// addr: set to the load addr found in the image
-int smc_sram_load(const char *fname, uint32_t **addr);
+struct smc_mem_iface_cfg {
+    unsigned chips;
+    unsigned width;
+    unsigned ext_addr_bits;
+    bool sync;
+    bool adv;
+    bool cre;
+    unsigned t_rc;
+    unsigned t_wc;
+    unsigned t_ceoe;
+    unsigned t_wp;
+    unsigned t_pc;
+    unsigned t_tr;
+};
+
+struct smc_mem_cfg {
+    struct smc_mem_iface_cfg iface[SMC_INTERFACES];
+};
+
+
+struct smc;
+
+struct smc *smc_init(volatile uint32_t *base, struct smc_mem_cfg *cfg);
+void smc_deinit(struct smc *);
 
 #endif // SMC_H

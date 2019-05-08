@@ -1,141 +1,129 @@
 #include <stdint.h>
 
 #include "printf.h"
-#include "hwinfo.h"
-#include "str.h"
-#include "dma.h"
-#include "bit.h"
+#include "panic.h"
+#include "object.h"
+#include "regops.h"
 
 #include "smc.h"
 
-#define FILE_NAME_LENGTH 200
+#define SMC_REG(b, r) ((volatile uint32_t *)(((volatile uint8_t *)b) + (r)))
 
-#define PAGE_SIZE (1 << 14) // 16KB (used for progress display only)
+#define SMC__memc_status                0x000
+#define SMC__mem_cfg_set                0x008
+#define SMC__mem_cfg_clr                0x00c
+#define SMC__direct_cmd                 0x010
+#define SMC__set_cycles                 0x014
+#define SMC__set_opmode                 0x018
 
-typedef struct {
-    uint32_t valid;
-    uint32_t offset;	/* offset in SRAM image */
-    uint32_t size;
-    uint32_t load_addr;		/* 32bit load address in DRAM at run-time */
-    uint32_t load_addr_high;	/* high 32bit of 64 bit load address in DRAM at run-time */
-    char  name[FILE_NAME_LENGTH];
-} file_descriptor;
+#define SMC__cycles_0_0                 0x100
+#define SMC__cycles_0_1                 0x120
+#define SMC__cycles_0_2                 0x140
+#define SMC__cycles_0_3                 0x160
 
-typedef struct {
-    uint32_t low_mark_data;	/* low mark of data */
-    uint32_t high_mark_fd;	/* high mark of file descriptors */
-    uint32_t n_files;		/* number of files */
-    uint32_t fsize;		/* sram file size */
-} global_table;
+#define SMC__opmode_0_0                 0x104
+#define SMC__opmode_0_1                 0x124
+#define SMC__opmode_0_2                 0x144
+#define SMC__opmode_0_3                 0x164
 
-static struct dma *dmac = NULL; // optional
+#define SMC__memc_status__raw_int_status0__SHIFT        5
+#define SMC__memc_status__raw_int_status1__SHIFT        6
 
-static int load_dma(uint32_t *sram_addr, uint32_t *load_addr, unsigned size)
+#define SMC__mem_cfg_set__int_enable0__SHIFT            0
+#define SMC__mem_cfg_set__int_enable1__SHIFT            1
+
+#define SMC__mem_cfg_clr__int_clear0__SHIFT             3
+#define SMC__mem_cfg_clr__int_clear1__SHIFT             4
+
+#define SMC__opmode__set_mw__SHIFT                      0
+#define SMC__opmode__rd_sync__SHIFT                     6
+#define SMC__opmode__wr_sync__SHIFT                     2
+#define SMC__opmode__set_adv__SHIFT                    11
+
+#define SMC__mw__8_BIT                  0b00
+#define SMC__mw__16_BIT                 0b01
+#define SMC__mw__32_BIT                 0b10
+
+#define SMC__set_opmode__MASK 0x0000ffff
+#define SMC__set_cycles__MASK 0x000fffff
+
+#define SMC__cycles__t_rc__SHIFT         0
+#define SMC__cycles__t_wc__SHIFT         4
+#define SMC__cycles__t_ceoe__SHIFT       8
+#define SMC__cycles__t_wp__SHIFT        11
+#define SMC__cycles__t_pc__SHIFT        14
+#define SMC__cycles__t_tr__SHIFT        17
+
+#define SMC__direct_cmd__addr__SHIFT         0
+#define SMC__direct_cmd__set_cre__SHIFT           20
+#define SMC__direct_cmd__cmd_type__SHIFT          21
+#define SMC__direct_cmd__chip_nmbr__SHIFT         23
+
+#define SMC__cmd_type__UpdateRegsAXI	        0b00
+#define SMC__cmd_type__ModeReg		        0b10
+#define SMC__cmd_type__UpdateRegs	        0b10
+#define SMC__cmd_type__ModeRegUpdateRegs        0b11
+
+struct smc {
+    volatile uint32_t *base;
+};
+
+#define MAX_SMCS 2
+static struct smc smcs[MAX_SMCS];
+
+static unsigned to_width_bits(unsigned width)
 {
-    printf("SMC: initiating DMA transfer\r\n");
-
-    struct dma_tx *dtx = dma_transfer(dmac, /* chan */ 0, // TODO: allocate channel per user
-        sram_addr, load_addr, ALIGN(size, DMA_MAX_BURST_BITS),
-        NULL, NULL /* no callback */);
-    int rc = dma_wait(dtx);
-    if (rc) {
-        printf("SMC: DMA transfer failed: rc %u\r\n", rc);
-        return rc;
+   switch (width) {
+       case  8: return SMC__mw__8_BIT;
+       case 16: return SMC__mw__16_BIT;
+       case 32: return SMC__mw__32_BIT;
     }
-    printf("SMC: DMA transfer succesful\r\n");
+    panic("invalid memory bus width");
     return 0;
 }
 
-static int load_memcpy(uint32_t *sram_addr, uint32_t *load_addr, unsigned size)
+struct smc *smc_init(volatile uint32_t *base, struct smc_mem_cfg *cfg)
 {
-    unsigned p, w, b;
+    struct smc *s;
+    s = OBJECT_ALLOC(smcs);
+    s->base = base;
 
-    uint32_t pages = size / PAGE_SIZE;
-    uint32_t rem_words = (size % PAGE_SIZE) / sizeof(uint32_t);
-    uint32_t rem_bytes = (size % PAGE_SIZE) % sizeof(uint32_t);
+    for (int i = 0; i < SMC_INTERFACES; ++i) {
+        struct smc_mem_iface_cfg *icfg = &cfg->iface[i];
 
-    // Split into pages, in order to print progress not too frequently and
-    // without having to add a conditional (for whether to print progress
-    // on every iteration of in the inner loop over words.
-    for (p = 0; p < pages; p++) {
-        for (w = 0; w < PAGE_SIZE / sizeof(uint32_t); w++) {
-            * load_addr = * sram_addr;
-            load_addr++;
-            sram_addr++;
-        }
-        printf("SMC: loading... %3u%%\r", p * 100 / pages);
-    }
-    for (w = 0; w < rem_words; w++) {
-        * load_addr = * sram_addr;
-        load_addr++;
-        sram_addr++;
-    }
-    uint8_t *load_addr_8 = (uint8_t *) load_addr;
-    uint8_t *sram_addr_8 = (uint8_t *) sram_addr;
-    for (b = 0; b < rem_bytes; b++) {
-        * load_addr_8 = * sram_addr_8;
-        load_addr_8++;
-        sram_addr_8++;
-    }
-    printf("SMC: loading... 100%%\r\n");
-    return 0;
-}
-
-int smc_sram_load(const char *fname, uint32_t **addr)
-{
-    global_table gt;
-    unsigned i;
-    uint32_t * load_addr_32;
-    uint32_t * sram_addr_32;
-    file_descriptor * fd_buf;
-    unsigned char * sram_start_addr = (unsigned char *)SMC_SRAM_BASE;
-    unsigned char * ptr = (unsigned char *) &gt;
-    int rc;
-
-    for(i = 0; i < sizeof(global_table); i++) {
-        ptr[i] = * (sram_start_addr + i);
-    }
-    printf("SMC: SRAM: #files : %u, low_mark_data(0x%lx), high_mark_fd(0x%x)\r\n",
-           gt.n_files, gt.low_mark_data, gt.high_mark_fd);
-
-    for (i = 0; i < gt.n_files ; i++) {
-        fd_buf = (file_descriptor *)(sram_start_addr + sizeof(gt) + sizeof(file_descriptor)*i);
-        if (!fd_buf->valid)
+        if (icfg->chips == 0)
             continue;
-        if (!strcmp(fd_buf->name, fname))
-            break;
+
+        printf("SMC: init interface %u with %u chips\r\n", i, icfg->chips);
+
+        REG_WRITE32(SMC_REG(base, SMC__set_opmode),
+            (icfg->adv << SMC__opmode__set_adv__SHIFT) |
+            (icfg->sync << SMC__opmode__rd_sync__SHIFT) |
+            (icfg->sync << SMC__opmode__wr_sync__SHIFT) |
+            (to_width_bits(icfg->width) << SMC__opmode__set_mw__SHIFT));
+
+        REG_WRITE32(SMC_REG(base, SMC__set_cycles),
+            (icfg->t_rc << SMC__cycles__t_rc__SHIFT) |
+            (icfg->t_wc << SMC__cycles__t_wc__SHIFT) |
+            (icfg->t_ceoe << SMC__cycles__t_ceoe__SHIFT) |
+            (icfg->t_wp << SMC__cycles__t_wp__SHIFT) |
+            (icfg->t_pc << SMC__cycles__t_pc__SHIFT) |
+            (icfg->t_tr << SMC__cycles__t_tr__SHIFT));
+
+          for (int j = 0; j < icfg->chips; ++j) {
+            REG_WRITE32(SMC_REG(base, SMC__direct_cmd),
+                (icfg->cre << SMC__direct_cmd__set_cre__SHIFT) |
+                (j << SMC__direct_cmd__chip_nmbr__SHIFT) |
+                (SMC__cmd_type__ModeRegUpdateRegs << SMC__direct_cmd__cmd_type__SHIFT) |
+                (icfg->ext_addr_bits << SMC__direct_cmd__addr__SHIFT));
+          }
     }
-    if (i == gt.n_files) {
-        printf("SMC: ERROR: file not found in SRAM: %s\r\n", fname);
-        return 1;
-    }
-
-    uint32_t offset = fd_buf->offset;
-
-    printf("SMC: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
-           i, fd_buf->name, sram_start_addr + offset,
-           fd_buf->load_addr, fd_buf->size / 1024);
-
-    sram_addr_32 = (uint32_t *) (sram_start_addr + offset);
-    load_addr_32 = (uint32_t *)fd_buf->load_addr;
-
-    if (dmac)
-        rc = load_dma(sram_addr_32, load_addr_32, fd_buf->size);
-    else
-        rc = load_memcpy(sram_addr_32, load_addr_32, fd_buf->size);
-
-    if (addr)
-        *addr = load_addr_32;
-    return rc;
+    return s;
 }
 
-int smc_init(struct dma *dma)
+void smc_deinit(struct smc *s)
 {
-    dmac = dma;
-    return 0;
-}
-
-void smc_deinit()
-{
-    dmac = NULL;
+    ASSERT(s);
+    s->base = NULL;
+    OBJECT_FREE(s);
 }

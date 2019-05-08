@@ -97,6 +97,7 @@ OBJS = \
        lib/llist.o \
        lib/mailbox-link.o \
        lib/mem.o \
+       lib/memfs.o \
        lib/object.o \
        lib/panic.o \
        lib/printf.o \
@@ -105,6 +106,7 @@ OBJS = \
        lib/shmem-link.o \
        lib/sleep.o \
        lib/str.o \
+       plat/board.o \
        plat/console.o \
        boot.o \
        isr.o \
