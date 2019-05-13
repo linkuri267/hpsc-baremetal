@@ -135,7 +135,7 @@ AOPT = --warn --fatal-warnings $(CPU_FLAGS)
 LDFLAGS = \
 	$(CPU_FLAGS) \
 	--entry=Start  \
- 	-lgcc -lc -lrdimon \
+	-lrdimon \
 	-Wl,--gc-sections \
 	-static \
 	-Wl,-z,max-page-size=4 \
