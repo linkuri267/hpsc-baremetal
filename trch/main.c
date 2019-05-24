@@ -41,6 +41,8 @@
 
 static struct syscfg syscfg;
 
+static struct llist link_list = { 0 };
+
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
 #endif // CONFIG_TRCH_WDT
@@ -220,7 +222,6 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX_PSCI
 
-    struct llist link_list;
     llist_init(&link_list);
 
 #if CONFIG_RTPS_TRCH_SHMEM
