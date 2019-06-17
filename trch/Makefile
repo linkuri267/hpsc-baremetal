@@ -37,6 +37,12 @@ $(error CONFIG_SLEEP_TIMER requires a timer to be enabled)
 endif
 endif
 
+ifeq ($(strip $(CONFIG_SYSCFG)),1)
+ifneq ($(strip $(CONFIG_SMC)),1)
+$(error CONFIG_SYSCFG requires CONFIG_SMC SMC-353 driver)
+endif
+endif
+
 # Most tests are standalone, but some are not
 ifeq ($(strip $(TEST_RT_MMU)),1)
 ifneq ($(strip $(CONFIG_RT_MMU)),1)

@@ -39,7 +39,9 @@
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_HPPS_TRCH_MAILBOX_ATF)
 #define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
 
+#if CONFIG_SYSCFG
 static struct syscfg syscfg;
+#endif // CONFIG_SYSCFG
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -256,17 +258,21 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
 
+#if CONFIG_SMC
     struct smc *lsio_smc = smc_init(SMC_BASE, &trch_smc_mem_cfg);
     if (!lsio_smc)
         panic("LSIO SMC");
+#endif // CONFIG_SMC
 
     struct memfs *trch_fs = memfs_mount(SMC_SRAM_BASE, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 
+#if CONFIG_SYSCFG
     if (syscfg_load(&syscfg, trch_fs))
         panic("SYS CFG");
     boot_request(syscfg.subsystems);
+#endif // CONFIG_SYSCFG
 
 #if CONFIG_TRCH_WDT
     watchdog_init_group(CPU_GROUP_TRCH);
@@ -298,11 +304,13 @@ int main ( void )
 
         //printf("main\r\n");
 
+#if CONFIG_SYSCFG
         subsys_t subsys;
         while (!boot_handle(&subsys)) {
             boot_reboot(subsys, &syscfg, trch_fs);
             verbose = true; // to end log with 'waiting' msg
         }
+#endif // CONFIG_SYSCFG
 
         struct cmd cmd;
         struct link *link_curr;
