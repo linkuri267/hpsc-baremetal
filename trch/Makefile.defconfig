@@ -12,6 +12,8 @@ TEST_SHMEM						?= 0
 # Set build configuration here
 CONFIG_SYSTICK					?= 1
 CONFIG_SLEEP_TIMER 				?= 1 # implement sleep() using a timer
+CONFIG_SYSCFG					?= 1
+CONFIG_SMC						?= 1
 CONFIG_HPPS_TRCH_MAILBOX 		?= 1
 CONFIG_HPPS_TRCH_MAILBOX_ATF 	?= 1
 CONFIG_HPPS_TRCH_MAILBOX_SSW 	?= 1

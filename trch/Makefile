@@ -27,6 +27,8 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_WDT \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
+	CONFIG_SMC \
+	CONFIG_SYSCFG \
 
 include Makefile.defconfig
 include Makefile.config
@@ -34,6 +36,12 @@ include Makefile.config
 ifeq ($(strip $(CONFIG_SLEEP_TIMER)),1)
 ifneq ($(strip $(CONFIG_SYSTICK)),1)
 $(error CONFIG_SLEEP_TIMER requires a timer to be enabled)
+endif
+endif
+
+ifeq ($(strip $(CONFIG_SYSCFG)),1)
+ifneq ($(strip $(CONFIG_SMC)),1)
+$(error CONFIG_SYSCFG requires CONFIG_SMC SMC-353 driver)
 endif
 endif
 
