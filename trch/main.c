@@ -39,9 +39,14 @@
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_HPPS_TRCH_MAILBOX_ATF)
 #define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
 
-#if CONFIG_SYSCFG
-static struct syscfg syscfg;
-#endif // CONFIG_SYSCFG
+// Default boot config (if not loaded from NV mem)
+static struct syscfg syscfg = {
+    .bin_loc = MEMDEV_HPPS_DRAM,
+    .subsystems = SUBSYS_INVALID,
+    .rtps_mode = SYSCFG__RTPS_MODE__LOCKSTEP,
+    .hpps_rootfs_loc = MEMDEV_HPPS_DRAM,
+};
+
 
 #if CONFIG_TRCH_WDT
 static bool trch_wdt_started = false;
@@ -271,8 +276,9 @@ int main ( void )
 #if CONFIG_SYSCFG
     if (syscfg_load(&syscfg, trch_fs))
         panic("SYS CFG");
-    boot_request(syscfg.subsystems);
 #endif // CONFIG_SYSCFG
+
+    boot_request(syscfg.subsystems);
 
 #if CONFIG_TRCH_WDT
     watchdog_init_group(CPU_GROUP_TRCH);
@@ -304,13 +310,11 @@ int main ( void )
 
         //printf("main\r\n");
 
-#if CONFIG_SYSCFG
         subsys_t subsys;
         while (!boot_handle(&subsys)) {
             boot_reboot(subsys, &syscfg, trch_fs);
             verbose = true; // to end log with 'waiting' msg
         }
-#endif // CONFIG_SYSCFG
 
         struct cmd cmd;
         struct link *link_curr;
