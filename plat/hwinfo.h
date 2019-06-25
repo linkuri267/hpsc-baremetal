@@ -63,6 +63,8 @@
 #define CRL       ((volatile uint8_t *)0xff5e0000)
 #define RPU_CTRL  ((volatile uint8_t *)0xff9a0000)
 
+#define RESET_CTRL              ((volatile uint8_t *)0x22000000)
+
 #define HSIO_BASE               ((volatile uint32_t *)0xe3000000)
 #define HSIO_SIZE                                     0x15000000
 
