@@ -16,12 +16,12 @@ int test_rt_mmu()
     // usecase need to be active at the same time (since RTPS needs to
     // excercise these mappings when it boots).
 
-    volatile uint32_t *addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_1_WIN_ADDR;
+    volatile uint32_t *addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_0_WIN_ADDR;
     uint32_t val = 0xbeeff00d;
     printf("%p <- %08x\r\n", addr, val);
     *addr = val;
 
-    addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_0_WIN_ADDR;
+    addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_1_WIN_ADDR;
     val = 0xf00dbeef;
     printf("%p <- %08x\r\n", addr, val);
     *addr = val;
