@@ -476,6 +476,46 @@ struct dma_tx {
 static struct pl330_dmac dmas[MAX_DMAS];
 static struct dma_tx txes[MAX_TXES];
 
+static inline void store_u16(uint8_t *addr, u16 val)
+{
+	int i;
+	for (i = 0; i < sizeof(val); ++i) {
+		addr[i] = val & 0xff;
+		val >>= 8;
+	}
+}
+
+static inline void store_u32(uint8_t *addr, u32 val)
+{
+	int i;
+	for (i = 0; i < sizeof(val); ++i) {
+		addr[i] = val & 0xff;
+		val >>= 8;
+	}
+}
+
+static inline u16 load_u16(uint8_t *addr)
+{
+	u16 val = 0x0;
+	int i;
+	for (i = sizeof(val) - 1; i >= 0; --i) {
+		val <<= 8;
+		val |= addr[i];
+	}
+	return val;
+}
+
+static inline u32 load_u32(uint8_t *addr)
+{
+	u32 val = 0x0;
+	int i;
+	for (i = sizeof(val) - 1; i >= 0; --i) {
+		val <<= 8;
+		val |= addr[i];
+	}
+	return val;
+}
+
 static inline bool is_manager(struct pl330_thread *thrd)
 {
 	return thrd->dmac->manager == thrd;
@@ -494,7 +534,7 @@ static inline u32 _emit_ADDH(unsigned dry_run, u8 buf[],
 
 	buf[0] = CMD_DMAADDH;
 	buf[0] |= (da << 1);
-	*((__le16 *)&buf[1]) = cpu_to_le16(val);
+	store_u16(&buf[1], cpu_to_le16(val));
 
 	PL330_DBGCMD_DUMP(SZ_DMAADDH, "\tDMAADDH %s %u\r\n",
 		da == 1 ? "DA" : "SA", val);
@@ -648,7 +688,7 @@ static inline u32 _emit_MOV(unsigned dry_run, u8 buf[],
 
 	buf[0] = CMD_DMAMOV;
 	buf[1] = dst;
-	*((__le32 *)&buf[2]) = cpu_to_le32(val);
+	store_u32(&buf[2], cpu_to_le32(val));
 
 	PL330_DBGCMD_DUMP(SZ_DMAMOV, "\tDMAMOV %s 0x%x\r\n",
 		dst == SAR ? "SAR" : (dst == DAR ? "DAR" : "CCR"), val);
@@ -826,7 +866,7 @@ static inline u32 _emit_GO(unsigned dry_run, u8 buf[],
 
 	buf[1] = chan & 0x7;
 
-	*((__le32 *)&buf[2]) = cpu_to_le32(addr);
+	store_u32(&buf[2], cpu_to_le32(addr));
 
 	return SZ_DMAGO;
 }
@@ -844,7 +884,7 @@ static inline void _execute_DBGINSN(struct pl330_thread *thrd,
 	}
 	writel(val, regs + DBGINST0);
 
-	val = le32_to_cpu(*((__le32 *)&insn[2]));
+	val = le32_to_cpu(load_u32(&insn[2]));
 	writel(val, regs + DBGINST1);
 
 #if 0
