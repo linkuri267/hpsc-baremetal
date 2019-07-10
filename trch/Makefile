@@ -27,6 +27,8 @@ CONFIG_FLAGS = \
 	CONFIG_HPPS_WDT \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
+	CONFIG_SMC \
+	CONFIG_SYSCFG \
 
 include Makefile.defconfig
 include Makefile.config
