@@ -42,6 +42,8 @@
 // Default boot config (if not loaded from NV mem)
 static struct syscfg syscfg = {
     .bin_loc = MEMDEV_HPPS_DRAM,
+    //.subsystems = SUBSYS_HPPS,
+    //.subsystems = SUBSYS_RTPS_R52,
     .subsystems = SUBSYS_INVALID,
     .rtps_mode = SYSCFG__RTPS_MODE__LOCKSTEP,
     .hpps_rootfs_loc = MEMDEV_HPPS_DRAM,
@@ -128,6 +130,11 @@ int main ( void )
     if (test_shmem())
         panic("shmem test");
 #endif // TEST_SHMEM
+
+#if TEST_RIO
+    if (test_rio())
+        panic("rio test");
+#endif // TEST_RIO
 
 #if CONFIG_TRCH_DMA
     struct dma *trch_dma = trch_dma_init();

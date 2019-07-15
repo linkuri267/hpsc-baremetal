@@ -11,6 +11,7 @@ CONFIG_FLAGS = \
 	TEST_ETIMER \
 	TEST_RTI_TIMER \
 	TEST_SHMEM \
+	TEST_RIO \
 	CONFIG_SYSTICK \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_HPPS_TRCH_MAILBOX \
@@ -166,6 +167,9 @@ OBJS += test/test-rti-timer.o tests/rti-timer.o
 endif
 ifeq ($(strip $(TEST_SHMEM)),1)
 OBJS += tests/shmem.o
+endif
+ifeq ($(strip $(TEST_RIO)),1)
+OBJS += tests/rio.o
 endif
 
 TARGET=trch
