@@ -11,6 +11,7 @@ CONFIG_FLAGS = \
 	TEST_ETIMER \
 	TEST_RTI_TIMER \
 	TEST_SHMEM \
+	TEST_RIO \
 	CONFIG_SYSTICK \
 	CONFIG_SLEEP_TIMER \
 	CONFIG_HPPS_TRCH_MAILBOX \
@@ -66,6 +67,14 @@ ifneq ($(strip $(CONFIG_RT_MMU)),1)
 $(error TEST_RT_MMU requires CONFIG_RT_MMU)
 endif
 endif
+ifeq ($(strip $(TEST_RIO)),1)
+ifneq ($(strip $(CONFIG_RT_MMU)),1)
+$(error TEST_RIO requires CONFIG_RT_MMU)
+endif
+ifneq ($(strip $(CONFIG_TRCH_DMA)),1)
+$(error TEST_RIO requires CONFIG_TRCH_DMA)
+endif
+endif # TEST_RIO
 ifeq ($(strip $(TEST_WDTS)),1)
 ifneq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
 $(error TEST_WDTS requires one of CONFIG_*_WDT)
@@ -114,6 +123,9 @@ OBJS = \
        drivers/mmu.o \
        drivers/ns16550.o \
        drivers/nvic.o \
+       drivers/rio-pkt.o \
+       drivers/rio-switch.o \
+       drivers/rio-ep.o \
        drivers/rti-timer.o \
        drivers/smc.o \
        drivers/systick.o \
@@ -192,6 +204,9 @@ OBJS += test/test-rti-timer.o tests/rti-timer.o
 endif
 ifeq ($(strip $(TEST_SHMEM)),1)
 OBJS += tests/shmem.o
+endif
+ifeq ($(strip $(TEST_RIO)),1)
+OBJS += tests/rio.o
 endif
 
 TARGET=trch

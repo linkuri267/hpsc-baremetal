@@ -74,9 +74,18 @@ int rt_mmu_init()
 	goto cleanup_lo_win;
 #endif // TEST_RT_MMU
 
+#if TEST_RIO
+    if (mmu_map(ctx, RIO_MEM_WIN_ADDR, RIO_MEM_ADDR, RIO_MEM_SIZE))
+        goto cleanup_rio_win;
+#endif // TEST_RIO
+
     mmu_enable(rt_mmu);
     return 0;
 
+#if TEST_RIO
+cleanup_rio_win:
+    mmu_unmap(ctx, RT_MMU_TEST_DATA_LO_ADDR, RT_MMU_TEST_DATA_LO_SIZE);
+#endif // TEST_RIO
 #if TEST_RT_MMU
 cleanup_lo_win:
     mmu_unmap(ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
@@ -116,6 +125,11 @@ int rt_mmu_deinit()
 {
     int rc = 0;
     mmu_disable(rt_mmu);
+
+#if TEST_RIO
+    rc |= mmu_unmap(ctx, RIO_MEM_WIN_ADDR, RIO_MEM_SIZE);
+    rc |= mmu_unmap(ctx, RT_MMU_TEST_DATA_LO_ADDR, RT_MMU_TEST_DATA_LO_SIZE);
+#endif /* TEST_RIO */
 
     rc |= mmu_unmap(ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
     rc |= mmu_unmap(ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);

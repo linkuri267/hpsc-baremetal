@@ -191,6 +191,11 @@ int main ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
+#if TEST_RIO /* must be after RT MMU setup */
+    if (test_rio(trch_dma))
+        panic("rio test");
+#endif // TEST_RIO
+
 #if CONFIG_MBOX_DEV_HPPS
     struct mbox_link_dev mldev_hpps;
     mldev_hpps.base = MBOX_HPPS_TRCH__BASE;

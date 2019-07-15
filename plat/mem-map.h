@@ -68,6 +68,19 @@
 #define RT_MMU_TEST_DATA_HI_1_ADDR      0x100010000
 #define RT_MMU_TEST_DATA_HI_SIZE            0x10000
 
+// Memory for Rapid IO, and windows to it in lo mem
+#define RIO_MEM_ADDR                    0x100020000
+#define RIO_MEM_WIN_ADDR                 0xc2000000
+#define RIO_MEM_SIZE                     0x00010000
+
+// Memory for Rapid IO test
+#define RIO_MEM_TEST_ADDR               0x100030000
+#define RIO_MEM_TEST_SIZE                0x00020000
+
+// Region in window space for RIO test to create mappings
+#define RIO_TEST_WIN_ADDR               0xc2020000
+#define RIO_TEST_WIN_SIZE               0x00040000
+
 // Page tables for RTPS MMU: in RPTS DRAM
 #define RTPS_PT_ADDR 0x40060000
 #define RTPS_PT_SIZE   0x200000
