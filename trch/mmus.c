@@ -95,6 +95,7 @@ int rt_mmu_deinit()
     mmu_disable(rt_mmu);
 
     rc |= mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
+    rc |= mmu_unmap(trch_ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
     rc |= mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
     rc |= mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
 
