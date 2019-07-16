@@ -8,7 +8,7 @@ TEST_RTPS_TRCH_MAILBOX		?= 0
 TEST_RTPS_DMA 				?= 0
 TEST_RTPS_DMA_CB 			?= 0
 TEST_RTPS_MMU 				?= 0
-TEST_RT_MMU 				?= 0
+TEST_RT_MMU 				?= 0 # depends on TEST_RT_MMU in TRCH
 TEST_SOFT_RESET 			?= 0
 TEST_R52_SMP				?= 0
 
