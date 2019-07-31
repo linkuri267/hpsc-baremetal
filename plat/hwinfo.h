@@ -69,6 +69,7 @@
 #define SMC_BASE                ((volatile uint32_t *)0x30006000)
 #define SMC_SRAM_BASE           ((volatile uint32_t *)0x28000000)
 #define SMC_SRAM_SIZE            0x8000000
+#define SMC_SRAM_BL_FS_START	((volatile uint32_t *)0x28300000)
 
 // See props in Qemu device tree node (or real HW characteristics)
 #define ETIMER_NOMINAL_FREQ_HZ 1000000000

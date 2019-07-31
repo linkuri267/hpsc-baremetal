@@ -261,7 +261,7 @@ int main ( void )
     if (!lsio_smc)
         panic("LSIO SMC");
 
-    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BASE, trch_dma);
+    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BL_FS_START, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 

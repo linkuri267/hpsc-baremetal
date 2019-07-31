@@ -8,6 +8,7 @@
 #include "memfs.h"
 
 #define FILE_NAME_LENGTH 200
+#define ECC_512_SIZE	3
 #define PAGE_SIZE (1 << 14) // 16KB (used for progress display only)
 
 typedef struct {
@@ -17,6 +18,9 @@ typedef struct {
     uint32_t load_addr;		/* 32bit load address in DRAM at run-time */
     uint32_t load_addr_high;	/* high 32bit of 64 bit load address in DRAM at run-time */
     char  name[FILE_NAME_LENGTH];
+    uint32_t entry_offset;	/* the offset of the entry point in the image */
+    uint8_t chcksum[32];		/* SHA-256 checksum */
+    uint8_t ecc[ECC_512_SIZE];	/* ecc of the struct */
 } file_descriptor;
 
 typedef struct {
@@ -24,6 +28,7 @@ typedef struct {
     uint32_t high_mark_fd;	/* high mark of file descriptors */
     uint32_t n_files;		/* number of files */
     uint32_t fsize;		/* sram file size */
+    uint8_t ecc[ECC_512_SIZE];   /* ecc of the struct */
 } global_table;
 
 struct memfs {
