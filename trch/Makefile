@@ -95,6 +95,7 @@ OBJS = \
        drivers/mmu.o \
        drivers/ns16550.o \
        drivers/nvic.o \
+       drivers/rio.o \
        drivers/rti-timer.o \
        drivers/smc.o \
        drivers/systick.o \

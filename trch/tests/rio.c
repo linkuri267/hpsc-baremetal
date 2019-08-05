@@ -4,25 +4,67 @@
 #include "panic.h"
 #include "hwinfo.h"
 #include "nvic.h"
+#include "rio.h"
 #include "test.h"
 
-volatile uint32_t payload = 0;
+static struct rio_pkt in_pkt, out_pkt;
 
 int test_rio()
 {
+    int rc;
+
     nvic_int_enable(TRCH_IRQ__RIO_1);
 
-    *((volatile uint32_t *)0xe3000000) = 0xdeadbe01;
-    printf("test rio: waiting for payload\r\n");
-#if 1
-    while (payload == 0);
-    printf("test rio: payload received: %u\r\n", payload);
-#endif
-    return 0;
+    struct rio_ep *ep0 = rio_ep_create("RIO_EP0", RIO_EP0_BASE);
+    struct rio_ep *ep1 = rio_ep_create("RIO_EP1", RIO_EP1_BASE);
+
+    out_pkt.ttype = RIO_TRANSPORT_DEV8,
+    out_pkt.src_id = RIO_DEVID_EP0,
+    out_pkt.dest_id = RIO_DEVID_EP1,
+
+    out_pkt.ftype = RIO_FTYPE_MAINT,
+    out_pkt.src_tid = 0x1;
+    out_pkt.transaction = RIO_TRANS_MAINT_REQ_READ,
+    out_pkt.size = 4,
+    /* TODO: compose an actual CAP/CSR read, for now assuming echo */
+    out_pkt.config_offset = 0x0,
+    out_pkt.payload_len = 0x1;
+    out_pkt.payload[0] = 0xdeadbeef;
+
+    printf("RIO TEST: sending pkt on EP 0:\r\n");
+    rio_print_pkt(&out_pkt);
+
+	rc = rio_ep_sp_send(ep0, &out_pkt);
+	if (rc)
+		goto fail_send;
+
+    rc = rio_ep_sp_recv(ep1, &in_pkt);
+	if (rc)
+		goto fail_recv;
+
+    printf("RIO TEST: received pkt on EP 1:\r\n");
+    rio_print_pkt(&in_pkt);
+
+    /* TODO: receive packets until expected response or timeout,
+     * instead of blocking on receive and checking the first pkt */
+    /* TODO: more checks */
+    if (!(in_pkt.ftype == RIO_FTYPE_MAINT &&
+          in_pkt.src_tid == out_pkt.src_tid &&
+          in_pkt.payload_len == 1 && in_pkt.payload[0] == 0xdeadbeef)) {
+        printf("RIO TEST: ERROR: bad response to MAINTENANCE request\r\n");
+        goto fail_resp;
+    }
+
+fail_resp:
+    rio_ep_destroy(ep1);
+fail_recv:
+    rio_ep_destroy(ep0);
+fail_send:
+    nvic_int_disable(TRCH_IRQ__RIO_1);
+    return rc;
 }
 
 void rio_1_isr()
 {
     nvic_int_disable(TRCH_IRQ__RIO_1);
-    payload = *((volatile uint32_t *)0xe4000004);
 }

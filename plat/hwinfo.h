@@ -72,6 +72,10 @@
 #define SMC_SRAM_BASE           ((volatile uint32_t *)0x28000000)
 #define SMC_SRAM_SIZE            0x8000000
 
+#define RIO_EP0_BASE            ((volatile uint32_t *)0xe3000000)
+#define RIO_EP1_BASE            ((volatile uint32_t *)0xe4000000)
+#define RIO_SWITCH_BASE         ((volatile uint32_t *)0xe5000000)
+
 // See props in Qemu device tree node (or real HW characteristics)
 #define ETIMER_NOMINAL_FREQ_HZ 1000000000
 #define ETIMER_CLK_FREQ_HZ      125000000
@@ -95,5 +99,9 @@
 // we need to convert seconds to interations (empirically calibrated).
 #define RTPS_R52_BUSYLOOP_FACTOR       1000000
 #define TRCH_M4_BUSYLOOP_FACTOR		800000
+
+/* Normally these are assigned by discovery routine in the driver */
+#define RIO_DEVID_EP0 0x0
+#define RIO_DEVID_EP1 0x1
 
 #endif // HWINFO_H
