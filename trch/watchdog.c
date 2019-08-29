@@ -22,7 +22,7 @@ struct wdt *wdts[NUM_CORES] = {0};
 struct wdt_group {
     unsigned index; // in wdts array
     unsigned num; // num wdts in sequence
-    volatile uint32_t *base;
+    uintptr_t base;
     unsigned as_size;
     unsigned irq_start;
     const char *names[16];
@@ -134,8 +134,8 @@ static void handle_timeout(struct wdt *wdt, unsigned stage, void *arg)
     }
 }
 
-static struct wdt *create_wdt(const char *name, volatile uint32_t *base,
-			      unsigned irq, const unsigned *timeouts, unsigned cpuid)
+static struct wdt *create_wdt(const char *name, uintptr_t base, unsigned irq,
+                              const unsigned *timeouts, unsigned cpuid)
 {
     struct wdt *wdt = wdt_create_monitor(name, base,
                                          handle_timeout, (void *)cpuid,
@@ -186,9 +186,8 @@ void watchdog_init_group(enum cpu_group_id gid)
     const struct wdt_group *wdtg = &wdt_groups[gid];
     for (unsigned i = 0; i < wdtg->num;  ++i) {
         struct wdt *wdt = create_wdt(wdtg->names[i],
-                (volatile uint32_t *)((volatile uint8_t *)wdtg->base +
-                    i * wdtg->as_size),
-                wdtg->irq_start + i, wdtg->timeouts, gid);
+                                     (wdtg->base + i * wdtg->as_size),
+                                     wdtg->irq_start + i, wdtg->timeouts, gid);
         wdts[wdtg->index + i] = wdt;
     }
 }

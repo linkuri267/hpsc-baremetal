@@ -32,7 +32,7 @@ typedef struct {
 } global_table;
 
 struct memfs {
-    volatile uint32_t *base;
+    uintptr_t base;
     struct dma *dmac; // optional, for loading files via DMA
 };
 
@@ -92,7 +92,7 @@ static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
     return 0;
 }
 
-struct memfs *memfs_mount(volatile uint32_t *base, struct dma *dmac)
+struct memfs *memfs_mount(uintptr_t base, struct dma *dmac)
 {
     struct memfs *fs;
     fs = OBJECT_ALLOC(memfss);
@@ -105,7 +105,7 @@ struct memfs *memfs_mount(volatile uint32_t *base, struct dma *dmac)
 void memfs_unmount(struct memfs *fs)
 {
     ASSERT(fs);
-    fs->base = NULL;
+    fs->base = 0;
     fs->dmac = NULL;
     OBJECT_FREE(fs);
 }

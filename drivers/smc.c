@@ -7,7 +7,7 @@
 
 #include "smc.h"
 
-#define SMC_REG(b, r) ((volatile uint32_t *)(((volatile uint8_t *)b) + (r)))
+#define SMC_REG(b, r) ((b) + (r))
 
 #define SMC__memc_status                0x000
 #define SMC__mem_cfg_set                0x008
@@ -65,7 +65,7 @@
 #define SMC__cmd_type__ModeRegUpdateRegs        0b11
 
 struct smc {
-    volatile uint32_t *base;
+    uintptr_t base;
 };
 
 #define MAX_SMCS 2
@@ -82,7 +82,7 @@ static unsigned to_width_bits(unsigned width)
     return 0;
 }
 
-struct smc *smc_init(volatile uint32_t *base, struct smc_mem_cfg *cfg)
+struct smc *smc_init(uintptr_t base, struct smc_mem_cfg *cfg)
 {
     struct smc *s;
     s = OBJECT_ALLOC(smcs);
@@ -124,6 +124,6 @@ struct smc *smc_init(volatile uint32_t *base, struct smc_mem_cfg *cfg)
 void smc_deinit(struct smc *s)
 {
     ASSERT(s);
-    s->base = NULL;
+    s->base = 0;
     OBJECT_FREE(s);
 }

@@ -61,7 +61,7 @@ struct irq {
 };
 
 struct gic {
-    volatile uint32_t *base;
+    uintptr_t base;
     struct irq irqs[MAX_IRQS];
     unsigned nregs;
 };
@@ -221,7 +221,7 @@ static const struct intc_ops gic_ops = {
     .int_type = gic_op_int_type,
 };
 
-void gic_init(volatile uint32_t *base)
+void gic_init(uintptr_t base)
 {
     uint32_t typer = REGB_READ32(base, GICD(GICD_TYPER));
 

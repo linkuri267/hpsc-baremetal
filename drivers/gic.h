@@ -18,7 +18,7 @@ typedef enum {
     GIC_IRQ_CFG_EDGE
 } gic_irq_cfg_t;
 
-void gic_init(volatile uint32_t *base);
+void gic_init(uintptr_t base);
 
 void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg);
 void gic_int_disable(unsigned irq, gic_irq_type_t type);

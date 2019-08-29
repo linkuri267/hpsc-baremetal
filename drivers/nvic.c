@@ -22,7 +22,7 @@ struct irq {
 };
 
 struct nvic {
-    volatile uint32_t *base;
+    uintptr_t base;
     struct irq irqs[MAX_IRQS];
 };
 
@@ -95,7 +95,7 @@ static const struct intc_ops nvic_ops = {
     .int_type = nvic_op_int_type,
 };
 
-void nvic_init(volatile uint32_t *scs_base)
+void nvic_init(uintptr_t scs_base)
 {
     nvic.base = scs_base;
     intc_register(&nvic_ops);

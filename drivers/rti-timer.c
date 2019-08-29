@@ -34,7 +34,7 @@ static const struct cmd_code cmd_codes[] = {
 
 struct rti_timer {
     struct object obj;
-    volatile uint32_t *base;
+    uintptr_t base;
     const char *name;
     rti_timer_cb_t *cb;
     void *cb_arg;
@@ -52,7 +52,7 @@ static void exec_cmd(struct rti_timer *tmr, enum cmd cmd)
     REGB_WRITE32(tmr->base, REG__CMD_FIRE, code->fire);
 }
 
-struct rti_timer *rti_timer_create(const char *name, volatile uint32_t *base,
+struct rti_timer *rti_timer_create(const char *name, uintptr_t base,
                                    rti_timer_cb_t *cb, void *cb_arg)
 {
     printf("RTI TMR %s: create base %p\r\n", name, base);

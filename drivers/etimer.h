@@ -18,7 +18,7 @@ enum etimer_sync_src {
 typedef void (*etimer_cb_t)(struct etimer *et, void *arg);
 
 
-struct etimer *etimer_create(const char *name, volatile uint32_t *base,
+struct etimer *etimer_create(const char *name, uintptr_t base,
                              etimer_cb_t cb, void *cb_arg,
                              uint32_t nominal_freq_hz, uint32_t clk_freq_hz,
                              unsigned max_div);

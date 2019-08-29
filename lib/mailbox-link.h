@@ -11,7 +11,7 @@
 // These properties are configured externally from the mailbox driver and
 // mailbox-link library, hence the separate data structure.
 struct mbox_link_dev {
-    volatile uint32_t *base;
+    uintptr_t base;
     struct irq *rcv_irq;
     unsigned rcv_int_idx; /* interrupt index within IP block */
     struct irq *ack_irq;

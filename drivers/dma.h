@@ -11,7 +11,7 @@ struct dma_tx;
 
 typedef void (*dma_cb_t)(void *arg, int rc);
 
-struct dma *dma_create(const char *name, volatile uint32_t *base,
+struct dma *dma_create(const char *name, uintptr_t base,
                        uint8_t *mcode_addr, unsigned mcode_sz);
 void dma_destroy(struct dma *dma);
 
