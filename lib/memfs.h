@@ -2,7 +2,7 @@
 
 struct dma;
 
-struct memfs *memfs_mount(volatile uint32_t *base, struct dma *dmac);
+struct memfs *memfs_mount(uintptr_t base, struct dma *dmac);
 void memfs_unmount(struct memfs *fs);
 
 // addr: will be set to the load addr found in the image
