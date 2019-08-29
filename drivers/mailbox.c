@@ -40,7 +40,7 @@
 
 struct mbox_ip_block {
         struct object obj;
-        volatile uint32_t *base;
+        uintptr_t base;
         unsigned refcnt;
         unsigned irq_refcnt[HPSC_MBOX_EVENTS];
 };
@@ -48,7 +48,7 @@ struct mbox_ip_block {
 struct mbox {
         struct object obj;
         struct mbox_ip_block *block;
-        volatile uint32_t *base;
+        uintptr_t base;
         unsigned instance;
         int int_idx;
         struct irq *irq;
@@ -73,7 +73,7 @@ static void mbox_irq_unsubscribe(struct mbox *mbox)
         intc_int_disable(mbox->irq);
 }
 
-static struct mbox_ip_block *block_get(volatile uint32_t *ip_base)
+static struct mbox_ip_block *block_get(uintptr_t ip_base)
 {
     struct mbox_ip_block *b;
     unsigned block = 0;
@@ -102,7 +102,7 @@ static void block_put(struct mbox_ip_block *b)
     }
 }
 
-struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
+struct mbox *mbox_claim(uintptr_t ip_base, unsigned instance,
                         struct irq *irq, unsigned int_idx,
                         uint32_t owner, uint32_t src, uint32_t dest,
                         enum mbox_dir dir, union mbox_cb cb, void *cb_arg)
@@ -120,13 +120,13 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
         goto cleanup;
 
     m->instance = instance;
-    m->base = (volatile uint32_t *)((uint8_t *)ip_base + instance * HPSC_MBOX_INSTANCE_REGION);
+    m->base = ip_base + instance * HPSC_MBOX_INSTANCE_REGION;
     m->int_idx = int_idx;
     m->irq = irq;
     m->owner = (owner != 0);
 
     if (m->owner) {
-        volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_CONFIG);
+        volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_CONFIG);
         uint32_t config = REG_CONFIG__UNSECURE |
                        ((owner << REG_CONFIG__OWNER__SHIFT) & REG_CONFIG__OWNER__MASK) |
                        ((src << REG_CONFIG__SRC__SHIFT)     & REG_CONFIG__SRC__MASK) |
@@ -142,7 +142,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
             goto cleanup;
         }
     } else { // not owner, just check the value in registers against the requested value
-        volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_CONFIG);
+        volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_CONFIG);
         uint32_t val = *addr;
         printf("mbox_claim: config: %p -> %08lx\r\n", addr, val);
         uint32_t src_hw =  (val & REG_CONFIG__SRC__MASK) >> REG_CONFIG__SRC__SHIFT;
@@ -172,7 +172,7 @@ struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
             goto cleanup;
     }
 
-    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_INT_ENABLE);
+    volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_INT_ENABLE);
     printf("mbox_claim: int en: %p <|- %08lx\r\n", addr, ie);
     *addr |= ie;
     mbox_irq_subscribe(m);
@@ -188,7 +188,7 @@ int mbox_release(struct mbox *m)
     // We are the OWNER, so we can release
 
     if (m->owner) {
-        volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_CONFIG);
+        volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_CONFIG);
         uint32_t val = 0;
         printf("mbox_release: owner: %p <|- %08lx\r\n", addr, val);
         *addr = val;
@@ -212,7 +212,7 @@ size_t mbox_send(struct mbox *m, void *buf, size_t sz)
         len++;
 
     printf("mbox_send: msg: ");
-    volatile uint32_t *slot = (volatile uint32_t *)((uint8_t *)m->base + REG_DATA);
+    volatile uint32_t *slot = (volatile uint32_t *)(m->base + REG_DATA);
     for (i = 0; i < len; ++i) {
         slot[i] = msg[i];
         printf("%x ", msg[i]);
@@ -222,7 +222,7 @@ size_t mbox_send(struct mbox *m, void *buf, size_t sz)
     for (; i < HPSC_MBOX_DATA_REGS; i++)
         slot[i] = 0;
 
-    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_EVENT_SET);
+    volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_EVENT_SET);
     uint32_t val = HPSC_MBOX_EVENT_A;
     printf("mbox_send: raise int A: %p <- %08lx\r\n", addr, val);
     *addr = val;
@@ -234,7 +234,7 @@ size_t mbox_read(struct mbox *m, void *buf, size_t sz)
 {
     size_t i;
     uint32_t *msg = buf;
-    volatile uint32_t *data = (volatile uint32_t *)((uint8_t *)m->base + REG_DATA);
+    volatile uint32_t *data = (volatile uint32_t *)(m->base + REG_DATA);
     size_t len = sz / sizeof(uint32_t);
     if (sz % sizeof(uint32_t))
         len++;
@@ -247,7 +247,7 @@ size_t mbox_read(struct mbox *m, void *buf, size_t sz)
     printf("\r\n");
 
     // ACK
-    volatile uint32_t *addr = (volatile uint32_t *)((uint8_t *)m->base + REG_EVENT_SET);
+    volatile uint32_t *addr = (volatile uint32_t *)(m->base + REG_EVENT_SET);
     uint32_t val = HPSC_MBOX_EVENT_B;
     printf("mbox_read: set int B: %p <- %08lx\r\n", addr, val);
     *addr = val;
@@ -263,7 +263,7 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
     printf("mbox_instance_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
     // Clear the event
-    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
+    addr = (volatile uint32_t *)(mbox->base + REG_EVENT_CLEAR);
     val = HPSC_MBOX_EVENT_A;
     printf("mbox_instance_rcv_isr: clear int A: %p <- %08lx\r\n", addr, val);
     *addr = val;
@@ -280,7 +280,7 @@ static void mbox_instance_ack_isr(struct mbox *mbox)
     printf("mbox_instance_ack_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
     // Clear the event first
-    addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CLEAR);
+    addr = (volatile uint32_t *)(mbox->base + REG_EVENT_CLEAR);
     val = HPSC_MBOX_EVENT_B;
     printf("mbox_instance_ack_isr: clear int B: %p <- %08lx\r\n", addr, val);
     *addr = val;
@@ -306,12 +306,12 @@ static void mbox_isr(unsigned event, unsigned interrupt)
 
         // Are we 'signed up' for this event (A) from this mailbox (i)?
         // Two criteria: (1) Cause is set, and (2) Mapped to our IRQ
-        addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_EVENT_CAUSE);
+        addr = (volatile uint32_t *)(mbox->base + REG_EVENT_CAUSE);
         val = *addr;
         printf("mbox_isr: cause: %p -> %08lx\r\n", addr, val);
         if (!(val & event))
             continue; // this mailbox didn't raise the interrupt
-        addr = (volatile uint32_t *)((uint8_t *)mbox->base + REG_INT_ENABLE);
+        addr = (volatile uint32_t *)(mbox->base + REG_INT_ENABLE);
         val = *addr;
         printf("mbox_isr: int enable: %p -> %08lx\r\n", addr, val);
         if (!(val & interrupt))

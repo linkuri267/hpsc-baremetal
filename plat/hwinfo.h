@@ -34,9 +34,9 @@
 
 #define HPSC_MBOX_NUM_BLOCKS 3
 
-#define MBOX_LSIO__BASE           ((volatile uint32_t *)0x3000a000)
-#define MBOX_HPPS_TRCH__BASE      ((volatile uint32_t *)0xfff50000)
-#define MBOX_HPPS_RTPS__BASE      ((volatile uint32_t *)0xfff60000)
+#define MBOX_LSIO__BASE           0x3000a000
+#define MBOX_HPPS_TRCH__BASE      0xfff50000
+#define MBOX_HPPS_RTPS__BASE      0xfff60000
 
 #define WDT_SIZE_4KB              0x1000
 #define WDT_SIZE_64KB            0x10000

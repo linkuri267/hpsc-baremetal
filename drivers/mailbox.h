@@ -26,7 +26,7 @@ union mbox_cb {
 
 struct mbox;
 
-struct mbox *mbox_claim(volatile uint32_t * ip_base, unsigned instance,
+struct mbox *mbox_claim(uintptr_t ip_base, unsigned instance,
                         struct irq *irq, unsigned int_idx,
                         uint32_t owner, uint32_t src, uint32_t dest,
                         enum mbox_dir dir, union mbox_cb cb, void *cb_arg);
