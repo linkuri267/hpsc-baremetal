@@ -98,8 +98,8 @@ int main ( void )
     if (interface) {
         /* SMC */
         printf("Initialize SMC\r\n");
-        smc_init(SMC_BASE, &trch_smc_mem_cfg);
-        mem_base_addr = (uint8_t *) SMC_SRAM_BASE;
+        smc_init(SMC_LSIO_BASE, &trch_smc_mem_cfg);
+        mem_base_addr = (uint8_t *) SMC_LSIO_SRAM_BASE;
         printf("Read Configuration blob\r\n");
     } else {
         /* TODO: SPI */
