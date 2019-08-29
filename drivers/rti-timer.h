@@ -7,7 +7,7 @@ struct rti_timer;
 
 typedef void (rti_timer_cb_t)(struct rti_timer *tmr, void *arg);
 
-struct rti_timer *rti_timer_create(const char *name, volatile uint32_t *base,
+struct rti_timer *rti_timer_create(const char *name, uintptr_t base,
                                    rti_timer_cb_t *cb, void *cb_arg);
 void rti_timer_destroy(struct rti_timer *tmr);
 

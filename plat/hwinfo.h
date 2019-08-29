@@ -24,13 +24,13 @@
 #define UART_BAUDRATE      125000
 
 #define ETIMER__BASE                    ((volatile uint32_t *)0x2100a000)
-#define RTI_TIMER_TRCH__BASE            ((volatile uint32_t *)0x21009000)
-#define RTI_TIMER_RTPS_R52_0__TRCH_BASE ((volatile uint32_t *)0x21007000)
-#define RTI_TIMER_RTPS_R52_1__TRCH_BASE ((volatile uint32_t *)0x21008000)
-#define RTI_TIMER_RTPS_A53__TRCH_BASE   ((volatile uint32_t *)0x21006000)
-#define RTI_TIMER_RTPS_R52_0__RTPS_BASE ((volatile uint32_t *)0x30a05000)
-#define RTI_TIMER_RTPS_R52_1__RTPS_BASE ((volatile uint32_t *)0x30a06000)
-#define RTI_TIMER_RTPS_A53__RTPS_BASE   ((volatile uint32_t *)0x30a04000)
+#define RTI_TIMER_TRCH__BASE            0x21009000
+#define RTI_TIMER_RTPS_R52_0__TRCH_BASE 0x21007000
+#define RTI_TIMER_RTPS_R52_1__TRCH_BASE 0x21008000
+#define RTI_TIMER_RTPS_A53__TRCH_BASE   0x21006000
+#define RTI_TIMER_RTPS_R52_0__RTPS_BASE 0x30a05000
+#define RTI_TIMER_RTPS_R52_1__RTPS_BASE 0x30a06000
+#define RTI_TIMER_RTPS_A53__RTPS_BASE   0x30a04000
 
 #define HPSC_MBOX_NUM_BLOCKS 3
 
