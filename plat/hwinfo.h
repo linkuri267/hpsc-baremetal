@@ -10,9 +10,9 @@
 #define RTPS_GIC_BASE   0x30e00000
 #define TRCH_SCS_BASE   0xe000e000
 
-#define RTPS_TRCH_TO_HPPS_SMMU_BASE   ((volatile uint32_t *)0x31100000)
-#define RTPS_SMMU_BASE                ((volatile uint32_t *)0x31000000)
-#define HPPS_SMMU_BASE                ((volatile uint32_t *)0xf9300000)
+#define RTPS_TRCH_TO_HPPS_SMMU_BASE   0x31100000
+#define RTPS_SMMU_BASE                0x31000000
+#define HPPS_SMMU_BASE                0xf9300000
 
 #define TRCH_DMA_BASE   0x21000000
 #define RTPS_DMA_BASE   0x30a08000
@@ -63,8 +63,8 @@
 #define CRL       ((volatile uint8_t *)0xff5e0000)
 #define RPU_CTRL  ((volatile uint8_t *)0xff9a0000)
 
-#define HSIO_BASE               ((volatile uint32_t *)0xe3000000)
-#define HSIO_SIZE                                     0x15000000
+#define HSIO_BASE               0xe3000000
+#define HSIO_SIZE               0x15000000
 
 #define SMC_BASE                ((volatile uint32_t *)0x30006000)
 #define SMC_SRAM_BASE           ((volatile uint32_t *)0x28000000)
