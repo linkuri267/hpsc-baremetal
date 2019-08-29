@@ -76,7 +76,7 @@ int main ( void )
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");
 
-    nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
+    nvic_init(TRCH_SCS_BASE);
 
     sleep_set_busyloop_factor(TRCH_M4_BUSYLOOP_FACTOR);
 
