@@ -28,7 +28,7 @@ struct smc_mem_cfg {
 
 struct smc;
 
-struct smc *smc_init(volatile uint32_t *base, struct smc_mem_cfg *cfg);
+struct smc *smc_init(uintptr_t base, struct smc_mem_cfg *cfg);
 void smc_deinit(struct smc *);
 
 #endif // SMC_H

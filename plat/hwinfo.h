@@ -66,8 +66,8 @@
 #define HSIO_BASE               0xe3000000
 #define HSIO_SIZE               0x15000000
 
-#define SMC_BASE                ((volatile uint32_t *)0x30006000)
-#define SMC_SRAM_BASE           ((volatile uint32_t *)0x28000000)
+#define SMC_BASE                0x30006000
+#define SMC_SRAM_BASE           0x28000000
 #define SMC_SRAM_SIZE            0x8000000
 #define SMC_SRAM_BL_FS_START	((volatile uint32_t *)0x28300000)
 
