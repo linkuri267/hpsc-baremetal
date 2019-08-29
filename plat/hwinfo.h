@@ -17,8 +17,8 @@
 #define TRCH_DMA_BASE   0x21000000
 #define RTPS_DMA_BASE   0x30a08000
 
-#define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
-#define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)
+#define LSIO_UART0_BASE 0x30000000
+#define LSIO_UART1_BASE 0x30001000
 
 #define UART_CLOCK      100000000
 #define UART_BAUDRATE      125000

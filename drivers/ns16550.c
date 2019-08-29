@@ -287,7 +287,7 @@ int NS16550_tstc(NS16550_t com_port)
 	return (serial_in(&com_port->lsr) & UART_LSR_DR) != 0;
 }
 
-int ns16550_startup(volatile uint32_t *base, int clock, int baudrate)
+int ns16550_startup(uintptr_t base, int clock, int baudrate)
 {
 	struct ns16550_platdata *plat = &com_port.plat;
 

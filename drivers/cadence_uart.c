@@ -116,7 +116,7 @@
 #define cdns_uart_readl(offset)		(*((volatile uint32_t *)baseaddr + (offset/4)))
 #define cdns_uart_writel(val, offset)	do { *((volatile uint32_t *)baseaddr + (offset/4)) = val; } while (0)
 
-static volatile uint32_t *baseaddr = 0x0;
+static uintptr_t baseaddr = 0x0;
 
 /**
  * cdns_uart_startup - Called when an application opens a cdns_uart port
@@ -124,7 +124,7 @@ static volatile uint32_t *baseaddr = 0x0;
  *
  * Return: 0 on success, negative errno otherwise
  */
-int cdns_uart_startup(volatile uint32_t *base)
+int cdns_uart_startup(uintptr_t base)
 {
         int retval = 0;
 
