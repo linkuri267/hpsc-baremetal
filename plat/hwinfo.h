@@ -23,7 +23,7 @@
 #define UART_CLOCK      100000000
 #define UART_BAUDRATE      125000
 
-#define ETIMER__BASE                    ((volatile uint32_t *)0x2100a000)
+#define ETIMER__BASE                    0x2100a000
 #define RTI_TIMER_TRCH__BASE            0x21009000
 #define RTI_TIMER_RTPS_R52_0__TRCH_BASE 0x21007000
 #define RTI_TIMER_RTPS_R52_1__TRCH_BASE 0x21008000
