@@ -14,8 +14,8 @@
 #define RTPS_SMMU_BASE                ((volatile uint32_t *)0x31000000)
 #define HPPS_SMMU_BASE                ((volatile uint32_t *)0xf9300000)
 
-#define TRCH_DMA_BASE   ((volatile uint32_t *)0x21000000)
-#define RTPS_DMA_BASE   ((volatile uint32_t *)0x30a08000)
+#define TRCH_DMA_BASE   0x21000000
+#define RTPS_DMA_BASE   0x30a08000
 
 #define LSIO_UART0_BASE ((volatile uint32_t*)0x30000000)
 #define LSIO_UART1_BASE ((volatile uint32_t*)0x30001000)

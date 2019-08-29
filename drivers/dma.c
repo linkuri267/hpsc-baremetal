@@ -1283,14 +1283,14 @@ static inline void _reset_thread(struct pl330_thread *thrd)
 	thrd->req_running = -1;
 }
 
-struct dma *dma_create(const char *name, volatile uint32_t *base,
+struct dma *dma_create(const char *name, uintptr_t base,
                        uint8_t *mcode_addr, unsigned mcode_sz)
 {
     struct pl330_dmac *d = OBJECT_ALLOC(dmas);
     if (!d)
         return NULL;
     d->name = name;
-    d->base = base;
+    d->base = (void __iomem *) base;
 
     // Microcode buffer reachable from DMA and CPU via same addr
     d->mcode_bus = mcode_addr;
