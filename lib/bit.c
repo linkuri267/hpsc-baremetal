@@ -5,7 +5,7 @@
 unsigned log2_of_pow2(unsigned long v)
 {
     ASSERT(v);
-    int b = 1;
+    int b = 0;
     while ((v & 0x1) == 0x0) {
         v >>= 1;
         b++;
