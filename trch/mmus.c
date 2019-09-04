@@ -2,6 +2,7 @@
 #include "mem-map.h"
 #include "mailbox.h"
 #include "mmu.h"
+#include "panic.h"
 
 #include "mmus.h"
 
@@ -104,4 +105,16 @@ int rt_mmu_deinit()
     balloc_destroy(ba);
     rc |= mmu_destroy(rt_mmu);
     return rc;
+}
+
+int rt_mmu_map(uint64_t vaddr, uint64_t paddr, unsigned sz)
+{
+    ASSERT(trch_ctx);
+    return mmu_map(trch_ctx, vaddr, paddr, sz);
+}
+
+int rt_mmu_unmap(uint64_t vaddr, unsigned sz)
+{
+    ASSERT(trch_ctx);
+    return mmu_unmap(trch_ctx, vaddr, sz);
 }
