@@ -157,6 +157,24 @@ static inline uint64_t deposit64(uint64_t value, int start, int length,
 #define REGB_READ64(base, reg) \
         reg_read64(#reg, (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)))
 
+#define REGB_FWRITE32(base, reg, field, value) \
+        reg_fwrite32(#reg, #field, \
+                (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), \
+                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
+#define REGB_FREAD32(base, reg, field, value) \
+        reg_fread32(#reg, #field, \
+                (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), \
+                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+
+#define REG_FWRITE32(addr, reg, field, value) \
+        reg_fwrite32(#reg, #field, \
+                (volatile uint32_t *)((volatile uint8_t *)(addr)), \
+                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
+#define REG_FREAD32(addr, reg, field, value) \
+        reg_fread32(#reg, #field, \
+                (volatile uint32_t *)((volatile uint8_t *)(addr)), \
+                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+
 static inline void reg_write32(const char *name, volatile uint32_t *addr, uint32_t val)
 {
     DPRINTF("%32s: %p <- %x\r\n", name, addr, val);
@@ -190,6 +208,26 @@ static inline void reg_clear32(const char *name, volatile uint32_t *addr, uint32
 {
     DPRINTF("%32s: %p &= ~%x\r\n", name, addr, val);
     *addr &= ~val;
+}
+
+static inline void reg_fwrite32(const char *name, const char *field,
+                                volatile uint32_t *addr,
+                                unsigned shift, uint32_t mask, uint32_t val)
+{
+    DPRINTF("%32s:%s: <- %x : %p <& ~%x, <| %x\r\n", name, field, val,
+            addr, mask, (val << shift) & mask);
+    *addr &= ~mask;
+    *addr |= (val << shift) & mask;
+}
+
+static inline uint32_t reg_fread32(const char *name, const char *field,
+                                   volatile uint32_t *addr,
+                                   unsigned shift, uint32_t mask)
+{
+    uint32_t val = (*addr & mask) >> shift;
+    DPRINTF("%32s:%s: -> %x : %p -> %x & %x >> %u\r\n", name, field, val,
+            addr, val, mask, shift);
+    return val;
 }
 
 #endif // REGOPS_H
