@@ -7,18 +7,18 @@
 
 // This file fulfills the role of a device tree
 
-#define RTPS_GIC_BASE   0x30e00000
+#define RTPS_GIC_BASE   0x34600000
 #define TRCH_SCS_BASE   0xe000e000
 
-#define RTPS_TRCH_TO_HPPS_SMMU_BASE   0x31100000
-#define RTPS_SMMU_BASE                0x31000000
-#define HPPS_SMMU_BASE                0xf9300000
+#define RTPS_TRCH_TO_HPPS_SMMU_BASE   0x34900000
+#define RTPS_SMMU_BASE                0x34800000
+#define HPPS_SMMU_BASE                0xe5000000
 
 #define TRCH_DMA_BASE   0x21000000
-#define RTPS_DMA_BASE   0x30a08000
+#define RTPS_DMA_BASE   0x34208000
 
-#define LSIO_UART0_BASE 0x30000000
-#define LSIO_UART1_BASE 0x30001000
+#define LSIO_UART0_BASE 0x26004000
+#define LSIO_UART1_BASE 0x26005000
 
 #define UART_CLOCK      100000000
 #define UART_BAUDRATE      125000
@@ -28,13 +28,13 @@
 #define RTI_TIMER_RTPS_R52_0__TRCH_BASE 0x21007000
 #define RTI_TIMER_RTPS_R52_1__TRCH_BASE 0x21008000
 #define RTI_TIMER_RTPS_A53__TRCH_BASE   0x21006000
-#define RTI_TIMER_RTPS_R52_0__RTPS_BASE 0x30a05000
-#define RTI_TIMER_RTPS_R52_1__RTPS_BASE 0x30a06000
-#define RTI_TIMER_RTPS_A53__RTPS_BASE   0x30a04000
+#define RTI_TIMER_RTPS_R52_0__RTPS_BASE 0x34206000
+#define RTI_TIMER_RTPS_R52_1__RTPS_BASE 0x34205000
+#define RTI_TIMER_RTPS_A53__RTPS_BASE   0x34204000
 
-#define MBOX_LSIO__BASE           0x3000a000
-#define MBOX_HPPS_TRCH__BASE      0xfff50000
-#define MBOX_HPPS_RTPS__BASE      0xfff60000
+#define MBOX_LSIO__BASE           0x26012000
+#define MBOX_HPPS_TRCH__BASE      0xe0880000
+#define MBOX_HPPS_RTPS__BASE      0xe0890000
 
 #define WDT_SIZE_4KB              0x1000
 #define WDT_SIZE_64KB            0x10000
@@ -45,14 +45,14 @@
 #define WDT_RTPS_R52_0_TRCH_BASE   0x21004000
 #define WDT_RTPS_R52_1_TRCH_BASE   0x21005000
 #define WDT_RTPS_A53_TRCH_BASE     0x21003000
-#define WDT_RTPS_R52_0_RTPS_BASE   0x30a0a000
-#define WDT_RTPS_R52_1_RTPS_BASE   0x30a0b000
+#define WDT_RTPS_R52_0_RTPS_BASE   0x3420a000
+#define WDT_RTPS_R52_1_RTPS_BASE   0x3420b000
 #define WDT_RTPS_R52_SIZE          WDT_SIZE_4KB
-#define WDT_RTPS_A53_RTPS_BASE     0x30a09000
+#define WDT_RTPS_A53_RTPS_BASE     0x34009000
 #define WDT_RTPS_A53_SIZE          WDT_SIZE_4KB
 
 #define WDT_HPPS_TRCH_BASE         0x21010000
-#define WDT_HPPS_RTPS_BASE         0xfff70000
+#define WDT_HPPS_RTPS_BASE         0xe08a0000
 #define WDT_HPPS_SIZE              WDT_SIZE_64KB
 
 #define APU       0xfd5c0000
@@ -61,12 +61,13 @@
 #define CRL       0xff5e0000
 #define RPU_CTRL  0xff9a0000
 
-#define HSIO_BASE               0xe3000000
-#define HSIO_SIZE               0x15000000
+#define HSIO_BASE               0xf4000000
+#define HSIO_SIZE               0x04000000
 
-#define SMC_LSIO_BASE               0x30006000
+#define SMC_CSR_LSIO_NAND_BASE      0x26000000
+#define SMC_CSR_LSIO_SRAM_BASE      0x26002000
 #define SMC_LSIO_SRAM_BASE          0x28000000
-#define SMC_LSIO_SRAM_SIZE          0x8000000
+#define SMC_LSIO_SRAM_SIZE          0x2000000
 #define SMC_LSIO_SRAM_BL_FS_START	0x28300000
 
 // See props in Qemu device tree node (or real HW characteristics)
