@@ -163,13 +163,13 @@ int main ( void )
         /* 3. Memory type (NOR or MRAM) */
         if (BS_MASK(boot_select, BS_SRAM_TYPE_SHIFT)) /* MRAM: +2 */
             mem_rank += 2;
-        smc_boot_init((uintptr_t)SMC_CSR_LSIO_SRAM_BASE, mem_rank, &trch_smc_boot_init, FAILOVER_ENABLED(boot_select));
+        smc_boot_init((uintptr_t)SMC_LSIO_SRAM_CSR_BASE, mem_rank, &trch_smc_boot_init, FAILOVER_ENABLED(boot_select));
 
         /* 4. base address depends on rank */
 #ifdef HW_EMULATION
-        mem_base_addr = (uint8_t *) smc_get_base_addr((uintptr_t)SMC_CSR_LSIO_SRAM_BASE, interface, mem_rank);
+        mem_base_addr = (uint8_t *) smc_get_base_addr((uintptr_t)SMC_LSIO_SRAM_CSR_BASE, interface, mem_rank);
 #else
-        mem_base_addr = (uint8_t *) SMC_LSIO_SRAM_BASE;
+        mem_base_addr = (uint8_t *) SMC_LSIO_SRAM_BASE0;
 #endif
         printf("interface(SRAM), rank(%d), base_addr(0x%x)\r\n", mem_rank, mem_base_addr);
 
@@ -198,7 +198,7 @@ int main ( void )
 #else
         if (mem_rank_used > 0)
             printf("memory rank(%d) is ignored in software emulation\r\n", mem_rank_used);
-        mem_base_addr = (uint8_t *) SMC_LSIO_SRAM_BASE;
+        mem_base_addr = (uint8_t *) SMC_LSIO_SRAM_BASE0;
 #endif
         /* 
            fail-over within a memory rank. 
