@@ -5,9 +5,10 @@
 
 #include "printf.h"
 
+/* Note: printing via "%s" to allow '%' in conditions */
 #define ASSERT(cond) \
         if (!(cond)) { \
-                printf("ASSERT: %s:%u: " #cond "\r\n", __FILE__, __LINE__); \
+                printf("ASSERT: %s:%u: %s\r\n", __FILE__, __LINE__, #cond); \
                 panic("ASSERT"); \
         }
 
