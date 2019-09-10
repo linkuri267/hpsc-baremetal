@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define MIN(a, b) ((a) <= (b) ? (a) : (b))
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+
+#define BITS_PER_BYTE   8
+
 #define ALIGN_MASK(bits) ((1 << (bits)) - 1)
 #define ALIGN(x, bits) (typeof(x))(((uint32_t)(x) + ALIGN_MASK(bits)) & ~ALIGN_MASK(bits))
 #define ALIGNED(x, bits) (x == ALIGN(x, bits))
