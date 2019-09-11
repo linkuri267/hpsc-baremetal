@@ -150,7 +150,7 @@ static inline uint64_t deposit64(uint64_t value, int start, int length,
         reg_clear32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
 
 #define REG_READ32(reg) reg_read32(#reg, (volatile uint32_t *)(reg))
-#define REG_READ64(reg) reg_read64(#reg, (volatile uint32_t *)(reg))
+#define REG_READ64(reg) reg_read64(#reg, (volatile uint64_t *)(reg))
 
 #define REGB_READ32(base, reg) \
         reg_read32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)))
