@@ -5,18 +5,18 @@ MEMORY
     TCM_B (RWX) :         ORIGIN = 0x00100000, LENGTH =   0x100000
     /* TODO: TCM C (not in device tree) */
 
-    PERIPH (RW) :         ORIGIN = 0x30000000, LENGTH = 0x10000000
+    PERIPH (RW) :         ORIGIN = 0x24000000, LENGTH = 0x1c000000
 
     /* Split only to place at same place as U-boot (the higher half) */
-    RTPS_DDR_LOW_0 (RWX): ORIGIN = 0x40000000, LENGTH = 0x20000000
-    RTPS_DDR_LOW_1 (RWX): ORIGIN = 0x70000000, LENGTH = 0x10000000
+    RTPS_DDR_LOW_0 (RWX): ORIGIN = 0x40000000, LENGTH = 0x30000000
+    RTPS_DDR_LOW_1 (RWX): ORIGIN = 0x70000000, LENGTH = 0x50000000
 
     /* Just to define symbols for MPU */
-    HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
+    HPPS_DDR_LOW (RW):    ORIGIN = 0xc0000000, LENGTH = 0x20000000
     WINDOW (RW):          ORIGIN = 0xc0000000, LENGTH = 0x20000000
 
-    HSIO (RW):            ORIGIN = 0xe3000000, LENGTH = 0x15000000
-    HPPS_MBOX (RW):       ORIGIN = 0xfff60000, LENGTH = 0x00010000
+    HSIO (RW):            ORIGIN = 0xf4000000, LENGTH = 0x04000000
+    HPPS_MBOX (RW):       ORIGIN = 0xe0890000, LENGTH = 0x00010000
 }
 
 /* All the start/end symbols need to be 64-byte aligned for MPU */
