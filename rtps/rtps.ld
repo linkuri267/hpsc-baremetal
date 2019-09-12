@@ -9,7 +9,7 @@ MEMORY
 
     /* Split only to place at same place as U-boot (the higher half) */
     RTPS_DDR_LOW_0 (RWX): ORIGIN = 0x40000000, LENGTH = 0x30000000
-    RTPS_DDR_LOW_1 (RWX): ORIGIN = 0x70000000, LENGTH = 0x50000000
+    RTPS_DDR_LOW_1 (RWX): ORIGIN = 0x70000000, LENGTH = 0x4e000000
 
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0xc0000000, LENGTH = 0x20000000
