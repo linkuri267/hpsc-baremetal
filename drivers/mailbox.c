@@ -257,12 +257,12 @@ static void mbox_instance_rcv_isr(struct mbox *mbox)
     uint32_t val = HPSC_MBOX_EVENT_A;
     printf("mbox_instance_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    // Clear the event first
-    printf("mbox_instance_rcv_isr: clear int A <- %08lx\r\n", val);
-    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
-
     if (mbox->cb.rcv_cb)
         mbox->cb.rcv_cb(mbox->cb_arg);
+
+    // Clear the event
+    printf("mbox_instance_rcv_isr: clear int A <- %08lx\r\n", val);
+    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
 }
 
 static void mbox_instance_ack_isr(struct mbox *mbox)
@@ -270,12 +270,12 @@ static void mbox_instance_ack_isr(struct mbox *mbox)
     uint32_t val = HPSC_MBOX_EVENT_B;
     printf("mbox_instance_ack_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
 
-    // Clear the event first    
-    printf("mbox_instance_ack_isr: clear int B <- %08lx\r\n", val);
-    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
-
     if (mbox->cb.ack_cb)
         mbox->cb.ack_cb(mbox->cb_arg);
+
+    // Clear the event
+    printf("mbox_instance_ack_isr: clear int B <- %08lx\r\n", val);
+    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
 }
 
 static void mbox_isr(unsigned event, unsigned interrupt)
