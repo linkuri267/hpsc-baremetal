@@ -60,6 +60,7 @@ static void handle_ack(void *arg)
     struct mbox_link *mlink = link->priv;
     printf("%s: handle_ack\r\n", link->name);
     mlink->cmd_ctx.tx_acked = true;
+    mbox_event_clear_ack(mlink->mbox_to);
 }
 
 static void handle_cmd(void *arg)
@@ -73,6 +74,8 @@ static void handle_cmd(void *arg)
     printf("%s: handle_cmd\r\n", link->name);
     // read never fails if sizeof(cmd.msg) > 0
     mbox_read(mlink->mbox_from, cmd.msg, sizeof(cmd.msg));
+    mbox_event_clear_rcv(mlink->mbox_from);
+    mbox_event_set_ack(mlink->mbox_from);
     if (cmd_enqueue(&cmd))
         panic("handle_cmd: failed to enqueue command");
 }
@@ -85,6 +88,8 @@ static void handle_reply(void *arg)
     mlink->cmd_ctx.reply_sz_read = mbox_read(mlink->mbox_from,
                                              mlink->cmd_ctx.reply,
                                              mlink->cmd_ctx.reply_sz);
+    mbox_event_clear_rcv(mlink->mbox_from);
+    mbox_event_set_ack(mlink->mbox_from);
 }
 
 static int mbox_link_disconnect(struct link *link) {
@@ -103,9 +108,12 @@ static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
                           size_t sz)
 {
     // TODO: timeout
+    int rc;
     struct mbox_link *mlink = link->priv;
     mlink->cmd_ctx.tx_acked = false;
-    return mbox_send(mlink->mbox_to, buf, sz);
+    rc = mbox_send(mlink->mbox_to, buf, sz);
+    mbox_event_set_rcv(mlink->mbox_to);
+    return rc;
 }
 
 static bool mbox_link_is_send_acked(struct link *link)

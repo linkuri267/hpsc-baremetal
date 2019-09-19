@@ -221,10 +221,6 @@ size_t mbox_send(struct mbox *m, void *buf, size_t sz)
     for (; i < HPSC_MBOX_DATA_REGS; i++)
         REGB_WRITE32(m->base, REG_DATA + (i * sizeof(uint32_t)), 0);
 
-    uint32_t val = HPSC_MBOX_EVENT_A;
-    printf("mbox_send: raise int A <- %08lx\r\n", val);
-    REGB_WRITE32(m->base, REG_EVENT_SET, val);
-
     return sz;
 }
 
@@ -244,38 +240,53 @@ size_t mbox_read(struct mbox *m, void *buf, size_t sz)
     }
     printf("\r\n");
 
-    // ACK
-    uint32_t val = HPSC_MBOX_EVENT_B;
-    printf("mbox_read: set int B <- %08lx\r\n", val);
-    REGB_WRITE32(m->base, REG_EVENT_SET, val);
-
     return i * sizeof(uint32_t);
+}
+
+void mbox_event_set_rcv(struct mbox *m)
+{
+    static const uint32_t val = HPSC_MBOX_EVENT_A;
+    printf("mbox_event_set_rcv: raise int A <- %08lx\r\n", val);
+    REGB_WRITE32(m->base, REG_EVENT_SET, val);
+}
+
+void mbox_event_set_ack(struct mbox *m)
+{
+    static const uint32_t val = HPSC_MBOX_EVENT_B;
+    printf("mbox_event_set_ack: raise int B <- %08lx\r\n", val);
+    REGB_WRITE32(m->base, REG_EVENT_SET, val);
+}
+
+void mbox_event_clear_rcv(struct mbox *m)
+{
+    static const uint32_t val = HPSC_MBOX_EVENT_A;
+    printf("mbox_event_clear_rcv: clear int A <- %08lx\r\n", val);
+    REGB_WRITE32(m->base, REG_EVENT_CLEAR, val);
+}
+
+void mbox_event_clear_ack(struct mbox *m)
+{
+    static const uint32_t val = HPSC_MBOX_EVENT_B;
+    printf("mbox_event_clear_ack: clear int B <- %08lx\r\n", val);
+    REGB_WRITE32(m->base, REG_EVENT_CLEAR, val);
 }
 
 static void mbox_instance_rcv_isr(struct mbox *mbox)
 {
-    uint32_t val = HPSC_MBOX_EVENT_A;
     printf("mbox_instance_rcv_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
-
     if (mbox->cb.rcv_cb)
         mbox->cb.rcv_cb(mbox->cb_arg);
-
-    // Clear the event
-    printf("mbox_instance_rcv_isr: clear int A <- %08lx\r\n", val);
-    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
+    else
+        mbox_event_clear_rcv(mbox); // just clear event, but don't ACK
 }
 
 static void mbox_instance_ack_isr(struct mbox *mbox)
 {
-    uint32_t val = HPSC_MBOX_EVENT_B;
     printf("mbox_instance_ack_isr: base %p instance %u\r\n", mbox->base, mbox->instance);
-
     if (mbox->cb.ack_cb)
         mbox->cb.ack_cb(mbox->cb_arg);
-
-    // Clear the event
-    printf("mbox_instance_ack_isr: clear int B <- %08lx\r\n", val);
-    REGB_WRITE32(mbox->base, REG_EVENT_CLEAR, val);
+    else
+        mbox_event_clear_ack(mbox); // just clear event
 }
 
 static void mbox_isr(unsigned event, unsigned interrupt)
