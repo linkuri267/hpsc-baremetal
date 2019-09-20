@@ -3,7 +3,6 @@
 #include "mailbox.h"
 #include "mem.h"
 #include "printf.h"
-#include "sleep.h"
 
 #include "command.h"
 
@@ -79,7 +78,6 @@ void cmd_handle(struct cmd *cmd)
     uint8_t reply[REPLY_SIZE];
     int reply_sz;
     size_t rc;
-    unsigned sleep_ms_rem = CMD_TIMEOUT_MS_REPLY;
 
     printf("command: handle: cmd %u arg %u...\r\n",
            cmd->msg[0], cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
@@ -103,27 +101,9 @@ void cmd_handle(struct cmd *cmd)
     printf("command: handle: %s: reply %u arg %u...\r\n", cmd->link->name,
            reply[0], reply[CMD_MSG_PAYLOAD_OFFSET]);
 
-    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_SEND, reply, sizeof(reply));
-    if (!rc) {
+    rc = cmd->link->send(cmd->link, CMD_TIMEOUT_MS_REPLY, reply, sizeof(reply));
+    if (rc)
+        printf("command: handle: %s: reply sent and ACK'd\r\n", cmd->link->name);
+    else
         printf("command: handle: %s: failed to send reply\r\n", cmd->link->name);
-    } else {
-        printf("command: handle: %s: waiting for ACK for our reply\r\n",
-               cmd->link->name);
-        do {
-            if (cmd->link->is_send_acked(cmd->link)) {
-                printf("command: handle: %s: ACK for our reply received\r\n", 
-                       cmd->link->name);
-                break;
-            }
-            if (sleep_ms_rem) {
-                msleep(CMD_TIMEOUT_MS_RECV);
-                sleep_ms_rem -= sleep_ms_rem < CMD_TIMEOUT_MS_RECV ?
-                    sleep_ms_rem : CMD_TIMEOUT_MS_RECV;
-            } else {
-                printf("command: handle: %s: timed out waiting for ACK\r\n",
-                       cmd->link->name);
-                break;
-            }
-        } while (1);
-    }
 }

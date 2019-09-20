@@ -7,9 +7,12 @@
 #include "object.h"
 #include "panic.h"
 #include "printf.h"
+#include "sleep.h"
 
 
 #define MAX_LINKS 8
+// pretty coarse, limited by systick
+#define MIN_SLEEP_MS 500
 
 struct cmd_ctx {
     bool tx_acked;
@@ -104,32 +107,54 @@ static int mbox_link_disconnect(struct link *link) {
     return rc;
 }
 
+static void msleep_and_dec(int *ms_rem)
+{
+    msleep(MIN_SLEEP_MS);
+    // if < 0, timeout is infinite
+    if (*ms_rem > 0)
+        *ms_rem -= *ms_rem >= MIN_SLEEP_MS ? MIN_SLEEP_MS : *ms_rem;
+}
+
 static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
                           size_t sz)
 {
-    // TODO: timeout
-    int rc;
     struct mbox_link *mlink = link->priv;
+    int sleep_ms_rem = timeout_ms;
+    int rc;
     mlink->cmd_ctx.tx_acked = false;
     rc = mbox_send(mlink->mbox_to, buf, sz);
     mbox_event_set_rcv(mlink->mbox_to);
-    return rc;
-}
-
-static bool mbox_link_is_send_acked(struct link *link)
-{
-    struct mbox_link *mlink = link->priv;
-    return mlink->cmd_ctx.tx_acked;
+    printf("%s: send: waiting for ACK...\r\n", link->name);
+    do {
+        if (mlink->cmd_ctx.tx_acked) {
+            printf("%s: send: ACK received\r\n", link->name);
+            mbox_event_clear_ack(mlink->mbox_to);
+            return rc;
+        }
+        if (!sleep_ms_rem)
+            break; // timeout
+        msleep_and_dec(&sleep_ms_rem);
+    } while (1);
+    return 0;
 }
 
 static int mbox_link_poll(struct link *link, int timeout_ms)
 {
-    // TODO: timeout
     struct mbox_link *mlink = link->priv;
+    int sleep_ms_rem = timeout_ms;
+    int rc;
     printf("%s: poll: waiting for reply...\r\n", link->name);
-    while (!mlink->cmd_ctx.reply_sz_read);
-    printf("%s: poll: reply received\r\n", link->name);
-    return mlink->cmd_ctx.reply_sz_read;
+    do {
+        rc = mlink->cmd_ctx.reply_sz_read;
+        if (rc) {
+            printf("%s: poll: reply received\r\n", link->name);
+            break; // got data
+        }
+        if (!sleep_ms_rem)
+            break; // timeout
+        msleep_and_dec(&sleep_ms_rem);
+    } while (1);
+    return rc;
 }
 
 static int mbox_link_request(struct link *link,
@@ -146,19 +171,12 @@ static int mbox_link_request(struct link *link,
 
     rc = mbox_link_send(link, wtimeout_ms, wbuf, wsz);
     if (!rc) {
-        printf("mbox_link_request: send failed\r\n");
+        printf("%s: request: send timed out\r\n", link->name);
         return -1;
     }
-
-    // TODO: timeout on ACKs as part of rtimeout_ms
-    printf("%s: request: waiting for ACK...\r\n", link->name);
-    while (!mlink->cmd_ctx.tx_acked);
-    printf("%s: request: ACK received\r\n", link->name);
-
-    if (mlink->cmd_ctx.reply_sz == 0) return 1;
     rc = mbox_link_poll(link, rtimeout_ms);
     if (!rc)
-        printf("mbox_link_request: recv failed\r\n");
+        printf("%s: request: recv failed\r\n", link->name);
     return rc;
 }
 
@@ -209,7 +227,6 @@ struct link *mbox_link_connect(const char *name, struct mbox_link_dev *ldev,
     link->name = name;
     link->disconnect = mbox_link_disconnect;
     link->send = mbox_link_send;
-    link->is_send_acked = mbox_link_is_send_acked;
     link->request = mbox_link_request;
     link->recv = NULL;
     return link;
