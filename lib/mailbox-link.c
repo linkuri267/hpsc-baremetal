@@ -12,7 +12,7 @@
 #define MAX_LINKS 8
 
 struct cmd_ctx {
-    volatile bool tx_acked;
+    bool tx_acked;
     uint32_t *reply;
     size_t reply_sz;
     size_t reply_sz_read;
@@ -24,7 +24,7 @@ struct mbox_link {
     unsigned idx_from;
     struct mbox *mbox_from;
     struct mbox *mbox_to;
-    struct cmd_ctx cmd_ctx;
+    volatile struct cmd_ctx cmd_ctx;
 };
 
 static struct mbox_link_dev *devs[MBOX_DEV_COUNT] = {0};
