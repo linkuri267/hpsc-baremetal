@@ -15,9 +15,12 @@ struct shmem {
 
 static struct shmem shmems[MAX_SHMEMS] = {0};
 
+#define IS_ALIGNED(p) (((uintptr_t)(const void *)(p) % sizeof(uint32_t)) == 0)
+
 struct shmem *shmem_open(volatile void *addr)
 {
     struct shmem *s = OBJECT_ALLOC(shmems);
+    ASSERT(IS_ALIGNED(addr));
     if (s)
         s->addr = addr;
     return s;
@@ -32,6 +35,7 @@ size_t shmem_send(struct shmem *s, void *msg, size_t sz)
 {
     volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
     size_t sz_rem = SHMEM_MSG_SIZE - sz;
+    ASSERT(IS_ALIGNED(msg));
     ASSERT(sz <= SHMEM_MSG_SIZE);
     vmem_cpy(shm->data, msg, sz);
     if (sz_rem)
@@ -68,6 +72,7 @@ size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
 {
     volatile struct hpsc_shmem_region *shm = (volatile struct hpsc_shmem_region *) s->addr;
     ASSERT(sz >= SHMEM_MSG_SIZE);
+    ASSERT(IS_ALIGNED(msg));
     mem_vcpy(msg, shm->data, SHMEM_MSG_SIZE);
     shm->status = shm->status & ~HPSC_SHMEM_STATUS_BIT_NEW; // clear new
     shm->status = shm->status | HPSC_SHMEM_STATUS_BIT_ACK; // set ACK
