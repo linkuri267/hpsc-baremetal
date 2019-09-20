@@ -43,9 +43,13 @@ static int shmem_link_send(struct link *link, int timeout_ms, void *buf,
 {
     struct shmem_link *slink = link->priv;
     int sleep_ms_rem = timeout_ms;
+    int rc;
     do {
         if (!shmem_is_new(slink->shmem_out)) {
-            return shmem_send(slink->shmem_out, buf, sz);
+            rc = shmem_send(slink->shmem_out, buf, sz);
+            shmem_set_new(slink->shmem_out, true);
+            // TODO: wait for ACK to be set (and then clear it)?
+            return rc;
         }
         if (!sleep_ms_rem)
             break; // timeout
@@ -63,8 +67,13 @@ static bool shmem_link_is_send_acked(struct link *link)
 static int shmem_link_recv(struct link *link, void *buf, size_t sz)
 {
     struct shmem_link *slink = link->priv;
-    if (shmem_is_new(slink->shmem_in))
-        return shmem_recv(slink->shmem_in, buf, sz);
+    int rc;
+    if (shmem_is_new(slink->shmem_in)) {
+        rc = shmem_recv(slink->shmem_in, buf, sz);
+        shmem_set_new(slink->shmem_in, false);
+        shmem_set_ack(slink->shmem_in, true);
+        return rc;
+    }
     return 0;
 }
 

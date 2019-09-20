@@ -39,7 +39,6 @@ size_t shmem_send(struct shmem *s, void *msg, size_t sz)
     vmem_cpy(s->shm->data, msg, sz);
     if (sz_rem)
         vmem_set(s->shm->data + sz, 0, sz_rem);
-    s->shm->status |= HPSC_SHMEM_STATUS_BIT_NEW;
     return sz;
 }
 
@@ -58,9 +57,20 @@ bool shmem_is_ack(struct shmem *s)
     return s->shm->status & HPSC_SHMEM_STATUS_BIT_ACK;
 }
 
-void shmem_clear_ack(struct shmem *s)
+void shmem_set_new(struct shmem *s, bool val)
 {
-    s->shm->status &= ~HPSC_SHMEM_STATUS_BIT_ACK;
+    if (val)
+        s->shm->status |= HPSC_SHMEM_STATUS_BIT_NEW;
+    else
+        s->shm->status &= ~HPSC_SHMEM_STATUS_BIT_NEW;
+}
+
+void shmem_set_ack(struct shmem *s, bool val)
+{
+    if (val)
+        s->shm->status |= HPSC_SHMEM_STATUS_BIT_ACK;
+    else
+        s->shm->status &= ~HPSC_SHMEM_STATUS_BIT_ACK;
 }
 
 size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
@@ -68,7 +78,5 @@ size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
     ASSERT(sz >= SHMEM_MSG_SIZE);
     ASSERT(IS_ALIGNED(msg));
     mem_vcpy(msg, s->shm->data, SHMEM_MSG_SIZE);
-    s->shm->status &= ~HPSC_SHMEM_STATUS_BIT_NEW; // clear new
-    s->shm->status |= HPSC_SHMEM_STATUS_BIT_ACK; // set ACK
     return SHMEM_MSG_SIZE;
 }
