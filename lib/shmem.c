@@ -42,6 +42,14 @@ size_t shmem_send(struct shmem *s, void *msg, size_t sz)
     return sz;
 }
 
+size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
+{
+    ASSERT(sz >= SHMEM_MSG_SIZE);
+    ASSERT(IS_ALIGNED(msg));
+    mem_vcpy(msg, s->shm->data, SHMEM_MSG_SIZE);
+    return SHMEM_MSG_SIZE;
+}
+
 uint32_t shmem_get_status(struct shmem *s)
 {
     return s->shm->status;
@@ -71,12 +79,4 @@ void shmem_set_ack(struct shmem *s, bool val)
         s->shm->status |= HPSC_SHMEM_STATUS_BIT_ACK;
     else
         s->shm->status &= ~HPSC_SHMEM_STATUS_BIT_ACK;
-}
-
-size_t shmem_recv(struct shmem *s, void *msg, size_t sz)
-{
-    ASSERT(sz >= SHMEM_MSG_SIZE);
-    ASSERT(IS_ALIGNED(msg));
-    mem_vcpy(msg, s->shm->data, SHMEM_MSG_SIZE);
-    return SHMEM_MSG_SIZE;
 }
