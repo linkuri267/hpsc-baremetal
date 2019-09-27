@@ -138,6 +138,34 @@ int main ( void )
     struct dma *trch_dma = NULL;
 #endif // !CONFIG_TRCH_DMA
 
+#if CONFIG_SMC
+    struct smc *lsio_smc = smc_init(SMC_BASE, &trch_smc_mem_cfg);
+    if (!lsio_smc)
+        panic("LSIO SMC");
+
+    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BASE, trch_dma);
+    if (!trch_fs)
+        panic("TRCH SMC SRAM FS mount");
+#endif // CONFIG_SMC
+
+#if CONFIG_SYSCFG
+    uint32_t *syscfg_addr;
+
+#if CONFIG_SYSCFG_PRELOADED
+    syscfg_addr = (uint32_t *)PRELOADED_SYSCFG_ADDR;
+#else
+#if CONFIG_SMC
+    if (memfs_load(trch_fs, "syscfg", &syscfg_addr))
+        return 1;
+#else /* !CONFIG_SMC */
+#error CONFIG_SYSCFG requires either CONFIG_SYSCFG_ADDR or CONFIG_SMC
+#endif /* CONFIG_SMC */
+#endif /* CONFIG_SYSCFG_ADDR */
+
+    if (syscfg_load(&syscfg, syscfg_addr))
+        panic("SYS CFG");
+#endif // CONFIG_SYSCFG
+
 #if CONFIG_RT_MMU
     if (rt_mmu_init())
         panic("RTPS/TRCH-HPPS MMU setup");
@@ -262,21 +290,6 @@ int main ( void )
         panic("HPPS_SHMEM_SSW_LINK: llist_insert");
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_HPPS_TRCH_SHMEM_SSW
-
-#if CONFIG_SMC
-    struct smc *lsio_smc = smc_init(SMC_BASE, &trch_smc_mem_cfg);
-    if (!lsio_smc)
-        panic("LSIO SMC");
-#endif // CONFIG_SMC
-
-    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BASE, trch_dma);
-    if (!trch_fs)
-        panic("TRCH SMC SRAM FS mount");
-
-#if CONFIG_SYSCFG
-    if (syscfg_load(&syscfg, trch_fs))
-        panic("SYS CFG");
-#endif // CONFIG_SYSCFG
 
     boot_request(syscfg.subsystems);
 

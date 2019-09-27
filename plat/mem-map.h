@@ -3,6 +3,9 @@
 
 // This file indicates the resource allocations in memory
 
+/* Addres of syscfg blob in TRCH SRAM only when preloaded */
+#define PRELOADED_SYSCFG_ADDR               0x000ff000
+
 // Binary images with executables for RTPS
 #define RTPS_R52_DDR_LOW_ADDR               0x40000000
 #define RTPS_R52_DDR_LOW_SIZE               0x3fc00000 // excludes shm

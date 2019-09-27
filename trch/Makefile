@@ -29,6 +29,7 @@ CONFIG_FLAGS = \
 	CONFIG_RT_MMU \
 	CONFIG_SMC \
 	CONFIG_SYSCFG \
+	CONFIG_SYSCFG_PRELOADED \
 
 include Makefile.defconfig
 include Makefile.config
@@ -40,8 +41,10 @@ endif
 endif
 
 ifeq ($(strip $(CONFIG_SYSCFG)),1)
+ifeq ($(CONFIG_SYSCFG_PRELOADED),)
 ifneq ($(strip $(CONFIG_SMC)),1)
-$(error CONFIG_SYSCFG requires CONFIG_SMC SMC-353 driver)
+$(error CONFIG_SYSCFG requires CONFIG_SYSCFG_PRELOADED or CONFIG_SMC)
+endif
 endif
 endif
 

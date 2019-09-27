@@ -2,9 +2,7 @@
 
 #include "printf.h"
 #include "subsys.h"
-#include "smc.h"
 #include "syscfg.h"
-#include "memfs.h"
 
 static const char *rtps_mode_name(unsigned m)
 {
@@ -44,13 +42,9 @@ void syscfg_print(struct syscfg *cfg)
            memdev_name(cfg->hpps_rootfs_loc));
 }
 
-int syscfg_load(struct syscfg *cfg, struct memfs *fs)
+int syscfg_load(struct syscfg *cfg, uint32_t *addr)
 {
-    uint32_t *addr;
     uint32_t opts;
-
-    if (memfs_load(fs, "syscfg", &addr))
-        return 1;
 
     opts = *addr;
     printf("SYSCFG: raw: %x\r\n", opts);
