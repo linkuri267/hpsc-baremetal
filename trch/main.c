@@ -141,11 +141,11 @@ int main ( void )
 #endif // !CONFIG_TRCH_DMA
 
 #if CONFIG_SMC
-    struct smc *lsio_smc = smc_init(SMC_CSR_LSIO_SRAM_BASE, &trch_smc_mem_cfg);
+    struct smc *lsio_smc = smc_init(SMC_LSIO_SRAM_CSR_BASE, &trch_smc_mem_cfg);
     if (!lsio_smc)
         panic("LSIO SMC");
 
-    struct memfs *trch_fs = memfs_mount(SMC_LSIO_SRAM_BL_FS_START, trch_dma);
+    struct memfs *trch_fs = memfs_mount(SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 #endif // CONFIG_SMC
