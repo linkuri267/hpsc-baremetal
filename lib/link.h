@@ -1,8 +1,6 @@
 #ifndef LINK_H
 #define LINK_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <unistd.h>
 
 #include "object.h"
@@ -18,7 +16,6 @@ struct link {
     int (*disconnect)(struct link *link);
     // returns 0 on timeout, or positive value for number of bytes sent
     int (*send)(struct link *link, int timeout_ms, void *buf, size_t sz);
-    bool (*is_send_acked)(struct link *link);
     // returns -1 on send failure, 0 on read timeout, or number of bytes read
     int (*request)(struct link *link,
                    int wtimeout_ms, void *wbuf, size_t wsz,

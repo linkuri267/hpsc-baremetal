@@ -31,11 +31,11 @@ int test_shmem()
         ret = 1;
         goto out;
     }
+    shmem_set_new(shm, true);
     // NEW flag should be set
     if (!shmem_is_new(shm)) {
-        printf("ERROR: TEST: shmem: intermediate status failed\n");
-        ret = 1;
-        goto out;
+        printf("ERROR: TEST: shmem: set NEW status failed\n");
+        return 1;
     }
     sz = shmem_recv(shm, buf, sizeof(buf));
     if (sz != SHMEM_MSG_SIZE) {
@@ -43,17 +43,23 @@ int test_shmem()
         ret = 1;
         goto out;
     }
-    // NEW flag should be off, ACK flag should be set
-    if (shmem_is_new(shm) || !shmem_is_ack(shm)) {
-        printf("ERROR: TEST: shmem: final status failed\n");
-        ret = 1;
-        goto out;
+    shmem_set_new(shm, false);
+    // NEW flag should be off
+    if (shmem_is_new(shm)) {
+        printf("ERROR: TEST: shmem: clear NEW status failed\n");
+        return 1;
     }
-    shmem_clear_ack(shm);
+    shmem_set_ack(shm, true);
+    // ACK flag should be set
+    if (!shmem_is_ack(shm)) {
+        printf("ERROR: TEST: shmem: set ACK status failed\n");
+        return 1;
+    }
+    shmem_set_ack(shm, false);
     // no flags should be set anymore
     status = shmem_get_status(shm);
     if (status) {
-        printf("ERROR: TEST: shmem: initial status failed\n");
+        printf("ERROR: TEST: shmem: final status failed\n");
         ret = 1;
         goto out;
     }

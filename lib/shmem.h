@@ -59,8 +59,13 @@ bool shmem_is_new(struct shmem *s);
 bool shmem_is_ack(struct shmem *s);
 
 /**
- * Clears the ACK status bit.
+ * Set or clear the NEW status bit.
  */
-void shmem_clear_ack(struct shmem *s);
+void shmem_set_new(struct shmem *s, bool val);
+
+/**
+ * Set or clear the ACK status bit.
+ */
+void shmem_set_ack(struct shmem *s, bool val);
 
 #endif // SHMEM_H
