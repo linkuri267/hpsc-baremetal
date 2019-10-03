@@ -238,7 +238,6 @@ EL2_Reset_Handler:
         MPU_REGION(__text_start__, __text_end__,        4, c8, 0, 1, ATTR_Non_Shareable | ATTR_RO_Access)
         MPU_REGION(__data_start__, __bss_end__,         4, c8, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never) // .data and .bss (assumed juxtaposed)
         MPU_REGION(__stack_start__, __stack_end__,      4, c9, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
-        MPU_REGION(__window_start__, __window_end__,    4, c9, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
 #ifdef TCM
         MPU_REGION(__tcm_a_start__, __tcm_a_end__,      4, c10, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
@@ -513,7 +512,6 @@ Finished:
         MPU_REGION(__text_start__, __text_end__,        0, c8, 0, 1, ATTR_Non_Shareable | ATTR_RO_Access)
         MPU_REGION(__data_start__, __bss_end__,         0, c8, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never) // .data and .bss (assumed juxtaposed)
         MPU_REGION(__stack_start__, __stack_end__,      0, c9, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
-        MPU_REGION(__window_start__, __window_end__,    0, c9, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
 #ifdef TCM
         MPU_REGION(__tcm_a_start__, __tcm_a_end__,      0, c10, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
