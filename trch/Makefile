@@ -178,7 +178,7 @@ TARGET=trch
 clean:
 	rm -rf $(BLDDIR) vectors.s vectors.s.gen isr.c isr.c.gen
 
-isrs: irqmap genisr.py Makefile Makefile.config
+isrs: irqmap genisr.py Makefile Makefile.defconfig Makefile.config
 	./genisr.py -v $(INC_FLAGS) $(CONFIG_ARGS) --irqmap $< vectors.s.gen isr.c.gen
 .INTERMEDIATE: isrs
 vectors.s.gen: isrs
