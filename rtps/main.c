@@ -90,7 +90,7 @@ int main(void)
     enable_caches();
     enable_interrupts();
 
-    gic_init((volatile uint32_t *)RTPS_GIC_BASE);
+    gic_init(RTPS_GIC_BASE);
 
 #if TEST_R52_SMP
     test_r52_smp();

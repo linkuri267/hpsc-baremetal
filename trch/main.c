@@ -83,7 +83,7 @@ int main ( void )
     printf("ENTER PRIVELEGED MODE: svc #0\r\n");
     asm("svc #0");
 
-    nvic_init((volatile uint32_t *)TRCH_SCS_BASE);
+    nvic_init(TRCH_SCS_BASE);
 
     sleep_set_busyloop_factor(TRCH_M4_BUSYLOOP_FACTOR);
 
@@ -141,11 +141,11 @@ int main ( void )
 #endif // !CONFIG_TRCH_DMA
 
 #if CONFIG_SMC
-    struct smc *lsio_smc = smc_init(SMC_BASE, &trch_smc_mem_cfg);
+    struct smc *lsio_smc = smc_init(SMC_LSIO_BASE, &trch_smc_mem_cfg);
     if (!lsio_smc)
         panic("LSIO SMC");
 
-    struct memfs *trch_fs = memfs_mount(SMC_SRAM_BL_FS_START, trch_dma);
+    struct memfs *trch_fs = memfs_mount(SMC_LSIO_SRAM_BL_FS_START, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 #endif // CONFIG_SMC

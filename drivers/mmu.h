@@ -15,7 +15,7 @@ struct mmu;
 struct mmu_context;
 struct mmu_stream;
 
-struct mmu *mmu_create(const char *name, volatile uint32_t *base);
+struct mmu *mmu_create(const char *name, uintptr_t base);
 int mmu_destroy(struct mmu *m);
 
 struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mmu_pagesize pgsz);

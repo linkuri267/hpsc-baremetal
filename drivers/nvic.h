@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void nvic_init(volatile uint32_t *scs_base);
+void nvic_init(uintptr_t scs_base);
 unsigned nvic_num_ints();
 
 void nvic_int_enable(unsigned irq);

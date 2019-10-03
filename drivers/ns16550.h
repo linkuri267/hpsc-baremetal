@@ -18,5 +18,5 @@
 
 #include <stdint.h>
 
-int ns16550_startup(volatile uint32_t *base, int clock, int baudrate);
+int ns16550_startup(uintptr_t base, int clock, int baudrate);
 void ns16550_putchar(char ch);

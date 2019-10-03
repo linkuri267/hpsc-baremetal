@@ -21,7 +21,7 @@ static void handle_event(struct rti_timer *tmr, void *arg)
     printf("RTI TMR test: events -> %u\r\n", *events);
 }
 
-int test_rti_timer(volatile uint32_t *base, struct rti_timer **tmr_ptr)
+int test_rti_timer(uintptr_t base, struct rti_timer **tmr_ptr)
 {
     int rc = 1;
     int events = 0;

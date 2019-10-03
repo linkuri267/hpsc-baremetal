@@ -72,7 +72,7 @@ int reset_assert(comp_t comps)
         REGB_CLEAR32(RPU_CTRL, RPU_CTRL__RPU_2_CFG, RPU_CTRL__RPU_2_CFG__NCPUHALT);
 
     if (comps & COMP_CPUS_HPPS) {
-        volatile uint8_t * apu = APU;
+        volatile uint8_t * apu = (volatile uint8_t *)APU;
         uint32_t shift = COMP_CPUS_SHIFT_HPPS;
         REGB_SET32(CRF, CRF__RST_FPD_APU,
                    (CRF__RST_FPD_APU__ACPUx_RESET &
@@ -80,7 +80,7 @@ int reset_assert(comp_t comps)
                         << CRF__RST_FPD_APU__ACPUx_RESET__SHIFT)) |
                    (((comps & COMP_CPUS_HPPS) == COMP_CPUS_HPPS) ? CRF__RST_FPD_APU__GIC_RESET : 0x0));
         if (comps & COMP_CPUS_HPPS_CL1) { 
-            apu = APU1;
+            apu = (volatile uint8_t *)APU1;
             shift = COMP_CPUS_SHIFT_HPPS_CL1;
         }
         REGB_SET32(apu, APU__PWRCTL,
@@ -121,10 +121,10 @@ int reset_release(comp_t comps)
     }
 
     if (comps & COMP_CPUS_HPPS) {
-        volatile uint8_t * apu = APU;
+        volatile uint8_t * apu = (volatile uint8_t *)APU;
         uint32_t shift = COMP_CPUS_SHIFT_HPPS;
         if (comps & COMP_CPUS_HPPS_CL1) { 
-            apu = APU1;
+            apu = (volatile uint8_t *)APU1;
             shift = COMP_CPUS_SHIFT_HPPS_CL1;
         }
         REGB_CLEAR32(apu, APU__PWRCTL,

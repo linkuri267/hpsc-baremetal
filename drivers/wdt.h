@@ -16,10 +16,10 @@ typedef void (*wdt_cb_t)(struct wdt *wdt, unsigned stage, void *arg);
 // board (but not of the IP block), i.e. what would be defined by the device
 // tree node, hence they are not hardcoded in the driver. To divide the
 // frequency, you would change the argument to wdt_configure, not here.
-struct wdt *wdt_create_monitor(const char *name, volatile uint32_t *base,
-                       wdt_cb_t cb, void *cb_arg,
-                       uint32_t clk_freq_hz, unsigned max_div);
-struct wdt *wdt_create_target(const char *name, volatile uint32_t *base,
+struct wdt *wdt_create_monitor(const char *name, uintptr_t base,
+                               wdt_cb_t cb, void *cb_arg,
+                               uint32_t clk_freq_hz, unsigned max_div);
+struct wdt *wdt_create_target(const char *name, uintptr_t base,
                               wdt_cb_t cb, void *cb_arg);
 void wdt_destroy(struct wdt *wdt);
 int wdt_configure(struct wdt *wdt, unsigned freq,

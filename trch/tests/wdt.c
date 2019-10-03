@@ -23,7 +23,7 @@ struct wdt_info {
     // WDT instance base = group base + offset * as_size
     // Do this math at runtime, since the expressions need casts that make
     // them to long to write in the table
-    volatile uint32_t *base; // of the group
+    uintptr_t base; // of the group
     unsigned offset; // from base
     unsigned as_size;
 
@@ -186,7 +186,7 @@ cleanup:
 }
 
 static int test_wdt(struct wdt **wdt_ptr, const char *name,
-             volatile uint32_t *base, unsigned irq)
+                    uintptr_t base, unsigned irq)
 {
     printf("TEST WDT: %s: interval %u ms\r\n", name, INTERVAL_MS);
 
@@ -244,9 +244,7 @@ int test_wdts()
     for (unsigned i = 1 /* trch tested above */; i < NUM_WDTS;  ++i) {
         const struct wdt_info *wi = &wdt_info[i];
         rc |= test_wdt(&wdts[i] /* see ISR in watchdog.c */, wi->name,
-                (volatile uint32_t *)
-                ((volatile uint8_t *)wi->base + wi->offset * wi->as_size),
-                wi->irq);
+                       wi->base + wi->offset * wi->as_size, wi->irq);
        if (rc)
            return rc;
     }

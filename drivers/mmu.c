@@ -24,7 +24,7 @@
 #define NUMPAGES      1 // (2 * (NUMPAGENDXB + 1))
 
 #define SMMU_CB_SIZE   (NUMPAGES * PAGESIZE) // also size of global address space
-#define SMMU_CB_BASE(base)   ((volatile uint8_t *)base + 0x10000) // (base + SMMU_CB_SIZE) // TODO: Qemu model does not agree with HW?
+#define SMMU_CB_BASE(base)   (base + 0x10000) // (base + SMMU_CB_SIZE) // TODO: Qemu model does not agree with HW?
 #define SMMU_CBn_BASE(base, n)  (SMMU_CB_BASE(base) + (n) * SMMU_CB_SIZE)
 
 #define SMMU__SCR0       0x00000
@@ -85,10 +85,10 @@
 // NOTE: This the only config supported by this driver
 #define T0SZ 32
 
-#define GL_REG(mmu, reg)    ((volatile uint32_t *)((volatile uint8_t *)mmu->base + reg))
-#define CB_REG32(ctx, reg)  ((volatile uint32_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg))
-#define CB_REG64(ctx, reg)  ((volatile uint64_t *)((volatile uint8_t *)SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg))
-#define ST_REG(stream, reg) ((volatile uint32_t *)((volatile uint8_t *)stream->ctx->mmu->base + reg) + stream->obj.index)
+#define GL_REG(mmu, reg)    (mmu->base + reg)
+#define CB_REG32(ctx, reg)  (SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg)
+#define CB_REG64(ctx, reg)  (SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg)
+#define ST_REG(stream, reg) (stream->ctx->mmu->base + reg + stream->obj.index)
 
 #define MAX_LEVEL 3 // max level index, not count
 #define MAX_CONTEXTS 8 // TODO: take from ID reg
@@ -166,7 +166,7 @@ struct mmu_stream {
 struct mmu {
     struct object obj;
     const char *name; // for pretty printing
-    volatile uint32_t *base;
+    uintptr_t base;
     struct mmu_context contexts[MAX_CONTEXTS];
     struct mmu_stream streams[MAX_STREAMS]; // whether the indexed stream is allocated
 };
@@ -261,7 +261,7 @@ static void dump_pt(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 }
 #endif
 
-struct mmu *mmu_create(const char *name, volatile uint32_t *base)
+struct mmu *mmu_create(const char *name, uintptr_t base)
 {
     struct mmu *m = OBJECT_ALLOC(mmus);
     if (!m)

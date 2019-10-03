@@ -83,7 +83,7 @@ static const struct cmd_code cmd_codes[] = {
 
 struct wdt {
     struct object obj;
-    volatile uint32_t *base; 
+    uintptr_t base;
     const char *name;
     wdt_cb_t cb;
     void *cb_arg;
@@ -119,8 +119,8 @@ static void exec_stage_cmd(struct wdt *wdt, enum stage_cmd scmd, unsigned stage)
     exec_cmd(wdt, &stage_cmd_codes[stage][scmd]);
 }
 
-static struct wdt *wdt_create(const char *name, volatile uint32_t *base,
-                       wdt_cb_t cb, void *cb_arg)
+static struct wdt *wdt_create(const char *name, uintptr_t base,
+                              wdt_cb_t cb, void *cb_arg)
 {
 
     printf("WDT %s: create base %p\r\n", name, base);
@@ -133,9 +133,9 @@ static struct wdt *wdt_create(const char *name, volatile uint32_t *base,
     wdt->cb_arg = cb_arg;
     return wdt;
 }
-struct wdt *wdt_create_monitor(const char *name, volatile uint32_t *base,
-                       wdt_cb_t cb, void *cb_arg,
-                       uint32_t clk_freq_hz, unsigned max_div)
+struct wdt *wdt_create_monitor(const char *name, uintptr_t base,
+                               wdt_cb_t cb, void *cb_arg,
+                               uint32_t clk_freq_hz, unsigned max_div)
 {
     struct wdt *wdt = wdt_create(name, base, cb, cb_arg);
     wdt->clk_freq_hz = clk_freq_hz;
@@ -144,8 +144,8 @@ struct wdt *wdt_create_monitor(const char *name, volatile uint32_t *base,
     wdt->monitor = true;
     return wdt;
 }
-struct wdt *wdt_create_target(const char *name, volatile uint32_t *base,
-                       wdt_cb_t cb, void *cb_arg)
+struct wdt *wdt_create_target(const char *name, uintptr_t base,
+                              wdt_cb_t cb, void *cb_arg)
 {
     struct wdt *wdt = wdt_create(name, base, cb, cb_arg);
     wdt->monitor = false;
