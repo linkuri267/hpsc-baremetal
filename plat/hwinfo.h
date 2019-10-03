@@ -64,9 +64,10 @@
 #define HSIO_BASE               0xe3000000
 #define HSIO_SIZE               0x15000000
 
-#define SMC_LSIO_BASE               0x30006000
+#define SMC_CSR_LSIO_NAND_BASE      0x30000000
+#define SMC_CSR_LSIO_SRAM_BASE      0x30002000
 #define SMC_LSIO_SRAM_BASE          0x28000000
-#define SMC_LSIO_SRAM_SIZE          0x8000000
+#define SMC_LSIO_SRAM_SIZE          0x2000000
 #define SMC_LSIO_SRAM_BL_FS_START	0x28300000
 
 // See props in Qemu device tree node (or real HW characteristics)

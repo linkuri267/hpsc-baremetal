@@ -55,7 +55,7 @@ OBJS = \
        main.o \
        sections.o \
 
-TARGET=bl0
+TARGET=trch-bl0
 
 .DEFAULT_GOAL := $(BLDDIR)/$(TARGET).bin
 
