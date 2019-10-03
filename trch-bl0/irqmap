@@ -1,0 +1,8 @@
+// Syntax per line: irq[:isr_name]|irq_from-irq_to
+
+#include "hwinfo.h"
+
+// Copies from Qemu Device Tree repo (transitive via hwinfo.h not supported)
+#include "hpsc-irqs.dtsh"
+#include "hpsc-busids.dtsh"
+

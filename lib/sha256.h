@@ -14,4 +14,5 @@ void mbedtls_sha256_init( mbedtls_sha256_context *ctx );
 int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
 int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
 int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32] );
+int mbedtls_sha256_ret( const unsigned char *input, size_t ilen, unsigned char output[32], int is224 );
 #endif
