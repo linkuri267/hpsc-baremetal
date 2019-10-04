@@ -22,14 +22,6 @@
 #define SMC__cycles_0_2                 0x140
 #define SMC__cycles_0_3                 0x160
 
-static uint32_t opmode_offset[2][4] = { {0x104, 0x124, 0x144, 0x164},
-				 	{0x184, 0x1a4, 0x1c4, 0x1e4}};
-
-#define SMC__opmode_0_0                 0x104
-#define SMC__opmode_0_1                 0x124
-#define SMC__opmode_0_2                 0x144
-#define SMC__opmode_0_3                 0x164
-
 #define SMC__memc_status__raw_int_status0__SHIFT        5
 #define SMC__memc_status__raw_int_status1__SHIFT        6
 
@@ -89,6 +81,11 @@ struct smc {
 
 #define MAX_SMCS 2
 static struct smc smcs[MAX_SMCS];
+
+static uint32_t opmode_offset[2][4] = {
+    {0x104, 0x124, 0x144, 0x164},
+    {0x184, 0x1a4, 0x1c4, 0x1e4}
+};
 
 static unsigned to_width_bits(unsigned width)
 {
