@@ -43,9 +43,9 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
                     printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
                     break;
                 case SYSCFG__RTPS_MODE__LOCKSTEP:
-                    if (memfs_load(fs, "rtps-bl", NULL))
+                    if (memfs_load(fs, "rtps-bl", NULL, NULL))
                         return 1;
-                    if (memfs_load(fs, "rtps-os", NULL))
+                    if (memfs_load(fs, "rtps-os", NULL, NULL))
                         return 1;
                     break;
                 case SYSCFG__RTPS_MODE__SMP: // TODO
@@ -70,23 +70,23 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
                 return 0;
             }
 
-            if (memfs_load(fs, "hpps-fw", NULL))
+            if (memfs_load(fs, "hpps-fw", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-bl", NULL))
+            if (memfs_load(fs, "hpps-bl", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-bl-dt", NULL)) {
+            if (memfs_load(fs, "hpps-bl-dt", NULL, NULL)) {
                 printf("BOOT: hpps-bl-dt not found in NV mem;"
                        "will fall back to compiled-in DT");
             }
-            if (memfs_load(fs, "hpps-bl-env", NULL)) {
+            if (memfs_load(fs, "hpps-bl-env", NULL, NULL)) {
                 printf("BOOT: hpps-bl-env not found in NV mem;"
                        "will fall back to compiled-in environment");
             }
-            if (memfs_load(fs, "hpps-dt", NULL))
+            if (memfs_load(fs, "hpps-dt", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-os", NULL))
+            if (memfs_load(fs, "hpps-os", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-initramfs", NULL)) {
+            if (memfs_load(fs, "hpps-initramfs", NULL, NULL)) {
                 printf("BOOT: hpps-initramfs not found in NV mem;"
                        "booting without initramfs");
             }

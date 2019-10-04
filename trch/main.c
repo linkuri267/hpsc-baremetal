@@ -157,7 +157,7 @@ int main ( void )
     syscfg_addr = (uint32_t *)PRELOADED_SYSCFG_ADDR;
 #else
 #if CONFIG_SMC
-    if (memfs_load(trch_fs, "syscfg", &syscfg_addr))
+    if (memfs_load(trch_fs, "syscfg", &syscfg_addr, NULL))
         return 1;
 #else /* !CONFIG_SMC */
 #error CONFIG_SYSCFG requires either CONFIG_SYSCFG_ADDR or CONFIG_SMC

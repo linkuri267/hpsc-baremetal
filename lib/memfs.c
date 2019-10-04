@@ -110,7 +110,8 @@ void memfs_unmount(struct memfs *fs)
     OBJECT_FREE(fs);
 }
 
-int memfs_load(struct memfs *fs, const char *fname, uint32_t **addr)
+int memfs_load(struct memfs *fs, const char *fname,
+               uint32_t **addr, uint32_t **ep)
 {
     global_table gt;
     unsigned i;
@@ -155,5 +156,7 @@ int memfs_load(struct memfs *fs, const char *fname, uint32_t **addr)
 
     if (addr)
         *addr = load_addr_32;
+    if (ep)
+        *ep = (uint32_t *)(fd_buf->load_addr + fd_buf->entry_offset);
     return rc;
 }
