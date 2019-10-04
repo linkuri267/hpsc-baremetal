@@ -98,7 +98,8 @@ static unsigned to_width_bits(unsigned width)
     return 0;
 }
 
-void smc_icfg_init(uintptr_t base, int interface, int chip, struct smc_mem_iface_cfg *icfg)
+void smc_icfg_init(uintptr_t base, int interface, int chip,
+                   struct smc_mem_iface_cfg *icfg)
 {
     REG_WRITE32(SMC_REG(base, SMC__set_opmode),
         (icfg->adv << SMC__opmode__set_adv__SHIFT) |
@@ -153,7 +154,8 @@ struct smc *smc_init(uintptr_t base, struct smc_mem_cfg *cfg)
             REG_WRITE32(SMC_REG(base, SMC__direct_cmd),
                 (icfg->cre << SMC__direct_cmd__set_cre__SHIFT) |
                 ((j + (i << 2)) << SMC__direct_cmd__chip_nmbr__SHIFT) |
-                (SMC__cmd_type__ModeRegUpdateRegs << SMC__direct_cmd__cmd_type__SHIFT) |
+                (SMC__cmd_type__ModeRegUpdateRegs
+                    << SMC__direct_cmd__cmd_type__SHIFT) |
                 (icfg->ext_addr_bits << SMC__direct_cmd__addr__SHIFT));
           }
     }
