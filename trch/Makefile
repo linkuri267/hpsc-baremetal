@@ -108,10 +108,10 @@ OBJS = \
        lib/llist.o \
        lib/mailbox-link.o \
        lib/mem.o \
-       lib/memfs.o \
        lib/object.o \
        lib/panic.o \
        lib/printf.o \
+       lib/sfs.o \
        lib/sha256.o \
        lib/shmem.o \
        lib/shmem-link.o \

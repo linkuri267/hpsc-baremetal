@@ -4,7 +4,7 @@
 #include "watchdog.h"
 #include "syscfg.h"
 #include "mem-map.h"
-#include "memfs.h"
+#include "sfs.h"
 
 #include "boot.h"
 
@@ -27,7 +27,7 @@ static int hpps_boot_mode(enum memdev rootfs_loc, volatile uint32_t *mode)
     return 0;
 }
 
-static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
+static int boot_load(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
 {
     switch (subsys) {
         case SUBSYS_RTPS_R52:
@@ -43,9 +43,9 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
                     printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
                     break;
                 case SYSCFG__RTPS_MODE__LOCKSTEP:
-                    if (memfs_load(fs, "rtps-bl", NULL, NULL))
+                    if (sfs_load(fs, "rtps-bl", NULL, NULL))
                         return 1;
-                    if (memfs_load(fs, "rtps-os", NULL, NULL))
+                    if (sfs_load(fs, "rtps-os", NULL, NULL))
                         return 1;
                     break;
                 case SYSCFG__RTPS_MODE__SMP: // TODO
@@ -70,23 +70,23 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
                 return 0;
             }
 
-            if (memfs_load(fs, "hpps-fw", NULL, NULL))
+            if (sfs_load(fs, "hpps-fw", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-bl", NULL, NULL))
+            if (sfs_load(fs, "hpps-bl", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-bl-dt", NULL, NULL)) {
+            if (sfs_load(fs, "hpps-bl-dt", NULL, NULL)) {
                 printf("BOOT: hpps-bl-dt not found in NV mem;"
                        "will fall back to compiled-in DT");
             }
-            if (memfs_load(fs, "hpps-bl-env", NULL, NULL)) {
+            if (sfs_load(fs, "hpps-bl-env", NULL, NULL)) {
                 printf("BOOT: hpps-bl-env not found in NV mem;"
                        "will fall back to compiled-in environment");
             }
-            if (memfs_load(fs, "hpps-dt", NULL, NULL))
+            if (sfs_load(fs, "hpps-dt", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-os", NULL, NULL))
+            if (sfs_load(fs, "hpps-os", NULL, NULL))
                 return 1;
-            if (memfs_load(fs, "hpps-initramfs", NULL, NULL)) {
+            if (sfs_load(fs, "hpps-initramfs", NULL, NULL)) {
                 printf("BOOT: hpps-initramfs not found in NV mem;"
                        "booting without initramfs");
             }
@@ -175,7 +175,7 @@ int boot_handle(subsys_t *subsys)
     return 0;
 }
 
-int boot_reboot(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
+int boot_reboot(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
 {
     int rc = 0;
     printf("BOOT: rebooting subsys %s...\r\n", subsys_name(subsys));

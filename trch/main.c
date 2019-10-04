@@ -15,7 +15,7 @@
 #include "mailbox-map.h"
 #include "mailbox.h"
 #include "mem-map.h"
-#include "memfs.h"
+#include "sfs.h"
 #include "mmu.h"
 #include "mmus.h"
 #include "nvic.h"
@@ -145,7 +145,7 @@ int main ( void )
     if (!lsio_smc)
         panic("LSIO SMC");
 
-    struct memfs *trch_fs = memfs_mount(SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
+    struct sfs *trch_fs = sfs_mount(SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 #endif // CONFIG_SMC
@@ -157,7 +157,7 @@ int main ( void )
     syscfg_addr = (uint32_t *)PRELOADED_SYSCFG_ADDR;
 #else
 #if CONFIG_SMC
-    if (memfs_load(trch_fs, "syscfg", &syscfg_addr, NULL))
+    if (sfs_load(trch_fs, "syscfg", &syscfg_addr, NULL))
         return 1;
 #else /* !CONFIG_SMC */
 #error CONFIG_SYSCFG requires either CONFIG_SYSCFG_ADDR or CONFIG_SMC

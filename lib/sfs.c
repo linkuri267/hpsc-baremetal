@@ -5,7 +5,7 @@
 #include "bit.h"
 #include "object.h"
 
-#include "memfs.h"
+#include "sfs.h"
 
 #define FILE_NAME_LENGTH 200
 #define ECC_512_SIZE	3
@@ -31,13 +31,13 @@ typedef struct {
     uint8_t ecc[ECC_512_SIZE];   /* ecc of the struct */
 } global_table;
 
-struct memfs {
+struct sfs {
     uintptr_t base;
     struct dma *dmac; // optional, for loading files via DMA
 };
 
 #define MAX_MEMFS 2
-static struct memfs memfss[MAX_MEMFS];
+static struct sfs sfss[MAX_MEMFS];
 
 static int load_dma(uint32_t *sram_addr, uint32_t *load_addr, unsigned size,
                     struct dma *dmac)
@@ -92,17 +92,17 @@ static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
     return 0;
 }
 
-struct memfs *memfs_mount(uintptr_t base, struct dma *dmac)
+struct sfs *sfs_mount(uintptr_t base, struct dma *dmac)
 {
-    struct memfs *fs;
-    fs = OBJECT_ALLOC(memfss);
+    struct sfs *fs;
+    fs = OBJECT_ALLOC(sfss);
     fs->base = base;
     fs->dmac = dmac;
     // could load the file table here
     return fs;
 }
 
-void memfs_unmount(struct memfs *fs)
+void sfs_unmount(struct sfs *fs)
 {
     ASSERT(fs);
     fs->base = 0;
@@ -110,7 +110,7 @@ void memfs_unmount(struct memfs *fs)
     OBJECT_FREE(fs);
 }
 
-int memfs_load(struct memfs *fs, const char *fname,
+int sfs_load(struct sfs *fs, const char *fname,
                uint32_t **addr, uint32_t **ep)
 {
     global_table gt;

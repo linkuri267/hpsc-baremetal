@@ -56,7 +56,7 @@ static inline int diff_checksum(unsigned char * a, unsigned char * b) {
     return 0;
 }
 
-/* copied and modified from lib/memfs.c */
+/* copied and modified from lib/sfs.c */
 static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
 {
     unsigned w, b;
