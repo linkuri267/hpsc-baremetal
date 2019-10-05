@@ -37,6 +37,8 @@
 #include <stdint.h>
 #include "printf.h"
 
+/* #define DEBUG */
+
 /*
  * invparity is a 256 byte table that contains the odd parity
  * for each byte. So if the number of bits in a byte is even,
@@ -146,7 +148,9 @@ void calculate_ecc(const unsigned char *buf, unsigned int eccsize,
 	uint32_t rp0, rp1, rp2, rp3, rp4, rp5, rp6, rp7;
 	uint32_t rp8, rp9, rp10, rp11, rp12, rp13, rp14, rp15, rp16;
         uint32_t rp17;
-//	uint32_t uninitialized_var(rp17);	/* to make compiler happy */
+#if 0
+	uint32_t uninitialized_var(rp17);	/* to make compiler happy */
+#endif
 	uint32_t par;		/* the cumulative parity for all data */
 	uint32_t tmppar;	/* the cumulative parity for this iteration;
 				   for rp12, rp14 and rp16 at the end of the
@@ -407,11 +411,15 @@ int correct_data(unsigned char *buf,
 	/* 256 or 512 bytes/ecc  */
 	uint32_t eccsize_mult;
 
-        if (eccsize < 256) eccsize = 256;
-        else if (eccsize < 512) eccsize = 512;
-        eccsize_mult = eccsize >> 8;
-// printf("read_ecc = %02x %02x %02x\r\n", read_ecc[0], read_ecc[1], read_ecc[2]);
-// printf("calc_ecc = %02x %02x %02x\r\n", calc_ecc[0], calc_ecc[1], calc_ecc[2]);
+	if (eccsize < 256) eccsize = 256;
+	else if (eccsize < 512) eccsize = 512;
+	eccsize_mult = eccsize >> 8;
+#ifdef DEBUG
+	printf("read_ecc = %02x %02x %02x\r\n",
+		   read_ecc[0], read_ecc[1], read_ecc[2]);
+	printf("calc_ecc = %02x %02x %02x\r\n",
+		   calc_ecc[0], calc_ecc[1], calc_ecc[2]);
+#endif /* DEBUG */
 	/*
 	 * b0 to b2 indicate which bit is faulty (if any)
 	 * we might need the xor result  more than once,
@@ -421,7 +429,9 @@ int correct_data(unsigned char *buf,
 	b1 = read_ecc[0] ^ calc_ecc[0];
 	b2 = read_ecc[2] ^ calc_ecc[2];
 
-// printf("b[] = %02x %02x %02x\r\n", b0, b1, b2);
+#ifdef DEBUG
+	printf("b[] = %02x %02x %02x\r\n", b0, b1, b2);
+#endif /* DEBUG */
 	/* check if there are any bitfaults */
 
 	/* repeated if statements are slightly more efficient than switch ... */
@@ -434,7 +444,7 @@ int correct_data(unsigned char *buf,
 	    (((b1 ^ (b1 >> 1)) & 0x55) == 0x55) &&
 	    ((eccsize_mult == 1 && ((b2 ^ (b2 >> 1)) & 0x54) == 0x54) ||
 	     (eccsize_mult == 2 && ((b2 ^ (b2 >> 1)) & 0x55) == 0x55))) {
-	/* single bit error */
+		/* single bit error */
 		/*
 		 * rp17/rp15/13/11/9/7/5/3/1 indicate which byte is the faulty
 		 * byte, cp 5/3/1 indicate the faulty bit.
@@ -459,7 +469,8 @@ int correct_data(unsigned char *buf,
 		bit_addr = addressbits[b2 >> 2];
 		/* flip the bit */
 		buf[byte_addr] ^= (1 << bit_addr);
-                printf("(%d)-th byte, (%d)-th bit is flipped. Fixed\n", byte_addr, bit_addr);
+		printf("(%d)-th byte, (%d)-th bit is flipped. Fixed\r\n",
+			   byte_addr, bit_addr);
 		return 1;
 
 	}
@@ -467,6 +478,6 @@ int correct_data(unsigned char *buf,
 	if ((bitsperbyte[b0] + bitsperbyte[b1] + bitsperbyte[b2]) == 1)
 		return 1;	/* error in ECC data; no action needed */
 
-	printf("%s: uncorrectable ECC error\n", __func__);
+	printf("%s: uncorrectable ECC error\r\n", __func__);
 	return -1;
 }
