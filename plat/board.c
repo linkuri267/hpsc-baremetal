@@ -2,40 +2,14 @@
 
 #include "board.h"
 
-struct smc_mem_cfg trch_smc_mem_cfg = {
-    .iface = {
-        [0] = { /* interface 0: SRAM */
-            /* Config values copied from memory connected to HPPS SMC in Zebu */
-            .chips = 4,
-            .width = 32,
-            .ext_addr_bits = 0xb,
-            .sync = true,
-            .adv = true,
-            .cre = true,
-            .t_rc = 10,
-            .t_wc = 10,
-            .t_ceoe = 1,
-            .t_wp = 1,
-            .t_pc = 1,
-            .t_tr = 1,
-        },
-        [1] = { /* interface 1: NAND */
-            .chips = 0, /* nothing connected */
-        },
-    }
-};
+/* Add params for different memory chips (MRAM, NOR, etc) below */
 
-struct smc_mem_iface_cfg trch_smc_boot_init = {
-    /* Config values copied from memory connected to HPPS SMC in Zebu */
-    /* Memory Interface Configuration Register */
-    /* for direct_cmd */
-    .chips = 4,
-    .ext_addr_bits = 0xb,	/* ?? */
-    .cre = true,
+/* SRAM memory chip modeled in Zebu (at HPPS SMC) */
+static const struct smc_mem_chip_cfg lsio_smc_chip_sram_zebu = {
+    .width = 32,
     /* from the Reset value of opmode<interface>_<chip> */
     .sync = false,
     .adv = false,
-    .width = 32,
      /* from the Reset value of sram_cycles<interface>_<chip> */
     .t_rc = 12,
     .t_wc = 12,
@@ -45,3 +19,22 @@ struct smc_mem_iface_cfg trch_smc_boot_init = {
     .t_tr = 1,
 };
 
+const struct smc_mem_cfg lsio_smc_mem_cfg = {
+    .iface = {
+        [SMC_IFACE_SRAM] = {
+            /* Memory Interface Configuration Register for direct_cmd */
+            .ext_addr_bits = 0xb, /* ?? */
+            .cre = true,
+            .chips = 4,
+            .chip_cfgs = {
+                &lsio_smc_chip_sram_zebu, /* TODO: should be an NOR chip */
+                &lsio_smc_chip_sram_zebu, /* TODO: should be an NOR chip */
+                &lsio_smc_chip_sram_zebu, /* TODO: should be an MRAM chip */
+                &lsio_smc_chip_sram_zebu, /* TODO: should be an MRAM chip */
+            },
+        },
+        [SMC_IFACE_NAND] = {
+            .chips = 0, /* nothing connected */
+        },
+    }
+};

@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include "printf.h"
 #include "panic.h"
 #include "object.h"
 #include "regops.h"
@@ -25,14 +24,8 @@
 #define SMC__memc_status__raw_int_status0__SHIFT        5
 #define SMC__memc_status__raw_int_status1__SHIFT        6
 
-#define SMC__mem_cfg__mem0_type__SHIFT			0
-#define SMC__mem_cfg__mem1_type__SHIFT			8
+#define SMC__mem_cfg__mem_type__SHIFT			8
 #define SMC__mem_cfg__mem_type__MASK			0x3
-#define SMC__mem_cfg__NONE 				0x0
-#define SMC__mem_cfg__SRAM__MASK			0x1
-#define SMC__mem_cfg__SRAM_NON_MULTIPLEXED		0x1
-#define SMC__mem_cfg__NAND				0x2
-#define SMC__mem_cfg__SRAM_MULTIPLEXED			0x3
 
 #define SMC__mem_cfg_set__int_enable0__SHIFT            0
 #define SMC__mem_cfg_set__int_enable1__SHIFT            1
@@ -77,12 +70,15 @@
 
 struct smc {
     uintptr_t base;
+
+    /* smc_iface_type -> index */
+    unsigned iface_index[SMC_INTERFACES];
 };
 
 #define MAX_SMCS 2
 static struct smc smcs[MAX_SMCS];
 
-static uint32_t opmode_offset[2][4] = {
+static const uint32_t opmode_offset[2][4] = {
     {0x104, 0x124, 0x144, 0x164},
     {0x184, 0x1a4, 0x1c4, 0x1e4}
 };
@@ -98,23 +94,28 @@ static unsigned to_width_bits(unsigned width)
     return 0;
 }
 
-void smc_icfg_init(uintptr_t base, int interface, int chip,
-                   struct smc_mem_iface_cfg *icfg)
+static void smc_stage_cfg(uintptr_t base,
+                          const struct smc_mem_chip_cfg *chip_cfg)
 {
     REG_WRITE32(SMC_REG(base, SMC__set_opmode),
-        (icfg->adv << SMC__opmode__set_adv__SHIFT) |
-        (icfg->sync << SMC__opmode__rd_sync__SHIFT) |
-        (icfg->sync << SMC__opmode__wr_sync__SHIFT) |
-        (to_width_bits(icfg->width) << SMC__opmode__set_mw__SHIFT));
+        (chip_cfg->adv << SMC__opmode__set_adv__SHIFT) |
+        (chip_cfg->sync << SMC__opmode__rd_sync__SHIFT) |
+        (chip_cfg->sync << SMC__opmode__wr_sync__SHIFT) |
+        (to_width_bits(chip_cfg->width) << SMC__opmode__set_mw__SHIFT));
 
     REG_WRITE32(SMC_REG(base, SMC__set_cycles),
-        (icfg->t_rc << SMC__cycles__t_rc__SHIFT) |
-        (icfg->t_wc << SMC__cycles__t_wc__SHIFT) |
-        (icfg->t_ceoe << SMC__cycles__t_ceoe__SHIFT) |
-        (icfg->t_wp << SMC__cycles__t_wp__SHIFT) |
-        (icfg->t_pc << SMC__cycles__t_pc__SHIFT) |
-        (icfg->t_tr << SMC__cycles__t_tr__SHIFT));
+        (chip_cfg->t_rc << SMC__cycles__t_rc__SHIFT) |
+        (chip_cfg->t_wc << SMC__cycles__t_wc__SHIFT) |
+        (chip_cfg->t_ceoe << SMC__cycles__t_ceoe__SHIFT) |
+        (chip_cfg->t_wp << SMC__cycles__t_wp__SHIFT) |
+        (chip_cfg->t_pc << SMC__cycles__t_pc__SHIFT) |
+        (chip_cfg->t_tr << SMC__cycles__t_tr__SHIFT));
+}
 
+static void smc_apply_staged_cfg(uintptr_t base,
+                                 unsigned interface, unsigned chip,
+                                 const struct smc_mem_iface_cfg *icfg)
+{
     REG_WRITE32(SMC_REG(base, SMC__direct_cmd),
         (icfg->cre << SMC__direct_cmd__set_cre__SHIFT) |
         ((chip + (interface << 2)) << SMC__direct_cmd__chip_nmbr__SHIFT) |
@@ -122,42 +123,50 @@ void smc_icfg_init(uintptr_t base, int interface, int chip,
         (icfg->ext_addr_bits << SMC__direct_cmd__addr__SHIFT));
 }
 
-struct smc *smc_init(uintptr_t base, struct smc_mem_cfg *cfg)
+static enum smc_mem_type smc_get_mem_type(uintptr_t base, unsigned interface)
+{
+    uint32_t reg = REG_READ32(SMC_REG(base, SMC__mem_cfg));
+    return (reg >> (interface * SMC__mem_cfg__mem_type__SHIFT))
+                    & SMC__mem_cfg__mem_type__MASK;
+}
+
+struct smc *smc_init(uintptr_t base, const struct smc_mem_cfg *cfg,
+                     uint8_t iface_mask, uint8_t chip_mask)
 {
     struct smc *s;
+    enum smc_mem_type mem_type;
+    const struct smc_mem_iface_cfg *icfg;
+    const struct smc_mem_chip_cfg *chip_cfg;
+
     s = OBJECT_ALLOC(smcs);
     s->base = base;
 
-    for (int i = 0; i < SMC_INTERFACES; ++i) {
-        struct smc_mem_iface_cfg *icfg = &cfg->iface[i];
+    /* The type of memory at the interface is queried dynamically from SMC */
+    for (int iface = 0; iface < SMC_INTERFACES; ++iface) {
+        mem_type = smc_get_mem_type(base, iface);
+        switch (mem_type) {
+            case SMC_MEM_SRAM_NON_MULTIPLEXED:
+                if (!(iface_mask & SMC_IFACE_SRAM_MASK))
+                    continue;
+                s->iface_index[SMC_IFACE_SRAM] = iface;
+                icfg = &cfg->iface[SMC_IFACE_SRAM];
 
-        if (icfg->chips == 0)
-            continue;
-
-        printf("SMC: init interface %u with %u chips\r\n", i, icfg->chips);
-
-        REG_WRITE32(SMC_REG(base, SMC__set_opmode),
-            (icfg->adv << SMC__opmode__set_adv__SHIFT) |
-            (icfg->sync << SMC__opmode__rd_sync__SHIFT) |
-            (icfg->sync << SMC__opmode__wr_sync__SHIFT) |
-            (to_width_bits(icfg->width) << SMC__opmode__set_mw__SHIFT));
-
-        REG_WRITE32(SMC_REG(base, SMC__set_cycles),
-            (icfg->t_rc << SMC__cycles__t_rc__SHIFT) |
-            (icfg->t_wc << SMC__cycles__t_wc__SHIFT) |
-            (icfg->t_ceoe << SMC__cycles__t_ceoe__SHIFT) |
-            (icfg->t_wp << SMC__cycles__t_wp__SHIFT) |
-            (icfg->t_pc << SMC__cycles__t_pc__SHIFT) |
-            (icfg->t_tr << SMC__cycles__t_tr__SHIFT));
-
-          for (int j = 0; j < icfg->chips; ++j) {
-            REG_WRITE32(SMC_REG(base, SMC__direct_cmd),
-                (icfg->cre << SMC__direct_cmd__set_cre__SHIFT) |
-                ((j + (i << 2)) << SMC__direct_cmd__chip_nmbr__SHIFT) |
-                (SMC__cmd_type__ModeRegUpdateRegs
-                    << SMC__direct_cmd__cmd_type__SHIFT) |
-                (icfg->ext_addr_bits << SMC__direct_cmd__addr__SHIFT));
-          }
+                DPRINTF("SMC: init interface %u as SRAM type with %u chips\r\n",
+                       iface, icfg->chips);
+                for (int chip = 0; chip < icfg->chips; ++chip) {
+                    if (!(chip_mask & (1 << chip)))
+                        continue;
+                    chip_cfg = icfg->chip_cfgs[chip];
+                    smc_stage_cfg(base, chip_cfg);
+                    smc_apply_staged_cfg(base, iface, chip, icfg);
+                }
+            case SMC_MEM_NONE:
+                break;
+            default:
+                DPRINTF("SMC: not initializing interface #%u: "
+                       "mem type %x is not supported by driver\r\n",
+                       iface, mem_type);
+        }
     }
     return s;
 }
@@ -169,41 +178,12 @@ void smc_deinit(struct smc *s)
     OBJECT_FREE(s);
 }
 
-uint32_t *smc_get_base_addr(uintptr_t base, int interface, int rank) {
-    uint32_t reg = REG_READ32(SMC_REG(base, opmode_offset[interface][rank]));
+uint8_t *smc_get_base_addr(struct smc *s, enum smc_iface_type iface_type,
+                           unsigned rank)
+{
+    uint32_t reg = REG_READ32(SMC_REG(s->base,
+        opmode_offset[s->iface_index[iface_type]][rank]));
     uint32_t match = reg & SMC__set_opmode_addr_match__MASK;
     uint32_t mask = (reg & SMC__set_opmode_addr_mask__MASK) << 8;
-    return (uint32_t *) (match & mask);
-}
-
-void smc_boot_init(uintptr_t base, int mem_rank, struct smc_mem_iface_cfg *iface_cfg, bool failover) {
-    /* sram interface 
-     * from mem_rank */
-
-    uint32_t reg = REG_READ32(SMC_REG(base, SMC__mem_cfg));
-    uint32_t mem0_type = (reg >> SMC__mem_cfg__mem0_type__SHIFT) & SMC__mem_cfg__mem_type__MASK;
-    uint32_t mem1_type = (reg >> SMC__mem_cfg__mem1_type__SHIFT) & SMC__mem_cfg__mem_type__MASK;
-    uint32_t interface;
-
-    printf("%s: mem_cfg = 0x%x\r\n", __func__, reg);
-#ifdef HW_EMULATION
-    /* find SRAM interface */
-    if (mem0_type & SMC__mem_cfg__SRAM__MASK) {
-        interface = 0;
-    }
-    if (mem1_type & SMC__mem_cfg__SRAM__MASK) {
-        interface = 1;
-        printf("Warning: SRAM  interface is found at interface (1) instead of (0)\r\n");
-    }
-#else
-    printf("%s: mem0_type(0x%x) and mem1_type(0x%x) are ignored\r\n", __func__, mem0_type, mem1_type);
-    interface = 0;
-#endif
-    /* Set cycles and memory width */
-    smc_icfg_init (base, interface, mem_rank, iface_cfg);
-    if (failover) { /* initialize the other chip */
-        int mem_rank1 = (mem_rank % 0x1 == 0 ? mem_rank + 1 : mem_rank - 1);
-        smc_icfg_init (base, interface, mem_rank1, iface_cfg);
-        
-    }
+    return (uint8_t *) (match & mask);
 }
