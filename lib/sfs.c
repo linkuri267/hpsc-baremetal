@@ -35,8 +35,8 @@ struct sfs {
     struct dma *dmac; // optional, for loading files via DMA
 };
 
-#define MAX_MEMFS 2
-static struct sfs sfss[MAX_MEMFS];
+#define MAX_SFS 2
+static struct sfs sfss[MAX_SFS];
 
 static int load_dma(uint32_t *sram_addr, uint32_t *load_addr, unsigned size,
                     struct dma *dmac)
