@@ -1,7 +1,6 @@
 
 #include <stdint.h>
 
-#include "printf.h"
 #include "panic.h"
 #include "mem.h"
 #include "object.h"
@@ -13,10 +12,10 @@ void *object_alloc(const char *name, void *array, unsigned elems, unsigned sz)
             ((struct object *)((uint8_t *)array + idx * sz))->valid)
         ++idx;
     if (idx == elems) {
-        printf("ERROR: failed to alloc object %s: out of mem\r\n", name);
+        DPRINTF("ERROR: failed to alloc object %s: out of mem\r\n", name);
         return NULL;
     }
-    printf("OBJECT: alloced obj %s of sz %u\r\n", name, sz);
+    DPRINTF("OBJECT: alloced obj %s of sz %u\r\n", name, sz);
     struct object *obj = (struct object *)((uint8_t *)array + idx * sz);
     bzero(obj, sz);
     obj->valid = 1;

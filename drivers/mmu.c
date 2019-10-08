@@ -181,7 +181,9 @@ static uint64_t *pt_alloc(struct mmu_context *ctx, unsigned level)
 {
     ASSERT(ctx);
     ASSERT(ctx->mmu);
+#if DEBUG
     struct mmu *m = ctx->mmu;
+#endif
 
     struct level *levp = &ctx->levels[level];
     DPRINTF("MMU %s: pt_alloc: ctx %u level %u size 0x%x align 0x%x\r\n",
@@ -203,7 +205,9 @@ static int pt_free(struct mmu_context *ctx, uint64_t *pt, unsigned level)
 {
     ASSERT(ctx);
     ASSERT(ctx->mmu);
+#if DEBUG
     struct mmu *m = ctx->mmu;
+#endif
     DPRINTF("MMU %s: pt_free: ctx %u level %u pt %p\r\n",
            m->name, ctx->obj.index, level, pt);
 

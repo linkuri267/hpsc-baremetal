@@ -1,4 +1,3 @@
-#include "printf.h"
 #include "panic.h"
 #include "str.h"
 #include "dma.h"
@@ -42,17 +41,17 @@ static struct sfs sfss[MAX_MEMFS];
 static int load_dma(uint32_t *sram_addr, uint32_t *load_addr, unsigned size,
                     struct dma *dmac)
 {
-    printf("MEMFS: initiating DMA transfer\r\n");
+    DPRINTF("SFS: initiating DMA transfer\r\n");
 
     struct dma_tx *dtx = dma_transfer(dmac, /* chan */ 0, // TODO: allocate channel per user
         sram_addr, load_addr, ALIGN(size, DMA_MAX_BURST_BITS),
         NULL, NULL /* no callback */);
     int rc = dma_wait(dtx);
     if (rc) {
-        printf("MEMFS: DMA transfer failed: rc %u\r\n", rc);
+        DPRINTF("SFS: DMA transfer failed: rc %u\r\n", rc);
         return rc;
     }
-    printf("MEMFS: DMA transfer succesful\r\n");
+    DPRINTF("SFS: DMA transfer succesful\r\n");
     return 0;
 }
 
@@ -74,7 +73,7 @@ static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
             load_addr++;
             mem_addr++;
         }
-        printf("MEMFS: loading... %3u%%\r", p * 100 / pages);
+        DPRINTF("SFS: loading... %3u%%\r", p * 100 / pages);
     }
     for (w = 0; w < rem_words; w++) {
         * load_addr = * mem_addr;
@@ -88,7 +87,7 @@ static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
         load_addr_8++;
         mem_addr_8++;
     }
-    printf("MEMFS: loading... 100%%\r\n");
+    DPRINTF("SFS: loading... 100%%\r\n");
     return 0;
 }
 
@@ -98,6 +97,7 @@ struct sfs *sfs_mount(uintptr_t base, struct dma *dmac)
     fs = OBJECT_ALLOC(sfss);
     fs->base = base;
     fs->dmac = dmac;
+    DPRINTF("SFS: mounting at 0x%x\r\n", fs->base);
     // could load the file table here
     return fs;
 }
@@ -125,7 +125,7 @@ int sfs_load(struct sfs *fs, const char *fname,
     for(i = 0; i < sizeof(global_table); i++) {
         ptr[i] = * (mem_start_addr + i);
     }
-    printf("MEMFS: #files : %u, low_mark_data(0x%lx), high_mark_fd(0x%x)\r\n",
+    DPRINTF("SFS: #files : %u, low_mark_data(0x%lx), high_mark_fd(0x%x)\r\n",
            gt.n_files, gt.low_mark_data, gt.high_mark_fd);
 
     for (i = 0; i < gt.n_files ; i++) {
@@ -136,13 +136,13 @@ int sfs_load(struct sfs *fs, const char *fname,
             break;
     }
     if (i == gt.n_files) {
-        printf("MEMFS: ERROR: file not found: %s\r\n", fname);
+        DPRINTF("SFS: ERROR: file not found: %s\r\n", fname);
         return 1;
     }
 
     uint32_t offset = fd_buf->offset;
 
-    printf("MEMFS: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
+    DPRINTF("SFS: loading file #%u: %s: 0x%0x -> 0x%x (%u KB)\r\n",
            i, fd_buf->name, mem_start_addr + offset,
            fd_buf->load_addr, fd_buf->size / 1024);
 
