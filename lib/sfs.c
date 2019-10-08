@@ -31,7 +31,7 @@ typedef struct {
 } global_table;
 
 struct sfs {
-    uintptr_t base;
+    uint8_t *base;
     struct dma *dmac; // optional, for loading files via DMA
 };
 
@@ -91,7 +91,7 @@ static int load_memcpy(uint32_t *mem_addr, uint32_t *load_addr, unsigned size)
     return 0;
 }
 
-struct sfs *sfs_mount(uintptr_t base, struct dma *dmac)
+struct sfs *sfs_mount(uint8_t *base, struct dma *dmac)
 {
     struct sfs *fs;
     fs = OBJECT_ALLOC(sfss);

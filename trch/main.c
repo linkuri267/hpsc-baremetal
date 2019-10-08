@@ -144,8 +144,7 @@ int main ( void )
     struct smc *lsio_smc = smc_init(SMC_LSIO_SRAM_CSR_BASE, &trch_smc_mem_cfg);
     if (!lsio_smc)
         panic("LSIO SMC");
-
-    struct sfs *trch_fs = sfs_mount(SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
+    struct sfs *trch_fs = sfs_mount((uint8_t *)SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
     if (!trch_fs)
         panic("TRCH SMC SRAM FS mount");
 #endif // CONFIG_SMC
