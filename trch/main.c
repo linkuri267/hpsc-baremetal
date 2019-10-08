@@ -41,7 +41,7 @@
 
 // Default boot config (if not loaded from NV mem)
 static struct syscfg syscfg = {
-    .bin_loc = MEMDEV_HPPS_DRAM,
+    .sfs_offset = 0x0,
     .subsystems = SUBSYS_INVALID,
     .rtps_mode = SYSCFG__RTPS_MODE__LOCKSTEP,
     .hpps_rootfs_loc = MEMDEV_HPPS_DRAM,
@@ -144,28 +144,27 @@ int main ( void )
     struct smc *lsio_smc = smc_init(SMC_LSIO_SRAM_CSR_BASE, &trch_smc_mem_cfg);
     if (!lsio_smc)
         panic("LSIO SMC");
-    struct sfs *trch_fs = sfs_mount((uint8_t *)SMC_LSIO_SRAM_BL_FS_START0, trch_dma);
-    if (!trch_fs)
-        panic("TRCH SMC SRAM FS mount");
+    uint8_t *smc_sram_base = (uint8_t *)SMC_LSIO_SRAM_BASE0;
 #endif // CONFIG_SMC
 
-#if CONFIG_SYSCFG
-    uint32_t *syscfg_addr;
-
-#if CONFIG_SYSCFG_PRELOADED
-    syscfg_addr = (uint32_t *)PRELOADED_SYSCFG_ADDR;
-#else
-#if CONFIG_SMC
-    if (sfs_load(trch_fs, "syscfg", &syscfg_addr, NULL))
-        return 1;
-#else /* !CONFIG_SMC */
-#error CONFIG_SYSCFG requires either CONFIG_SYSCFG_ADDR or CONFIG_SMC
-#endif /* CONFIG_SMC */
-#endif /* CONFIG_SYSCFG_ADDR */
+    uint8_t *syscfg_addr;
+#if CONFIG_SYSCFG_MEM__TRCH_SRAM
+    syscfg_addr = (uint8_t *)CONFIG_SYSCFG_ADDR;
+#elif CONFIG_SYSCFG_MEM__LSIO_SMC_SRAM
+    syscfg_addr = smc_sram_base + CONFIG_SYSCFG_ADDR;
+#endif /* CONFIG_SYSCFG_MEM__* */
 
     if (syscfg_load(&syscfg, syscfg_addr))
         panic("SYS CFG");
-#endif // CONFIG_SYSCFG
+
+    struct sfs *trch_fs = NULL;
+#if CONFIG_SFS
+    if (syscfg.have_sfs_offset) {
+        trch_fs = sfs_mount(smc_sram_base + syscfg.sfs_offset, trch_dma);
+        if (!trch_fs)
+            panic("TRCH SMC SRAM FS mount");
+    }
+#endif /* CONFIG_SFS */
 
 #if CONFIG_RT_MMU
     if (rt_mmu_init())

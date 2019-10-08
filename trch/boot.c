@@ -1,4 +1,5 @@
 #include "printf.h"
+#include "panic.h"
 #include "reset.h"
 #include "smc.h"
 #include "watchdog.h"
@@ -29,15 +30,10 @@ static int hpps_boot_mode(enum memdev rootfs_loc, volatile uint32_t *mode)
 
 static int boot_load(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
 {
+    ASSERT(fs);
     switch (subsys) {
         case SUBSYS_RTPS_R52:
             printf("BOOT: load RTPS mode: %x\r\n", cfg->rtps_mode);
-
-            if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
-                printf("BOOT: syscfg'ed bins not in SMC SRAM, not loading\r\n");
-                return 0;
-            }
-
             switch (cfg->rtps_mode) {
                 case SYSCFG__RTPS_MODE__SPLIT: // TODO
                     printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
@@ -64,11 +60,6 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
                                     (volatile uint32_t *)HPPS_BOOT_MODE_ADDR);
             if (rc)
                 return 1;
-
-            if (cfg->bin_loc != MEMDEV_TRCH_SMC_SRAM) {
-                printf("BOOT: syscfg'ed bins not in SMC SRAM, not loading\r\n");
-                return 0;
-            }
 
             if (sfs_load(fs, "hpps-fw", NULL, NULL))
                 return 1;
@@ -180,7 +171,11 @@ int boot_reboot(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
     int rc = 0;
     printf("BOOT: rebooting subsys %s...\r\n", subsys_name(subsys));
 
-    rc |= boot_load(subsys, cfg, fs);
+    if (fs) {
+        rc |= boot_load(subsys, cfg, fs);
+    } else {
+        printf("BOOT: not loading binaries: no Simple File System\r\n");
+    }
     rc |= boot_reset(subsys, cfg);
 
     reboot_requests &= ~subsys;

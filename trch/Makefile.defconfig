@@ -12,9 +12,13 @@ TEST_SHMEM						?= 0
 # Set build configuration here
 CONFIG_SYSTICK					?= 1
 CONFIG_SLEEP_TIMER 				?= 1 # implement sleep() using a timer
-CONFIG_SYSCFG					?= 1
-CONFIG_SYSCFG_PRELOADED			?= 0
+
+# If you override the location of syscfg blob in TRCH SRAM, also update trch.ld
+CONFIG_SYSCFG_MEM    			?= TRCH_SRAM
+CONFIG_SYSCFG_ADDR				?= 0xff000
+
 CONFIG_SMC						?= 1
+CONFIG_SFS						?= 1
 CONFIG_HPPS_TRCH_MAILBOX 		?= 1
 CONFIG_HPPS_TRCH_MAILBOX_ATF 	?= 1
 CONFIG_HPPS_TRCH_MAILBOX_SSW 	?= 1

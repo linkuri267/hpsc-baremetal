@@ -28,8 +28,8 @@ CONFIG_FLAGS = \
 	CONFIG_TRCH_DMA \
 	CONFIG_RT_MMU \
 	CONFIG_SMC \
-	CONFIG_SYSCFG \
-	CONFIG_SYSCFG_PRELOADED \
+	CONFIG_SFS \
+	CONFIG_SYSCFG_ADDR \
 
 include Makefile.defconfig
 include Makefile.config
@@ -40,11 +40,15 @@ $(error CONFIG_SLEEP_TIMER requires a timer to be enabled)
 endif
 endif
 
-ifeq ($(strip $(CONFIG_SYSCFG)),1)
-ifeq ($(CONFIG_SYSCFG_PRELOADED),)
+ifeq ($(strip $(CONFIG_SYSCFG_MEM)),LSIO_TRCH_SRAM)
 ifneq ($(strip $(CONFIG_SMC)),1)
-$(error CONFIG_SYSCFG requires CONFIG_SYSCFG_PRELOADED or CONFIG_SMC)
+$(error CONFIG_SYSCFG_MEM=LSIO_TRCH_SRAM requires CONFIG_SMC)
 endif
+endif
+
+ifeq ($(strip $(CONFIG_SFS)),1)
+ifneq ($(strip $(CONFIG_SMC)),1)
+$(error CONFIG_SFS required CONFIG_SMC)
 endif
 endif
 
@@ -63,6 +67,7 @@ endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
+CONFIG_ARGS += -DCONFIG_SYSCFG_MEM__$(CONFIG_SYSCFG_MEM)
 
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
