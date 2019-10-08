@@ -3,3 +3,15 @@
 # Set build configuration here
 CONFIG_CONSOLE					?= NS16550
 
+# Note: these are replicas of one and only config, not config variants
+CONFIG_CFG_ADDR_0 ?= 0x00000000
+CONFIG_CFG_ADDR_1 ?= 0x00100000
+
+# TODO: once GPIO implemented, make this unset by default (but keep for testing)
+CONFIG_BOOT_SELECT = \
+    BS_SRAM_INTERFACE \
+    BS_SRAM_NOR \
+    BS_MEM_RANK0 \
+    BS_CONFIGURATION_OFFSET0 \
+    BS_FAILOVER_DISABLE \
+    BS_PARITY_EVEN \

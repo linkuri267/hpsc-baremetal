@@ -1,13 +1,20 @@
 include ../Makefile.common
 
 # List all possible test flags here
-CONFIG_FLAGS = 			
+CONFIG_FLAGS = \
+    CONFIG_CFG_ADDR_0 \
+    CONFIG_CFG_ADDR_1 \
+    CONFIG_CFG_ADDR_2 \
 
 include Makefile.defconfig
 include Makefile.config
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
 CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
+
+ifneq ($(CONFIG_BOOT_SELECT),)
+CONFIG_ARGS += -DCONFIG_BOOT_SELECT='0$(patsubst %,|%,$(CONFIG_BOOT_SELECT))'
+endif # CONFIG_BOOT_SELECT
 
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
