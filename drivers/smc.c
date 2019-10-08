@@ -185,7 +185,7 @@ void smc_boot_init(uintptr_t base, int mem_rank, struct smc_mem_iface_cfg *iface
     uint32_t mem1_type = (reg >> SMC__mem_cfg__mem1_type__SHIFT) & SMC__mem_cfg__mem_type__MASK;
     uint32_t interface;
 
-    printf("%s: mem_cfg = 0x%x\n", __func__, reg);
+    printf("%s: mem_cfg = 0x%x\r\n", __func__, reg);
 #ifdef HW_EMULATION
     /* find SRAM interface */
     if (mem0_type & SMC__mem_cfg__SRAM__MASK) {
@@ -193,10 +193,10 @@ void smc_boot_init(uintptr_t base, int mem_rank, struct smc_mem_iface_cfg *iface
     }
     if (mem1_type & SMC__mem_cfg__SRAM__MASK) {
         interface = 1;
-        printf("Warning: SRAM  interface is found at interface (1) instead of (0)\n");
+        printf("Warning: SRAM  interface is found at interface (1) instead of (0)\r\n");
     }
 #else
-    printf("%s: mem0_type(0x%x) and mem1_type(0x%x) are ignored\n", __func__, mem0_type, mem1_type);
+    printf("%s: mem0_type(0x%x) and mem1_type(0x%x) are ignored\r\n", __func__, mem0_type, mem1_type);
     interface = 0;
 #endif
     /* Set cycles and memory width */

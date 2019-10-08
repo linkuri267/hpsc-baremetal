@@ -18,8 +18,11 @@
 #define DEBUG 0
 #endif // undef DEBUG
 
-#define DPRINTF(...) \
-        if (DEBUG) printf(__VA_ARGS__)
+#if DEBUG
+#define DPRINTF printf
+#else
+#define DPRINTF(...)
+#endif
 
 void panic(const char *msg);
 void dump_buf(const char *name, uint32_t *buf, unsigned words);
