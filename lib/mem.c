@@ -1,10 +1,14 @@
 #include <stdint.h>
 
+#include "panic.h"
+#include "bit.h"
+
 #include "mem.h"
 
 void bzero(void *p, size_t sz)
 {
-    // assume p is word-aligned
+    ASSERT(ALIGNED(p, 2)); /* log2(sizeof(uint32_t)) */
+
     uint32_t *wp = p;
     while (sz >= sizeof(uint32_t)) {
         *wp++ = 0;
