@@ -1387,8 +1387,9 @@ struct dma_tx *dma_transfer(struct dma *dma, unsigned chan,
     if (!(ALIGNED(src, TX_BURST_BITS) &&
           ALIGNED(dst, TX_BURST_BITS) &&
           ALIGNED(sz, TX_BURST_BITS))) {
-        printf("DMA: ERROR: size/src/dst not aligned to burst bytes: %x\r\n",
-               1 << TX_BURST_BITS);
+        printf("DMA: ERROR: size %u/src 0x%x/dst 0x%x "
+               "not aligned to burst bytes: %u\r\n",
+               sz, src, dst, 1 << TX_BURST_BITS);
         return NULL;
     }
 
