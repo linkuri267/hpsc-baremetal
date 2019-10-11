@@ -130,6 +130,8 @@ int rt_mmu_deinit()
 int rt_mmu_map(uint64_t vaddr, uint64_t paddr, unsigned sz)
 {
     ASSERT(ctx);
+    ASSERT(ALIGNED64(vaddr, 16)); /* 64k pages, to be safe */
+    ASSERT(ALIGNED64(paddr, 16));
     return mmu_map(ctx, vaddr, paddr, sz);
 }
 
