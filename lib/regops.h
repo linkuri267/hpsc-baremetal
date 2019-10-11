@@ -136,44 +136,63 @@ static inline uint64_t deposit64(uint64_t value, int start, int length,
 #define REG_WRITE32(reg, val) reg_write32(#reg, (volatile uint32_t *)(reg), val)
 #define REG_WRITE64(reg, val) reg_write64(#reg, (volatile uint64_t *)(reg), val)
 
-#define REGB_WRITE32(base, reg, val) \
-        reg_write32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
-#define REGB_WRITE64(base, reg, val) \
-        reg_write64(#reg, (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)), val)
+#define REGBO_WRITE32(base, reg, offset, val) \
+    reg_write32(#reg, \
+        (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)) + \
+            (offset), val)
+#define REGBO_WRITE64(base, reg, offset, val) \
+    reg_write64(#reg, \
+        (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)) + \
+            (offset), val)
+
+#define REGB_WRITE32(base, reg, val) REGBO_WRITE32(base, reg, 0, val)
+#define REGB_WRITE64(base, reg, val) REGBO_WRITE64(base, reg, 0, val)
 
 #define REG_SET32(reg, val)   reg_set32(#reg,   (volatile uint32_t *)(reg), val)
 #define REG_CLEAR32(reg, val) reg_clear32(#reg, (volatile uint32_t *)(reg), val)
 
 #define REGB_SET32(base, reg, val) \
-         reg_set32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
+    reg_set32(#reg, \
+        (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
 #define REGB_CLEAR32(base, reg, val) \
-        reg_clear32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
+    reg_clear32(#reg, \
+        (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), val)
 
 #define REG_READ32(reg) reg_read32(#reg, (volatile uint32_t *)(reg))
 #define REG_READ64(reg) reg_read64(#reg, (volatile uint64_t *)(reg))
 
-#define REGB_READ32(base, reg) \
-        reg_read32(#reg, (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)))
-#define REGB_READ64(base, reg) \
-        reg_read64(#reg, (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)))
+#define REGBO_READ32(base, reg, offset) \
+        reg_read32(#reg, \
+            (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)) + offset)
+#define REGBO_READ64(base, reg, offset) \
+        reg_read64(#reg, \
+            (volatile uint64_t *)((volatile uint8_t *)(base) + (reg)) + offset)
 
-#define REGB_FWRITE32(base, reg, field, value) \
-        reg_fwrite32(#reg, #field, \
-                (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), \
-                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
-#define REGB_FREAD32(base, reg, field, value) \
-        reg_fread32(#reg, #field, \
-                (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)), \
-                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+#define REGB_READ32(base, reg) REGBO_READ32(base, reg, 0)
+#define REGB_READ64(base, reg) REGBO_READ64(base, reg, 0)
 
 #define REG_FWRITE32(addr, reg, field, value) \
-        reg_fwrite32(#reg, #field, \
-                (volatile uint32_t *)((volatile uint8_t *)(addr)), \
-                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
-#define REG_FREAD32(addr, reg, field, value) \
-        reg_fread32(#reg, #field, \
-                (volatile uint32_t *)((volatile uint8_t *)(addr)), \
-                reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+    reg_fwrite32(#reg, #field, \
+        (volatile uint32_t *)((volatile uint8_t *)(addr)), \
+        reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
+#define REG_FREAD32(addr, reg, field) \
+    reg_fread32(#reg, #field, \
+        (volatile uint32_t *)((volatile uint8_t *)(addr)), \
+        reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+
+#define REGBO_FWRITE32(base, reg, offset, field, value) \
+    reg_fwrite32(#reg, #field, \
+        (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)) + offset, \
+        reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK, value)
+#define REGBO_FREAD32(base, reg, offset, field) \
+    reg_fread32(#reg, #field, \
+        (volatile uint32_t *)((volatile uint8_t *)(base) + (reg)) + offset, \
+        reg ## __ ## field ## __SHIFT, reg ## __ ## field ## __MASK)
+
+#define REGB_FWRITE32(base, reg, field, value) \
+        REGBO_FWRITE32(base, reg, 0, field, value)
+#define REGB_FREAD32(base, reg, field) \
+        REGBO_FREAD32(base, reg, 0, field)
 
 static inline void reg_write32(const char *name, volatile uint32_t *addr, uint32_t val)
 {
