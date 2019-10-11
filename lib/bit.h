@@ -9,12 +9,14 @@
 
 #define BITS_PER_BYTE   8
 
-#define ALIGN_MASK(bits) ((1 << (bits)) - 1)
-#define ALIGN(x, bits) (typeof(x))(((uint32_t)(x) + ALIGN_MASK(bits)) & ~ALIGN_MASK(bits))
+#define ALIGN_MASK(bits) ((1UL << (bits)) - 1)
+#define ALIGN(x, bits) \
+    (typeof(x))(((uint32_t)(x) + ALIGN_MASK(bits)) & ~ALIGN_MASK(bits))
 #define ALIGNED(x, bits) (x == ALIGN(x, bits))
 
 #define ALIGN64_MASK(bits) ((1ULL << (bits)) - 1)
-#define ALIGN64(x, bits) (typeof(x))(((uint64_t)(x) + ALIGN64_MASK(bits)) & ~ALIGN64_MASK(bits))
+#define ALIGN64(x, bits) \
+    (typeof(x))(((uint64_t)(x) + ALIGN64_MASK(bits)) & ~ALIGN64_MASK(bits))
 #define ALIGNED64(x, bits) (x == ALIGN64(x, bits))
 
 static inline uint32_t byte_swap32(uint32_t x)
