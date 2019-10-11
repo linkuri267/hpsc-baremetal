@@ -27,6 +27,17 @@ void *memset(void *s, int c, size_t n)
     return s;
 }
 
+void *memcpy(void *restrict dest, const void *restrict src, size_t n)
+{
+    uint8_t *bdest = dest;
+    const uint8_t *bsrc = src;
+    while (n) {
+        *bdest++ = *bsrc++;
+        --n;
+    }
+    return dest;
+}
+
 volatile void *vmem_set(volatile void *s, int c, unsigned n)
 {
     volatile uint8_t *bs = s;
