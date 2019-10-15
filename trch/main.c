@@ -141,7 +141,7 @@ int main ( void )
 #endif // !CONFIG_TRCH_DMA
 
 #if CONFIG_SMC
-    struct smc *lsio_smc = smc_init(SMC_LSIO_SRAM_CSR_BASE, &lsio_smc_mem_cfg,
+    struct smc *lsio_smc = smc_init(SMC_LSIO_CSR_BASE, &lsio_smc_mem_cfg,
                                     SMC_IFACE_MASK_ALL, SMC_CHIP_MASK_ALL);
     if (!lsio_smc)
         panic("LSIO SMC");

@@ -224,7 +224,7 @@ int main ( void )
         }
         chip_mask = (1 << mem_chip) | (failover ? (1 << mem_chip_backup) : 0);
         DPRINTF("BL0: SMC interface(SRAM), rank mask(%x)\r\n", chip_mask);
-        smc = smc_init(SMC_LSIO_SRAM_CSR_BASE, &lsio_smc_mem_cfg,
+        smc = smc_init(SMC_LSIO_CSR_BASE, &lsio_smc_mem_cfg,
                        SMC_IFACE_SRAM_MASK, chip_mask);
     } else {
         /* TODO: SPI */

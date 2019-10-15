@@ -64,25 +64,17 @@
 #define HSIO_BASE               0xe3000000
 #define HSIO_SIZE               0x15000000
 
-#define SMC_LSIO_SRAM_CSR_BASE      0x30006000
+#define SMC_LSIO_CSR_BASE           0x30006000
 #define SMC_LSIO_SRAM_BASE0         0x28000000
-#define SMC_LSIO_SRAM_SIZE0         0x02000000
-#define SMC_LSIO_SRAM_BASE1         0x2a000000
-#define SMC_LSIO_SRAM_SIZE1         0x02000000
-#define SMC_LSIO_SRAM_BASE2         0x2c000000
-#define SMC_LSIO_SRAM_SIZE2         0x02000000
-#define SMC_LSIO_SRAM_BASE3         0x23000000
-#define SMC_LSIO_SRAM_SIZE3         0x02000000
-
-#define SMC_LSIO_NAND_CSR_BASE       0x3000b000
-#define SMC_LSIO_NAND_BASE0          0x24000000
-#define SMC_LSIO_NAND_SIZE0          0x01000000
-#define SMC_LSIO_NAND_BASE1          0x25000000
-#define SMC_LSIO_NAND_SIZE1          0x01000000
-#define SMC_LSIO_NAND_BASE2          0x26000000
-#define SMC_LSIO_NAND_SIZE2          0x01000000
-#define SMC_LSIO_NAND_BASE3          0x27000000
-#define SMC_LSIO_NAND_SIZE3          0x01000000
+#define SMC_LSIO_SRAM_SIZE0         0x01000000
+#define SMC_LSIO_SRAM_BASE1         0x29000000
+#define SMC_LSIO_SRAM_SIZE1         0x01000000
+#define SMC_LSIO_SRAM_BASE2         0x2a000000
+#define SMC_LSIO_SRAM_SIZE2         0x01000000
+#define SMC_LSIO_SRAM_BASE3         0x2b000000
+#define SMC_LSIO_SRAM_SIZE3         0x01000000
+#define SMC_LSIO_NAND_BASE0         0x2c000000
+#define SMC_LSIO_NAND_SIZE0         0x04000000
 
 // See props in Qemu device tree node (or real HW characteristics)
 #define ETIMER_NOMINAL_FREQ_HZ 1000000000
