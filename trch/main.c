@@ -138,6 +138,7 @@ int main ( void )
     // never destroy, it is used by drivers
 #else // !CONFIG_TRCH_DMA
     struct dma *trch_dma = NULL;
+    (void)trch_dma; /* silence unused warning, depends on config flags */
 #endif // !CONFIG_TRCH_DMA
 
 #if CONFIG_SMC
