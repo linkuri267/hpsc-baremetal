@@ -247,15 +247,16 @@ int main ( void )
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
-#if CONFIG_RTPS_TRCH_MAILBOX_PSCI
-    struct link *rtps_psci_link = mbox_link_connect("RTPS_PSCI_MBOX_LINK", &mldev_lsio,
-                    MBOX_LSIO__RTPS_TRCH_PSCI, MBOX_LSIO__TRCH_RTPS_PSCI,
+#if CONFIG_RTPS_A53_TRCH_MAILBOX_PSCI
+    struct link *rtps_a53_psci_link =
+            mbox_link_connect("RTPS_A53_PSCI_MBOX_LINK", &mldev_lsio,
+                    MBOX_LSIO__RTPS_A53_TRCH_PSCI, MBOX_LSIO__TRCH_RTPS_A53_PSCI,
                     /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_RTPS_CPU0);
-    if (!rtps_psci_link)
-        panic("RTPS_PSCI_MBOX_LINK");
+                    /* client */ MASTER_ID_RTPS_A53);
+    if (!rtps_a53_psci_link)
+        panic("RTPS_A53_PSCI_MBOX_LINK");
     // Never disconnect the link, because we listen on it in main loop
-#endif // CONFIG_RTPS_TRCH_MAILBOX_PSCI
+#endif // CONFIG_RTPS_A53_TRCH_MAILBOX_PSCI
 
     llist_init(&link_list);
 
