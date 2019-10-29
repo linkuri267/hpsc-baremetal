@@ -249,7 +249,6 @@ EL2_Reset_Handler:
 
         MPU_REGION(__hpps_ddr_low_start__, __hpps_ddr_low_end__,     4, c11, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__periph_start__, __periph_end__,                 4, c11, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
-        MPU_REGION(__rtps_ddr_low_0_start__, __rtps_ddr_low_0_end__, 4, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
         MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           4, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hsio_start__, __hsio_end__,                     4, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
@@ -523,7 +522,6 @@ Finished:
 
         MPU_REGION(__hpps_ddr_low_start__, __hpps_ddr_low_end__,     0, c11, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__periph_start__, __periph_end__,                 0, c11, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
-        MPU_REGION(__rtps_ddr_low_0_start__, __rtps_ddr_low_0_end__, 0, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access)
         MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           0, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hsio_start__, __hsio_end__,                     0, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
