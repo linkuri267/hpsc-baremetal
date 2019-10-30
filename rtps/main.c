@@ -24,7 +24,6 @@
 #include "watchdog.h"
 
 extern void enable_caches(void);
-extern void compare_sorts(void);
 
 #define SYS_TICK_INTERVAL_MS 500
 #define MAIN_LOOP_SILENT_ITERS 16
