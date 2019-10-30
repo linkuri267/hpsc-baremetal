@@ -4,7 +4,7 @@
 #include "panic.h"
 #include "command.h"
 #include "sleep.h"
-#include "pm_defs.h"
+#include "pwrmgr.h"
 #include "printf.h"
 #include "reset.h"
 

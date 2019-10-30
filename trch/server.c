@@ -9,7 +9,6 @@
 #include "panic.h"
 #include "printf.h"
 #include "server.h"
-#include "pm_defs.h"
 #include "psci.h"
 
 #define MAX_MBOX_LINKS          8
