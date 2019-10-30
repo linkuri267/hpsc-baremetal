@@ -23,13 +23,6 @@
 #include "test.h"
 #include "watchdog.h"
 
-extern unsigned char _text_start;
-extern unsigned char _text_end;
-extern unsigned char _data_start;
-extern unsigned char _data_end;
-extern unsigned char _bss_start;
-extern unsigned char _bss_end;
-
 extern void enable_caches(void);
 extern void compare_sorts(void);
 
