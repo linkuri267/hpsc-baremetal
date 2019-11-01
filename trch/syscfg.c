@@ -7,10 +7,12 @@
 static const char *rtps_mode_name(unsigned m)
 {
     switch (m) {
-        case SYSCFG__RTPS_MODE__SPLIT:    return "SPLIT";
-        case SYSCFG__RTPS_MODE__LOCKSTEP: return "LOCKSTEP";
-        case SYSCFG__RTPS_MODE__SMP:      return "SMP";
-        default:                       return "?";
+        case SYSCFG__RTPS_MODE__LOCKSTEP:   return "LOCKSTEP";
+        case SYSCFG__RTPS_MODE__SMP:        return "SMP";
+        case SYSCFG__RTPS_MODE__SPLIT_BOTH: return "SPLIT_BOTH";
+        case SYSCFG__RTPS_MODE__SPLIT_0:    return "SPLIT_0";
+        case SYSCFG__RTPS_MODE__SPLIT_1:    return "SPLIT_1";
+        default:                            return "?";
     };
 }
 
