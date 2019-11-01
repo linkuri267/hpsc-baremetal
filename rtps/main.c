@@ -145,8 +145,41 @@ int main(void)
 
 #if TEST_RTPS_TRCH_MAILBOX
     if (test_rtps_trch_mailbox())
-        panic("RTPS->TRCH mailbox");
+        panic("RTPS->TRCH mailbox test");
 #endif // TEST_RTPS_TRCH_MAILBOX
+
+#if CONFIG_RTPS_TRCH_MAILBOX
+#define LSIO_RCV_IRQ_IDX  MBOX_LSIO__RTPS_RCV_INT
+#define LSIO_ACK_IRQ_IDX  MBOX_LSIO__RTPS_ACK_INT
+    struct mbox_link_dev mldev_trch;
+    mldev_trch.base = MBOX_LSIO__BASE;
+    mldev_trch.rcv_irq = gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_RCV_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mldev_trch.rcv_int_idx = LSIO_RCV_IRQ_IDX;
+    mldev_trch.ack_irq = gic_request(RTPS_IRQ__TR_MBOX_0 + LSIO_ACK_IRQ_IDX,
+                               GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
+    mldev_trch.ack_int_idx = LSIO_ACK_IRQ_IDX;
+
+    struct link *trch_link;
+    switch (self_core_id()) {
+        case 0:
+            trch_link = mbox_link_connect("RTPS_TRCH_MBOX_LINK",
+                &mldev_trch,
+                MBOX_LSIO__TRCH_RTPS_R52_0, MBOX_LSIO__RTPS_R52_0_TRCH,
+                /* server */ 0, /* client */ MASTER_ID_RTPS_CPU0);
+            break;
+        case 1:
+            trch_link = mbox_link_connect("RTPS_TRCH_MBOX_LINK",
+                &mldev_trch,
+                MBOX_LSIO__TRCH_RTPS_R52_1, MBOX_LSIO__RTPS_R52_1_TRCH,
+                /* server */ 0, /* client */ MASTER_ID_RTPS_CPU1);
+            break;
+        default:
+            panic("invalid RTPS R52 core ID");
+    }
+    if (!trch_link)
+        panic("RTPS->TRCH mailbox");
+#endif /* CONFIG_RTPS_TRCH_MAILBOX */
 
 #if CONFIG_MBOX_DEV_HPPS
     struct mbox_link_dev mldev_hpps;
@@ -282,14 +315,14 @@ void irq_handler(unsigned intid) {
                     mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
                     break;
 #endif // CONFIG_HPPS_RTPS_MAILBOX
-#if TEST_RTPS_TRCH_MAILBOX
+#if CONFIG_RTPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX
             case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_RCV_INT:
                     mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
                     break;
             case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_ACK_INT:
                     mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
                     break;
-#endif // TEST_RTPS_TRCH_MAILBOX
+#endif /* CONFIG_RTPS_TRCH_MAILBOX || TEST_RTPS_TRCH_MAILBOX */
 #if TEST_RTPS_DMA
             case RTPS_IRQ__RTPS_DMA_ABORT:
                     dma_abort_isr(rtps_dma);
