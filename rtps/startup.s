@@ -316,7 +316,6 @@ EL2_Reset_Handler:
 // DK end
 
 #endif // EL2_BARE_METAL
-    .global __use_two_region_memory
 
 EL1_Reset_Handler:
 
@@ -625,8 +624,6 @@ goto_main:
         BL      main
 hang:
         B hang
-
-//    .size Reset_Handler, . - Reset_Handler	// Original
 
 gic_init_secure:
 	/*
