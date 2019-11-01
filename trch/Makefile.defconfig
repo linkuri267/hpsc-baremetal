@@ -10,6 +10,8 @@ TEST_RTI_TIMER					?= 0
 TEST_SHMEM						?= 0
 
 # Set build configuration here
+CONFIG_RELEASE					?= 0
+
 CONFIG_SYSTICK					?= 1
 CONFIG_SLEEP_TIMER 				?= 1 # implement sleep() using a timer
 

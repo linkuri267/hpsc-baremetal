@@ -54,6 +54,15 @@ static struct llist link_list = { 0 };
 static bool trch_wdt_started = false;
 #endif // CONFIG_TRCH_WDT
 
+static void trch_panic(const char *msg)
+{
+#if CONFIG_TRCH_WDT && !CONFIG_RELEASE
+    if (trch_wdt_started)
+        watchdog_stop(COMP_CPU_TRCH);
+#endif
+    panic(msg);
+}
+
 #if CONFIG_SYSTICK
 static void systick_tick(void *arg)
 {
@@ -327,7 +336,10 @@ int main ( void )
 
         subsys_t subsys;
         while (!boot_handle(&subsys)) {
-            boot_reboot(subsys, &syscfg, trch_fs);
+            int rc = boot_reboot(subsys, &syscfg, trch_fs);
+            if (rc) {
+                trch_panic("reboot request failed");
+            }
             verbose = true; // to end log with 'waiting' msg
         }
 
@@ -344,7 +356,7 @@ int main ( void )
                 printf("%s: recv: got message\r\n", link_curr->name);
                 cmd.link = link_curr;
                 if (cmd_enqueue(&cmd))
-                    panic("TRCH: failed to enqueue command");
+                    trch_panic("TRCH: failed to enqueue command");
             }
         } while (1);
         while (!cmd_dequeue(&cmd)) {

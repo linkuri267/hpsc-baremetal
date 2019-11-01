@@ -30,6 +30,7 @@ CONFIG_FLAGS = \
 	CONFIG_SMC \
 	CONFIG_SFS \
 	CONFIG_SYSCFG_ADDR \
+	CONFIG_RELEASE \
 
 include Makefile.defconfig
 include Makefile.config
