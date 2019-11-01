@@ -337,7 +337,6 @@ EL1_Reset_Handler:
 //----------------------------------------------------------------
 // Cortex-R52 implementation-specific configuration
 //----------------------------------------------------------------
-#ifdef ENABLE_R52_SPECIFIC_CONFIG
         LDR r1,=0x3C                    // SIZE field mask
 
         MRC p15, 0, r0, c15, c0, 1      // Read from FLASHIFREGIONR
@@ -352,7 +351,6 @@ EL1_Reset_Handler:
         ORR r0, r0, #0x1                // Set enable bit if SIZE=!0x0
         MCR p15, 0, r0, c15, c0, 0      // Write r0 to PERIPHPREGIONR if SIZE=!0x0
 2:
-#endif
 
 //----------------------------------------------------------------
 // Initialize Stacks using Linker symbol from scatter file.
