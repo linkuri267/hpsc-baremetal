@@ -33,8 +33,7 @@
 #define HPSC_MBOX_INT_A(idx) (1 << (2 * (idx)))      // rcv (map event A to int 'idx')
 #define HPSC_MBOX_INT_B(idx) (1 << (2 * (idx) + 1))  // ack (map event B to int 'idx')
 
-#define HPSC_MBOX_EVENTS 2
-#define HPSC_MBOX_INTS   16
+#define HPSC_MBOX_INTS      16
 #define HPSC_MBOX_INSTANCES 32
 #define HPSC_MBOX_INSTANCE_REGION (REG_DATA + HPSC_MBOX_DATA_SIZE)
 
@@ -45,7 +44,7 @@ struct mbox_ip_block {
         struct object obj;
         uintptr_t base;
         unsigned refcnt;
-        unsigned irq_refcnt[HPSC_MBOX_EVENTS];
+        unsigned irq_refcnt[HPSC_MBOX_INTS];
 };
 
 struct mbox {
@@ -67,11 +66,13 @@ static struct mbox_ip_block blocks[MAX_BLOCKS] = {0};
 
 static void mbox_irq_subscribe(struct mbox *mbox)
 {
+    ASSERT(mbox->int_idx < HPSC_MBOX_INTS);
     if (mbox->block->irq_refcnt[mbox->int_idx]++ == 0)
         intc_int_enable(mbox->irq);
 }
 static void mbox_irq_unsubscribe(struct mbox *mbox)
 {
+    ASSERT(mbox->int_idx < HPSC_MBOX_INTS);
     if (--mbox->block->irq_refcnt[mbox->int_idx] == 0)
         intc_int_disable(mbox->irq);
 }
@@ -99,7 +100,7 @@ static void block_put(struct mbox_ip_block *b)
     ASSERT(b);
     ASSERT(b->refcnt);
     if (!--b->refcnt) {
-        for (unsigned e = 0; e < HPSC_MBOX_EVENTS; ++e)
+        for (unsigned e = 0; e < HPSC_MBOX_INTS; ++e)
             ASSERT(!b->irq_refcnt[e]);
         OBJECT_FREE(b);
     }
