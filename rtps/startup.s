@@ -360,15 +360,18 @@ EL1_Reset_Handler:
 // Stacks must be 8 byte aligned.
 //----------------------------------------------------------------
 
+#define STACK_REGION_BITS 14 /* per core */
 #define STACKSIZE 512
+#define STACKS 5 /* one stack per mode */
+
         //
         // Setup the stack(s) for this CPU
-        // the scatter file allocates 2^14 bytes per stack
+        // the scatter file allocates 2^STACK_REGION_BITS bytes per stack
         //
         MRC  p15, 0, r1, c0, c0, 5      // Read CPU ID register
         AND  r1, r1, #0x03              // Mask off, leaving the CPU ID field
         LDR  r0, =__stack_end__
-        SUB  r0, r0, r1, lsl #14
+        SUB  r0, r0, r1, lsl #STACK_REGION_BITS
 
         CPS #Mode_ABT
         MOV SP, r0
@@ -570,38 +573,25 @@ ret_secure_percpu:
         ISB                                 // Ensure subsequent insts execute wrt new MPU settings
 			// DK: this ISB instruction causes exception.
 
-//Check which CPU I am
-        MRC p15, 0, r0, c0, c0, 5       // Read MPIDR
-        ANDS r0, r0, #0xF
-//        ANDS r0, r0, 0xF		// DK: Original code
-        BEQ cpu0                        // If CPU0 then initialise C runtime
-        CMP r0, #1
-        BEQ cpu0                        // SMP test
-        BEQ loop_wfi                    // If CPU1 then jump to loop_wfi
-        CMP r0, #2
-        BEQ loop_wfi                    // If CPU2 then jump to loop_wfi
-        CMP r0, #3
-        BEQ loop_wfi                    // If CPU3 then jump to loop_wfi
-error:
-        B error                         // else.. something is wrong
-
-loop_wfi:
-        DSB SY      // Clear all pending data accesses
-        WFI         // Go to sleep
-        B loop_wfi
-
-
-cpu0:
-#       .global     __main
-#        B       __main
-       .global     main
-#DK's test to switch from SVC mode to User mode. it works.
-# but it is disabled for now.
-#	MSR     CPSR_c, #0x10
+        /* Switch from SVC mode to User mode */
+#if 0
+        /* If you enable this, then allocate a stack for Mod_USR above */
+        /* where stacks are allocated for each mode. */
+	MSR     CPSR_c, #0x10
+#endif
 
         // Change EL1 exception base address
         LDR r0, =EL1_Vectors
         MCR p15, 0, r0, c12, c0, 0      // Write to VBAR
+
+#if CONFIG_SMP
+        MRC p15, 0, r0, c0, c0, 5       // Read MPIDR (cpu ID register)
+        ANDS r0, r0, #0xF
+        BEQ crt_init                    // If CPU0 then initialise C runtime
+        B jump_to_main                  // Secondary core jumps straight to main
+#else /* !CONFIG_SMP */
+        B crt_init                      // No matter what core, init C runtime
+#endif /* CONFIG_SMP */
 
 crt_init: # Zero-initialize .bss
         ldr r0, =__bss_start__
@@ -613,13 +603,16 @@ bss_zero_loop:
         cmp r0, r1
         bne bss_zero_loop
 
+       .global     main
+jump_to_main:
+        LDR  r0, =__stack_end__
+#if CONFIG_SMP
         MRC p15, 0, r4, c0, c0, 5       // Read MPIDR
-	ANDS r4, r4, #0x3
-	// Core#0
-        LDR     r13, =__stack_end__ - 0x4000 /* 0x200 (STACKSIZE) * 5 (ABT,IRQ,FIQ,UNDEF,SVC) = 0xA00, and per-CPU offset 0x1000 * cpuidx */
-	CMP r4, #0
-	BEQ goto_main
-	SUB	r13, r13, #0xf000	/* stack For Core#1 */
+        ANDS r4, r4, #0x3               // Core ID
+        SUB  r0, r0, r4, lsl #STACK_REGION_BITS
+#endif
+        SUB  r13, r0, #(STACKSIZE * (STACKS - 1)) /* exclude current mode */
+
 goto_main:
         BL      main
 hang:
