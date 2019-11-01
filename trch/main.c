@@ -45,6 +45,7 @@ static struct syscfg syscfg = {
     .subsystems = SUBSYS_INVALID,
     .rtps_mode = SYSCFG__RTPS_MODE__LOCKSTEP,
     .hpps_rootfs_loc = MEMDEV_HPPS_DRAM,
+    .load_binaries = false,
 };
 
 

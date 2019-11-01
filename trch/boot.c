@@ -171,10 +171,13 @@ int boot_reboot(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
     int rc = 0;
     printf("BOOT: rebooting subsys %s...\r\n", subsys_name(subsys));
 
-    if (fs) {
+    if (cfg->load_binaries && fs) {
         rc |= boot_load(subsys, cfg, fs);
-    } else {
-        printf("BOOT: not loading binaries: no Simple File System\r\n");
+    } else if (cfg->load_binaries) {
+        if (!fs)
+            printf("BOOT: not loading binaries: no Simple File System\r\n");
+        else
+            printf("BOOT: not loading binaries: configured as preloaded\r\n");
     }
     rc |= boot_reset(subsys, cfg);
 

@@ -8,8 +8,8 @@
 
 // Fields in the 32-bit words specifying the boot config
 // Exposing since it's an external-facing interface
-#define SYSCFG__BIN_LOC__SHIFT             0
-#define SYSCFG__BIN_LOC__MASK              (0x7 << SYSCFG__BIN_LOC__SHIFT)
+#define SYSCFG__LOAD_BINARIES__SHIFT      0
+#define SYSCFG__LOAD_BINARIES__MASK       (0x1 << SYSCFG__LOAD_BINARIES__SHIFT)
 #define SYSCFG__RTPS_MODE__SHIFT           3
 #define SYSCFG__RTPS_MODE__MASK            (0x3 << SYSCFG__RTPS_MODE__SHIFT)
 #define SYSCFG__SUBSYS__SHIFT              5
@@ -41,6 +41,7 @@ struct syscfg {
     enum memdev hpps_rootfs_loc;
     bool have_sfs_offset;
     uint32_t sfs_offset;
+    bool load_binaries;
 };
 
 int syscfg_load(struct syscfg *cfg, uint8_t *addr);

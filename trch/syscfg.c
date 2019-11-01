@@ -34,10 +34,12 @@ void syscfg_print(struct syscfg *cfg)
     printf("SYSTEM CONFIG:\r\n"
            "\thave sfs offset:\t%u\r\n"
            "\tsfs offset:\t0x%x\r\n"
+           "\tload_binaries:\t%u\r\n"
            "\tsubsystems:\t%s\r\n"
            "\trtps mode:\t%s\r\n"
            "\thpps rootfs loc:\t%s\r\n",
            cfg->have_sfs_offset, cfg->sfs_offset,
+           cfg->load_binaries,
            subsys_name(cfg->subsystems),
            rtps_mode_name(cfg->rtps_mode),
            memdev_name(cfg->hpps_rootfs_loc));
@@ -58,6 +60,8 @@ int syscfg_load(struct syscfg *cfg, uint8_t *addr)
                                 >> SYSCFG__HPPS_ROOTFS_LOC__SHIFT;
     cfg->have_sfs_offset = (word0 & SYSCFG__HAVE_SFS_OFFSET__MASK)
                                 >> SYSCFG__HAVE_SFS_OFFSET__SHIFT;
+    cfg->load_binaries = (word0 & SYSCFG__LOAD_BINARIES__MASK)
+                                >> SYSCFG__LOAD_BINARIES__SHIFT;
     cfg->sfs_offset = *waddr++;
 
     syscfg_print(cfg);
