@@ -49,7 +49,7 @@ endif
 
 ifeq ($(strip $(CONFIG_SFS)),1)
 ifneq ($(strip $(CONFIG_SMC)),1)
-$(error CONFIG_SFS required CONFIG_SMC)
+$(error CONFIG_SFS requires CONFIG_SMC)
 endif
 endif
 
