@@ -1,3 +1,5 @@
+#define DEBUG 0
+
 #include <stdbool.h>
 #include <stdint.h>
 
