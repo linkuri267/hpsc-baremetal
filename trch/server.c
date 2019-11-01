@@ -61,7 +61,7 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
                  printf("0x%x ", action[i]);
             }
             printf("\r\n");
-            return handle_psci(cmd, reply);
+            return handle_psci(cmd, reply_u8, reply_sz);
         }
         case CMD_WATCHDOG_TIMEOUT: {
             unsigned int cpu =

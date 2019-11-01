@@ -110,10 +110,13 @@ static int pm_system_shutdown(uint32_t sender, uint32_t *data)
       cmd->msg[2]: PSCI command
       cmd->msg[3..]: argument of the PSCI command
 */
-int handle_psci(struct cmd * cmd, void *reply_buf)
+int handle_psci(struct cmd * cmd, uint8_t *reply_buf, unsigned reply_sz)
 {
     uint32_t *data, *arg_data;
     uint32_t sender;
+    unsigned reply_len;
+    int rc;
+    unsigned req;
  
     data = (uint32_t *) &(cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
     /* TODO: do the work and return the right results */
@@ -123,18 +126,27 @@ int handle_psci(struct cmd * cmd, void *reply_buf)
     }
     printf("\r\n");
     sender = data[0];
+    req = data[1];
     arg_data = &data[PSCI_ARG_OFFSET];
-    switch (data[1]) {	
+    switch (req) {
         case PM_REQ_SUSPEND:
-            return pm_req_suspend(sender, arg_data);
+            rc = pm_req_suspend(sender, arg_data);
+            break;
         case PM_SELF_SUSPEND:
-            return pm_self_suspend(sender, arg_data);
+            rc = pm_self_suspend(sender, arg_data);
+            break;
         case PM_REQ_WAKEUP:
-            return pm_req_wakeup(sender, arg_data);
+            rc = pm_req_wakeup(sender, arg_data);
+            break;
         case PM_SYSTEM_SHUTDOWN:
-            return pm_system_shutdown(sender, arg_data);
+            rc = pm_system_shutdown(sender, arg_data);
+            break;
 	default:
-            return 0;
+            printf("WARNING: unknown PSCI request: 0x%x", req);
+            rc = 1;
     }
-    return 0;
+    reply_len = 0;
+    ASSERT(reply_sz > reply_len);
+    reply_buf[reply_len++] = rc;
+    return reply_len;
 }
