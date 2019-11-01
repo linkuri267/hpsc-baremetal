@@ -107,6 +107,12 @@ static int mbox_link_disconnect(struct link *link) {
     return rc;
 }
 
+/* TODO: Would be good to replace 'sleep(x ms)' approach with
+   'wait-for-interrupt with timeout' approach, to take advantage of the
+   interrupt notification. This can be implemented using similar pattern to the
+   one used in msleep, but with SEV+WFE instead of WFI, because with WFI there
+   will be a race (not fatal, but would cost the timeout interval, defeating
+   the whole point). */
 static void msleep_and_dec(int *ms_rem)
 {
     msleep(MIN_SLEEP_MS);
@@ -124,7 +130,8 @@ static int mbox_link_send(struct link *link, int timeout_ms, void *buf,
     mlink->cmd_ctx.tx_acked = false;
     rc = mbox_send(mlink->mbox_to, buf, sz);
     mbox_event_set_rcv(mlink->mbox_to);
-    printf("%s: send: waiting for ACK...\r\n", link->name);
+    printf("%s: send: waiting for ACK (timeout %u ms)...\r\n",
+           link->name, timeout_ms);
     do {
         if (mlink->cmd_ctx.tx_acked) {
             printf("%s: send: ACK received\r\n", link->name);
@@ -143,7 +150,8 @@ static int mbox_link_poll(struct link *link, int timeout_ms)
     struct mbox_link *mlink = link->priv;
     int sleep_ms_rem = timeout_ms;
     int rc;
-    printf("%s: poll: waiting for reply...\r\n", link->name);
+    printf("%s: poll: waiting for reply (timeout %u ms)...\r\n",
+           link->name, timeout_ms);
     do {
         rc = mlink->cmd_ctx.reply_sz_read;
         if (rc) {
