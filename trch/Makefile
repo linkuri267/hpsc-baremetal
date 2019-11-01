@@ -31,6 +31,8 @@ CONFIG_FLAGS = \
 	CONFIG_SFS \
 	CONFIG_SYSCFG_ADDR \
 	CONFIG_RELEASE \
+	CONFIG_UART_BASE \
+	CONFIG_UART_BAUDRATE \
 
 include Makefile.defconfig
 include Makefile.config
@@ -80,7 +82,6 @@ COPS = \
 	-O0 -g \
 	$(CPU_FLAGS) $(FLOAT_FLAG) \
 	-nostdlib -nostartfiles -ffreestanding \
-	-DUART_BASE=LSIO_UART0_BASE \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
 	$(CONFIG_ARGS) \

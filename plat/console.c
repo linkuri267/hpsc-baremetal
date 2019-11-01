@@ -9,7 +9,7 @@
 
 int console_init()
 {
-    return ns16550_startup(UART_BASE, UART_CLOCK, UART_BAUDRATE);
+    return ns16550_startup(CONFIG_UART_BASE, UART_CLOCK, CONFIG_UART_BAUDRATE);
 }
 
 void _putchar(char c)
@@ -23,7 +23,7 @@ void _putchar(char c)
 
 int console_init()
 {
-    return cdns_uart_startup(UART_BASE);
+    return cdns_uart_startup(CONFIG_UART_BASE);
 }
 
 void _putchar(char c)

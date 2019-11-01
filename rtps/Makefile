@@ -32,6 +32,8 @@ CONFIG_FLAGS = \
 	CONFIG_WDT \
 	CONFIG_RTPS_TRCH_MAILBOX \
 	CONFIG_HPPS_RTPS_MAILBOX \
+	CONFIG_UART_BASE \
+	CONFIG_UART_BAUDRATE \
 
 include Makefile.defconfig
 include Makefile.config
@@ -126,7 +128,6 @@ CPU_FLAGS = -mcpu=cortex-r52 -mthumb -mfloat-abi=hard -mfpu=vfpv3
 CCOPT = \
 	-g -O0 $(CPU_FLAGS) \
 	-nostdlib -nostartfiles -ffreestanding \
-	-DUART_BASE=LSIO_UART1_BASE \
 	-DPRINTF_SUPPORT_LONG_LONG \
 	-DPRINTF_SUPPORT_FLOAT \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
