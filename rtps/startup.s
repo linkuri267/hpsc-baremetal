@@ -631,8 +631,7 @@ gic_init_secure:
 	 * r0: Distributor Base
 	 */
 	ldr	r0, =GICD_BASE
-	mov	r9, #0x37		/* EnableGrp0 | EnableGrp1NS */
-					/* EnableGrp1S | ARE_S | ARE_NS */
+	mov	r9, #0x13		/* EnableGrp0 | EnableGrp1 | ARE */
 	str	r9, [r0, #GICD_CTLR]	/* Secure GICD_CTLR */
 	ldr	r9, [r0, #GICD_TYPER]
 	and	r10, r9, #0x1f		/* ITLinesNumber */
