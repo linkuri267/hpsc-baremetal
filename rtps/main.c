@@ -82,7 +82,8 @@ int main(void)
     enable_caches();
     enable_interrupts();
 
-    gic_init(RTPS_GIC_BASE);
+    /* Not clear what happens to GIC interface to core 1 in lockstep mode */
+    gic_init(RTPS_GIC_BASE, RTPS_R52_NUM_CORES);
 
 #if TEST_R52_SMP
     test_r52_smp();

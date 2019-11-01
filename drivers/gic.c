@@ -5,6 +5,7 @@
 #include "panic.h"
 #include "regops.h"
 #include "object.h"
+#include "arm.h"
 #include "gic.h"
 #include "intc.h"
 
@@ -43,13 +44,15 @@
 #define GICD_TYPER__IT_LINES_NUMBER__MASK       0xf
 #define GICD_TYPER__IT_LINES_NUMBER__SHIFT        0
 
-#define CORE 0 // Everything is for Core #0 for now
 
 // See GIC-500 TRM Section 3.2
 #define GIC_ADDR_BITS 19 // 18 + max(1, cel(log2 NUM_CPUS)) = 19
 #define GIC_ADDR_MSB (GIC_ADDR_BITS - 1)
 #define GICD(r) (r) // Addr [0:00:0000_0000] + r
-#define GICR_PPI_SGI(r) ((1 << GIC_ADDR_MSB) + (CORE << 17) + (1 << 16) + r) // Addr [1:CORE:1:0000_0000] + r
+
+// Addr [1:core:1:0000_0000] + r
+#define GICR_PPI_SGI(core, r) \
+   ((1 << GIC_ADDR_MSB) + (core << 17) + (1 << 16) + r)
 
 #define MAX_IRQS 128
 
@@ -62,8 +65,9 @@ struct irq {
 
 struct gic {
     uintptr_t base;
+    unsigned num_cores;
     struct irq irqs[MAX_IRQS];
-    unsigned nregs;
+    unsigned it_lines_num;
 };
 
 static struct gic gic = {0}; // support only one, to make the interface simpler
@@ -121,20 +125,25 @@ void gic_int_enable(unsigned irq, gic_irq_type_t type, gic_irq_cfg_t cfg) {
            irq, intid, type, irq_cfg_name(cfg));
 
     if (use_redist(type)) {
+        /* for simplicity, allow controlling only core's own interrupts */
+        unsigned core = self_core_id();
         switch (type) {
             case GIC_IRQ_TYPE_SGI: {
                 unsigned sgi_id = intid % 16;
-                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), cfg_bit << (2 * sgi_id + 1));
+                REGB_SET32(gic.base, GICR_PPI_SGI(core, GICR_ICFGR0),
+                           cfg_bit << (2 * sgi_id + 1));
                 break;
             }
             case GIC_IRQ_TYPE_PPI: {
                 unsigned ppi_id = intid % 16;
-                REGB_SET32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), cfg_bit << (2 * ppi_id + 1));
+                REGB_SET32(gic.base, GICR_PPI_SGI(core, GICR_ICFGR1),
+                           cfg_bit << (2 * ppi_id + 1));
             }
             default:
                 ASSERT("unreachable");
         }
-        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ISENABLER0), 1 << (intid % 32));
+        REGB_WRITE32(gic.base, GICR_PPI_SGI(core, GICR_ISENABLER0),
+                     1 << (intid % 32));
     } else {
         REGB_SET32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, cfg_bit << (2 * (intid % 16) + 1));
         REGB_WRITE32(gic.base, GICD(GICD_ISENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
@@ -149,16 +158,21 @@ void gic_int_disable(unsigned irq, gic_irq_type_t type) {
            irq, intid, type);
 
     if (use_redist(type)) {
+        /* for simplicity, allow controlling only core's own interrupts */
+        unsigned core = self_core_id();
         switch (type) {
             case GIC_IRQ_TYPE_SGI:
-                REGB_CLEAR32(gic.base, GICR_PPI_SGI(GICR_ICFGR0), 1 << (intid % 16));
+                REGB_CLEAR32(gic.base, GICR_PPI_SGI(core, GICR_ICFGR0),
+                             1 << (intid % 16));
                 break;
             case GIC_IRQ_TYPE_PPI:
-                REGB_CLEAR32(gic.base, GICR_PPI_SGI(GICR_ICFGR1), 1 << (intid % 16));
+                REGB_CLEAR32(gic.base, GICR_PPI_SGI(core, GICR_ICFGR1),
+                             1 << (intid % 16));
             default:
                 ASSERT("unreachable");
         }
-        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ICENABLER0), 1 << (intid % 32));
+        REGB_WRITE32(gic.base, GICR_PPI_SGI(core, GICR_ICENABLER0),
+                     1 << (intid % 32));
     } else {
         REGB_CLEAR32(gic.base, GICD(GICD_ICFGRn) + (intid / 16) * 4, 1 << (2 * (intid % 16) + 1));
         REGB_WRITE32(gic.base, GICD(GICD_ICENABLERn) + (intid / 32) * 4, 1 << (intid % 32));
@@ -167,10 +181,14 @@ void gic_int_disable(unsigned irq, gic_irq_type_t type) {
 
 void gic_disable_all()
 {
+    unsigned c;
+
     if (is_affinity_routing()) {
-        REGB_WRITE32(gic.base, GICR_PPI_SGI(GICR_ICENABLER0), 0xffffffff);
+       for (c = 0; c < gic.num_cores; ++c) {
+           REGB_WRITE32(gic.base, GICR_PPI_SGI(c, GICR_ICENABLER0), 0xffffffff);
+       }
     } else {
-        for (int i = 0; i < gic.nregs; ++i)
+        for (int i = 0; i < gic.it_lines_num + 1; ++i)
             REGB_WRITE32(gic.base, GICD(GICD_ICENABLERn) + i * 4, 0xffffff);
     }
 }
@@ -221,13 +239,16 @@ static const struct intc_ops gic_ops = {
     .int_type = gic_op_int_type,
 };
 
-void gic_init(uintptr_t base)
+void gic_init(uintptr_t base, unsigned num_cores)
 {
     uint32_t typer = REGB_READ32(base, GICD(GICD_TYPER));
 
     gic.base = base;
-    gic.nregs = ((typer & GICD_TYPER__IT_LINES_NUMBER__MASK) >>
-                                GICD_TYPER__IT_LINES_NUMBER__SHIFT) + 1;
+    gic.num_cores = num_cores;
+    gic.it_lines_num = ((typer & GICD_TYPER__IT_LINES_NUMBER__MASK) >>
+                                GICD_TYPER__IT_LINES_NUMBER__SHIFT);
+
     intc_register(&gic_ops);
-    printf("GIC: base %p typer %x nregs %u\r\n", base, typer, gic.nregs);
+    printf("GIC: base %p typer %x it lines num %u num cores %u\r\n",
+           base, typer, gic.it_lines_num, gic.num_cores);
 }
