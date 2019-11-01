@@ -17,4 +17,6 @@ static inline void int_disable()
 void sys_ints_enable();
 void sys_ints_disable();
 
+unsigned self_core_id();
+
 #endif // ARM_H
