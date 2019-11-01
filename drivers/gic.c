@@ -28,6 +28,7 @@
 #define GICD_ISACTIVERn		0x0300
 #define GICD_ICFGRn             0x0c00
 #define GICD_IGROUPMODRn        0x0d00
+#define GICD_IROUTERn           0x6100
 
 #define GICR_TYPER              0x0008
 #define GICR_WAKER              0x0014
@@ -42,6 +43,8 @@
 #define GICD_CTRL__ARE          (1 << 4) // when no security extention, use only ARE_S bit
 #define GICD_CTRL__ARE_S        (1 << 4)
 #define GICD_CTRL__ARE_NS       (1 << 5)
+
+#define GICD_IROUTERn__IRM     (1 << 31)
 
 #define GICD_TYPER__IT_LINES_NUMBER__MASK       0xf
 #define GICD_TYPER__IT_LINES_NUMBER__SHIFT        0
@@ -243,12 +246,20 @@ static const struct intc_ops gic_ops = {
 
 void gic_init(uintptr_t base, unsigned num_cores)
 {
+    int n;
     uint32_t typer = REGB_READ32(base, GICD(GICD_TYPER));
 
     gic.base = base;
     gic.num_cores = num_cores;
     gic.it_lines_num = ((typer & GICD_TYPER__IT_LINES_NUMBER__MASK) >>
                                 GICD_TYPER__IT_LINES_NUMBER__SHIFT);
+
+    /* Set routing mode to all participating cores
+       (important to support running on any core in an SMP set) */
+    for (/* 0-31 reserved */ n = 32; n < 32 * (gic.it_lines_num + 1); ++n) {
+        REGB_SET32(gic.base, GICD(GICD_IROUTERn) + (n * sizeof(uint64_t)),
+                   GICD_IROUTERn__IRM);
+    }
 
     intc_register(&gic_ops);
     printf("GIC: base %p typer %x it lines num %u num cores %u\r\n",
