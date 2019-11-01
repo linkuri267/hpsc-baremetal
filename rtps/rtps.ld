@@ -8,7 +8,7 @@ MEMORY
     PERIPH (RW) :         ORIGIN = 0x30000000, LENGTH = 0x10000000
 
     /* Leave space for bootloader and packed image of ourselves */
-    RTPS_DDR_LOW (RWX):   ORIGIN = 0x40044000, LENGTH = 0x3ffbc000
+    RTPS_DDR_LOW (RWX):   ORIGIN = 0x40044000, LENGTH = 0x1ffbc000
 
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
