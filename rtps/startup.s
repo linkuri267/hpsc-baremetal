@@ -382,6 +382,10 @@ EL1_Reset_Handler:
         SUB r0, r0, #STACKSIZE
         MOV SP, r0
 
+        CPS #Mode_UND
+        SUB r0, r0, #STACKSIZE
+        MOV SP, r0
+
         CPS #Mode_SVC
         SUB r0, r0, #STACKSIZE
         MOV SP, r0
