@@ -248,12 +248,23 @@ int main ( void )
 #endif
 
 #if CONFIG_RTPS_TRCH_MAILBOX
-    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK", &mldev_lsio,
-                    MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_RTPS_CPU0);
-    if (!rtps_link)
-        panic("RTPS_MBOX_LINK");
+    struct link *rtps_links[RTPS_R52_NUM_CORES] = {0};
+    rtps_links[0] = mbox_link_connect("RTPS_R52_0_MBOX_LINK",
+        &mldev_lsio,
+        MBOX_LSIO__RTPS_R52_0_TRCH, MBOX_LSIO__TRCH_RTPS_R52_0,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_RTPS_CPU0);
+    if (!rtps_links[0])
+        panic("RTPS_R52_0_MBOX_LINK");
+    if (syscfg.rtps_mode != SYSCFG__RTPS_MODE__LOCKSTEP) {
+        rtps_links[1] = mbox_link_connect("RTPS_R52_1_MBOX_LINK",
+            &mldev_lsio,
+            MBOX_LSIO__RTPS_R52_1_TRCH, MBOX_LSIO__TRCH_RTPS_R52_1,
+            /* server */ MASTER_ID_TRCH_CPU,
+            /* client */ MASTER_ID_RTPS_CPU1);
+        if (!rtps_links[1])
+            panic("RTPS_R52_1_MBOX_LINK");
+    }
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
