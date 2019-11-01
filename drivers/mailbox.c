@@ -121,12 +121,16 @@ struct mbox *mbox_claim(uintptr_t ip_base, unsigned instance,
            int_idx, owner, src, dest, dir);
 
     struct mbox *m = OBJECT_ALLOC(mboxes);
-    if (!m)
-        return NULL;
+    if (!m) {
+       printf("mbox_claim: failed to alloc mbox\r\n");
+       return NULL;
+    }
 
     m->block = block_get(ip_base);
-    if (!m->block)
-        goto cleanup;
+    if (!m->block) {
+       printf("mbox_claim: failed to get block\r\n");
+       goto cleanup;
+    }
 
     m->instance = instance;
     m->base = ip_base + instance * HPSC_MBOX_INSTANCE_REGION;
