@@ -42,13 +42,9 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct sfs *fs)
                         return 1;
                     break;
                 case SYSCFG__RTPS_MODE__SMP: // TODO
-                    printf("TODO: NOT IMPLEMENTED: loading for SMP mode");
-                    break;
-                case SYSCFG__RTPS_MODE__SPLIT_BOTH: // TODO
-                case SYSCFG__RTPS_MODE__SPLIT_0:
-                case SYSCFG__RTPS_MODE__SPLIT_1:
-                    printf("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
-                    break;
+                    panic("TODO: NOT IMPLEMENTED: loading for SMP mode");
+                case SYSCFG__RTPS_MODE__SPLIT: // TODO
+                    panic("TODO: NOT IMPLEMENTED: loading for SPLIT mode");
             }
             break;
         case SUBSYS_RTPS_A53:
@@ -111,27 +107,19 @@ static int boot_reset(subsys_t subsys, struct syscfg *cfg)
                     reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
                     rc = reset_release(COMP_CPU_RTPS_R52_0);
                     break;
-                case SYSCFG__RTPS_MODE__SPLIT_0:
+                case SYSCFG__RTPS_MODE__SPLIT:
+                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
 #if CONFIG_RTPS_R52_WDT
-                    watchdog_init_group(CPU_GROUP_RTPS_R52_0);
+                    if (cfg->rtps_cores & 0x1)
+                       watchdog_init_group(CPU_GROUP_RTPS_R52_0);
+                    if (cfg->rtps_cores & 0x2)
+                       watchdog_init_group(CPU_GROUP_RTPS_R52_1);
 #endif /* CONFIG_RTPS_R52_WDT */
-                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
-                    rc = reset_release(COMP_CPU_RTPS_R52_0);
-                    break;
-                case SYSCFG__RTPS_MODE__SPLIT_1:
-#if CONFIG_RTPS_R52_WDT
-                    watchdog_init_group(CPU_GROUP_RTPS_R52_1);
-#endif /* CONFIG_RTPS_R52_WDT */
-                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
-                    rc = reset_release(COMP_CPU_RTPS_R52_1);
-                    break;
-                case SYSCFG__RTPS_MODE__SPLIT_BOTH:
-#if CONFIG_RTPS_R52_WDT
-                    watchdog_init_group(CPU_GROUP_RTPS_R52_0);
-                    watchdog_init_group(CPU_GROUP_RTPS_R52_1);
-#endif // CONFIG_RTPS_R52_WDT
-                    reset_set_rtps_r52_mode(RTPS_R52_MODE__SPLIT);
-                    rc = reset_release(COMP_CPUS_RTPS_R52);
+
+                    if (cfg->rtps_cores & 0x1)
+                        rc = reset_release(COMP_CPU_RTPS_R52_0);
+                    if (cfg->rtps_cores & 0x2)
+                        rc = reset_release(COMP_CPU_RTPS_R52_1);
                     break;
                 default:
                     printf("BOOT: ERROR: unknown RTPS boot mode: %x\r\n",

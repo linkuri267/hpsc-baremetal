@@ -11,7 +11,9 @@
 #define SYSCFG__LOAD_BINARIES__SHIFT      0
 #define SYSCFG__LOAD_BINARIES__MASK       (0x1 << SYSCFG__LOAD_BINARIES__SHIFT)
 #define SYSCFG__RTPS_MODE__SHIFT           1
-#define SYSCFG__RTPS_MODE__MASK            (0x7 << SYSCFG__RTPS_MODE__SHIFT)
+#define SYSCFG__RTPS_MODE__MASK            (0x3 << SYSCFG__RTPS_MODE__SHIFT)
+#define SYSCFG__RTPS_CORES__SHIFT          3
+#define SYSCFG__RTPS_CORES__MASK           (0x3 << SYSCFG__RTPS_CORES__SHIFT)
 #define SYSCFG__SUBSYS__SHIFT              5
 #define SYSCFG__SUBSYS__MASK               (0xf << SYSCFG__SUBSYS__SHIFT)
 #define SYSCFG__HPPS_ROOTFS_LOC__SHIFT     9
@@ -36,10 +38,9 @@ struct syscfg {
     enum {
         SYSCFG__RTPS_MODE__LOCKSTEP    = 0x0,
         SYSCFG__RTPS_MODE__SMP	       = 0x1,
-        SYSCFG__RTPS_MODE__SPLIT_BOTH  = 0x2,
-        SYSCFG__RTPS_MODE__SPLIT_0     = 0x3,
-        SYSCFG__RTPS_MODE__SPLIT_1     = 0x4,
+        SYSCFG__RTPS_MODE__SPLIT       = 0x2,
     } rtps_mode;
+    uint8_t rtps_cores; /* bitmask (valid only in SPLIT mode) */
     enum memdev hpps_rootfs_loc;
     bool have_sfs_offset;
     uint32_t sfs_offset;

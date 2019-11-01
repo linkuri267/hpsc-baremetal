@@ -9,9 +9,7 @@ static const char *rtps_mode_name(unsigned m)
     switch (m) {
         case SYSCFG__RTPS_MODE__LOCKSTEP:   return "LOCKSTEP";
         case SYSCFG__RTPS_MODE__SMP:        return "SMP";
-        case SYSCFG__RTPS_MODE__SPLIT_BOTH: return "SPLIT_BOTH";
-        case SYSCFG__RTPS_MODE__SPLIT_0:    return "SPLIT_0";
-        case SYSCFG__RTPS_MODE__SPLIT_1:    return "SPLIT_1";
+        case SYSCFG__RTPS_MODE__SPLIT:      return "SPLIT";
         default:                            return "?";
     };
 }
@@ -39,11 +37,12 @@ void syscfg_print(struct syscfg *cfg)
            "\tload_binaries:\t%u\r\n"
            "\tsubsystems:\t%s\r\n"
            "\trtps mode:\t%s\r\n"
+           "\trtps cores bitmask:\t0x%x\r\n"
            "\thpps rootfs loc:\t%s\r\n",
            cfg->have_sfs_offset, cfg->sfs_offset,
            cfg->load_binaries,
            subsys_name(cfg->subsystems),
-           rtps_mode_name(cfg->rtps_mode),
+           rtps_mode_name(cfg->rtps_mode), cfg->rtps_cores,
            memdev_name(cfg->hpps_rootfs_loc));
 }
 
@@ -57,6 +56,8 @@ int syscfg_load(struct syscfg *cfg, uint8_t *addr)
 
     /* TODO: use field macros from lib/ */
     cfg->rtps_mode = (word0 & SYSCFG__RTPS_MODE__MASK) >> SYSCFG__RTPS_MODE__SHIFT;
+    cfg->rtps_cores = (word0 & SYSCFG__RTPS_CORES__MASK)
+                            >> SYSCFG__RTPS_CORES__SHIFT;
     cfg->subsystems = (word0 & SYSCFG__SUBSYS__MASK) >> SYSCFG__SUBSYS__SHIFT;
     cfg->hpps_rootfs_loc = (word0 & SYSCFG__HPPS_ROOTFS_LOC__MASK)
                                 >> SYSCFG__HPPS_ROOTFS_LOC__SHIFT;
