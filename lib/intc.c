@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 
 #include "intc.h"
 

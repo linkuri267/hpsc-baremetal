@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "printf.h"
+#include "console.h"
 #include "panic.h"
 #include "regops.h"
 #include "object.h"

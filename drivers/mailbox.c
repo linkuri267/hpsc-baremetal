@@ -7,7 +7,7 @@
 #include "mailbox.h"
 #include "object.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "regops.h"
 
 #define REG_CONFIG              0x00

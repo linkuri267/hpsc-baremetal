@@ -3,7 +3,7 @@
 
 #include "command.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "server.h"
 
 int server_process(struct cmd *cmd, void *reply, size_t reply_sz)

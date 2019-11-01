@@ -1,5 +1,5 @@
 #include "mmu.h"
-#include "printf.h"
+#include "console.h"
 #include "hwinfo.h"
 #include "mem-map.h"
 #include "test.h"

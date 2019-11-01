@@ -16,7 +16,7 @@
 #include "mailbox-map.h"
 #include "mailbox.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "rti-timer.h"
 #include "server.h"
 #include "sleep.h"

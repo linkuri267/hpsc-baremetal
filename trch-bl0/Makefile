@@ -5,12 +5,18 @@ CONFIG_FLAGS = \
     CONFIG_CFG_ADDR_0 \
     CONFIG_CFG_ADDR_1 \
     CONFIG_CFG_ADDR_2 \
+	CONFIG_UART_BASE \
+	CONFIG_UART_BAUDRATE \
+
 
 include Makefile.defconfig
 include Makefile.config
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
-CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+CONFIG_ARGS += -DCONFIG_CONSOLE
+endif
 
 ifneq ($(CONFIG_BOOT_SELECT),)
 CONFIG_ARGS += -DCONFIG_BOOT_SELECT='0$(patsubst %,|%,$(CONFIG_BOOT_SELECT))'
@@ -54,13 +60,19 @@ OBJS = \
        lib/mem.o \
        lib/object.o \
        lib/panic.o \
-       lib/printf.o \
        lib/sha256.o \
        lib/str.o \
        plat/board.o \
-       plat/console.o \
        main.o \
        sections.o \
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+OBJS += lib/printf.o
+endif # CONFIG_CONSOLE
+
+ifeq ($(strip $(CONFIG_CONSOLE)),NS16550)
+OBJS += plat/console/ns16550.o
+endif # CONFIG_CONSOLE
 
 TARGET=trch-bl0
 

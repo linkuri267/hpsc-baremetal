@@ -1,7 +1,7 @@
 #include "etimer.h"
 #include "sleep.h"
 #include "hwinfo.h"
-#include "printf.h"
+#include "console.h"
 #include "nvic.h"
 
 #include "test.h"

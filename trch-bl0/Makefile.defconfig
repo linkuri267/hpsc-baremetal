@@ -1,7 +1,9 @@
 # Enable/disable standalone tests here:
 
 # Set build configuration here
-CONFIG_CONSOLE					?= NS16550
+CONFIG_CONSOLE			?= NS16550
+CONFIG_UART_BASE		?= LSIO_UART0_BASE
+CONFIG_UART_BAUDRATE		?= 125000
 
 # Note: these are replicas of one and only config, not config variants
 CONFIG_CFG_ADDR_0 ?= 0x00000000

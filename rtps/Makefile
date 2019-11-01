@@ -46,7 +46,10 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
-CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+CONFIG_ARGS += -DCONFIG_CONSOLE
+endif
 
 VPATH = ..
 # startup.o must be first
@@ -73,9 +76,16 @@ OBJS = \
 	lib/printf.o \
 	lib/psci.o \
 	lib/sleep.o \
-	plat/console.o \
 	main.o \
 	server.o \
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+OBJS += lib/printf.o
+endif # CONFIG_CONSOLE
+
+ifeq ($(strip $(CONFIG_CONSOLE)),NS16550)
+OBJS += plat/console/ns16550.o
+endif # CONFIG_CONSOLE
 
 ifeq ($(strip $(CONFIG_WDT)),1)
 OBJS += watchdog.o

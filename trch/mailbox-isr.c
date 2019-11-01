@@ -1,6 +1,6 @@
 #include "mailbox.h"
 #include "mailbox-map.h"
-#include "printf.h"
+#include "console.h"
 
 
 void mbox_lsio_rcv_isr()

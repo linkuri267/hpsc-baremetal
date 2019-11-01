@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "hwinfo.h"
 #include "gic.h"
 #include "sleep.h"

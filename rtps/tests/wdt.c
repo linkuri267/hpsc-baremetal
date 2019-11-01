@@ -1,4 +1,4 @@
-#include "printf.h"
+#include "console.h"
 #include "gic.h"
 #include "hwinfo.h"
 #include "sleep.h"

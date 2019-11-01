@@ -2,7 +2,7 @@
 
 #include "object.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "regops.h"
 
 #include "rti-timer.h"

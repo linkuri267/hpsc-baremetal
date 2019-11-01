@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "printf.h"
+#include "console.h"
 #include "panic.h"
 #include "reset.h"
 #include "smc.h"

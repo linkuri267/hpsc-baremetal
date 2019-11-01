@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "mailbox-link.h"
 #include "mailbox-map.h"
 #include "hwinfo.h"

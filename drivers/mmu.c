@@ -3,7 +3,7 @@
 
 #define DEBUG 0
 
-#include "printf.h"
+#include "console.h"
 #include "object.h"
 #include "regops.h"
 #include "balloc.h"
@@ -349,8 +349,8 @@ int mmu_context_destroy(struct mmu_context *ctx)
     ASSERT(ctx);
     ASSERT(ctx->mmu);
 
-    struct mmu *m = ctx->mmu;
-    printf("MMU %s: context_destroy: ctx %u\r\n", m->name, ctx->obj.index);
+    printf("MMU %s: context_destroy: ctx %u\r\n",
+           ctx->mmu->name, ctx->obj.index);
 
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), 0);
@@ -606,8 +606,8 @@ int mmu_stream_destroy(struct mmu_stream *s)
     ASSERT(s->ctx);
     ASSERT(s->ctx->mmu);
 
-    struct mmu *m = s->ctx->mmu;
-    printf("MMU %s: destroy stream %u\r\n", m->name, s->obj.index);
+    printf("MMU %s: destroy stream %u\r\n",
+           s->ctx->mmu->name, s->obj.index);
 
     REG_WRITE32(ST_REG(s, SMMU__SMR0), 0);
     REG_WRITE32(ST_REG(s, SMMU__S2CR0), 0);

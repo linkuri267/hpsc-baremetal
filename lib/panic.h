@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 
 /* Note: printing via "%s" to allow '%' in conditions */
 #define ASSERT(cond) \

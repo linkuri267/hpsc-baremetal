@@ -20,7 +20,7 @@
 #include "mmus.h"
 #include "nvic.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "reset.h"
 #include "server.h"
 #include "shmem-link.h"

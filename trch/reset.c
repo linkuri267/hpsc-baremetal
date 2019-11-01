@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "hwinfo.h"
-#include "printf.h"
+#include "console.h"
 #include "regops.h"
 #include "subsys.h"
 #include "sleep.h"
@@ -38,6 +38,7 @@
 #define RPU_CTRL__RPU_2_CFG  0x270
 #define RPU_CTRL__RPU_2_CFG__NCPUHALT 0x1
 
+#if CONFIG_CONSOLE
 static const char *rtps_r52_mode_name(unsigned m)
 {
     switch (m) {
@@ -46,6 +47,7 @@ static const char *rtps_r52_mode_name(unsigned m)
         default:                      return "?";
     };
 }
+#endif /* CONFIG_CONSOLE */
 
 int reset_assert(comp_t comps)
 {

@@ -7,7 +7,7 @@
 #include "link.h"
 #include "mailbox-link.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "server.h"
 #include "psci.h"
 
@@ -54,6 +54,7 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
             printf("PONG ...\r\n");
             return 0;
         case CMD_PSCI: {
+#if CONFIG_CONSOLE
             printf("PSCI ...\r\n");
             uint32_t *action = (uint32_t *) &(cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("\t");
@@ -61,21 +62,26 @@ int server_process(struct cmd *cmd, void *reply, size_t reply_sz)
                  printf("0x%x ", action[i]);
             }
             printf("\r\n");
+#endif /* CONFIG_CONSOLE */
             return handle_psci(cmd, reply_u8, reply_sz);
         }
         case CMD_WATCHDOG_TIMEOUT: {
+#if CONFIG_CONSOLE
             unsigned int cpu =
                 *((unsigned int *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]));
             printf("WATCHDOG_TIMEOUT ...\r\n");
             printf("\tCPU = %u\r\n", cpu);
+#endif /* CONFIG_CONSOLE */
             return 0;
         }
         case CMD_LIFECYCLE: {
+#if CONFIG_CONSOLE
             struct cmd_lifecycle *pl =
                 (struct cmd_lifecycle *)(&cmd->msg[CMD_MSG_PAYLOAD_OFFSET]);
             printf("LIFECYCLE ...\r\n");
             printf("\tstatus = %s\r\n", pl->status ? "DOWN" : "UP");
             printf("\tinfo = '%s'\r\n", pl->info);
+#endif /* CONFIG_CONSOLE */
             return 0;
         }
         case CMD_ACTION: {

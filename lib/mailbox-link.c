@@ -6,7 +6,7 @@
 #include "mailbox-link.h"
 #include "object.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "sleep.h"
 
 

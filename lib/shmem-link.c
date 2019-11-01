@@ -2,7 +2,7 @@
 
 #include "link.h"
 #include "object.h"
-#include "printf.h"
+#include "console.h"
 #include "shmem.h"
 #include "sleep.h"
 

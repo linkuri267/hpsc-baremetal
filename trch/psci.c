@@ -5,7 +5,7 @@
 #include "command.h"
 #include "sleep.h"
 #include "pwrmgr.h"
-#include "printf.h"
+#include "console.h"
 #include "reset.h"
 
 struct pm_state {
@@ -38,8 +38,8 @@ printf("%s: id(%d), cpu_id(0x%x)\r\n", __func__, id, *cpu_id);
 static int pm_self_suspend(uint32_t sender, uint32_t * data)
 {
     uint32_t target = data[0];
-    uint32_t latency = data[1];
-    uint32_t state = data[2];
+    uint32_t latency = data[1]; (void)latency;
+    uint32_t state = data[2]; (void)state;
     uint32_t addr_low = data[3];
     uint32_t addr_high = data[4];
     comp_t cpu_id;
@@ -62,9 +62,9 @@ static int pm_self_suspend(uint32_t sender, uint32_t * data)
 static int pm_req_suspend(uint32_t sender, uint32_t * data)
 {
     uint32_t target = data[0];
-    uint32_t ack = data[1];
-    uint32_t latency = data[2];
-    uint32_t state = data[3];
+    uint32_t ack = data[1]; (void)ack;
+    uint32_t latency = data[2]; (void)latency;
+    uint32_t state = data[3]; (void)state;
     comp_t cpu_id;
 
     printf("%s: sender(%d), target(%d), latency(%d), ack(%d), state(0x%x)\r\n", __func__, 
@@ -80,9 +80,9 @@ static int pm_req_suspend(uint32_t sender, uint32_t * data)
 static int pm_req_wakeup(uint32_t sender, uint32_t * data)
 {
     uint32_t target = data[0];
-    uint32_t addr_low = data[1];
-    uint32_t addr_high = data[2];
-    uint32_t ack = data[3];
+    uint32_t addr_low = data[1]; (void)addr_low;
+    uint32_t addr_high = data[2]; (void)addr_high;
+    uint32_t ack = data[3]; (void)ack;
     comp_t cpu_id;
     printf("%s: is called: target(%d), addr_low(0x%x), addr_high(0x%x), ack(%d)\r\n", 
 		__func__, target, addr_low, addr_high, ack);
@@ -95,8 +95,8 @@ static int pm_req_wakeup(uint32_t sender, uint32_t * data)
 
 static int pm_system_shutdown(uint32_t sender, uint32_t *data)
 {
-    uint32_t type = data[0];
-    uint32_t sub_type = data[1];
+    uint32_t type = data[0]; (void)type;
+    uint32_t sub_type = data[1]; (void)sub_type;
     printf("%s: not implemented yet: type(%d), subtype(%d)\r\n", 
 		__func__, type, sub_type);
     return 0;

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "object.h"
 #include "regops.h"
 #include "intc.h"

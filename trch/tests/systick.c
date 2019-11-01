@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
 #include "systick.h"
-#include "printf.h"
+#include "console.h"
 #include "sleep.h"
 
 #include "test.h"

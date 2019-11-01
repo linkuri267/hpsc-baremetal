@@ -35,7 +35,7 @@
  */
 
 #include <stdint.h>
-#include "printf.h"
+#include "console.h"
 
 /* #define DEBUG */
 

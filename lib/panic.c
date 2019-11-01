@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "arm.h"
 #include "intc.h"
 

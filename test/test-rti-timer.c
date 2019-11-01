@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "rti-timer.h"
 #include "hwinfo.h"
 #include "nvic.h"

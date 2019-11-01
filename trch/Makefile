@@ -69,8 +69,11 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
-CONFIG_ARGS += -DCONFIG_CONSOLE__$(CONFIG_CONSOLE)
 CONFIG_ARGS += -DCONFIG_SYSCFG_MEM__$(CONFIG_SYSCFG_MEM)
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+CONFIG_ARGS += -DCONFIG_CONSOLE
+endif
 
 CPU_FLAGS = -mcpu=cortex-m4 -mthumb 
 FLOAT_FLAG = -mfloat-abi=hard 
@@ -117,7 +120,6 @@ OBJS = \
        lib/mem.o \
        lib/object.o \
        lib/panic.o \
-       lib/printf.o \
        lib/sfs.o \
        lib/sha256.o \
        lib/shmem.o \
@@ -125,7 +127,6 @@ OBJS = \
        lib/sleep.o \
        lib/str.o \
        plat/board.o \
-       plat/console.o \
        boot.o \
        isr.o \
        main.o \
@@ -134,6 +135,14 @@ OBJS = \
        server.o \
        syscfg.o \
        subsys.o \
+
+ifneq ($(strip $(CONFIG_CONSOLE)),)
+OBJS += lib/printf.o
+endif # CONFIG_CONSOLE
+
+ifeq ($(strip $(CONFIG_CONSOLE)),NS16550)
+OBJS += plat/console/ns16550.o
+endif # CONFIG_CONSOLE
 
 ifeq ($(call cfg-or,$(CONFIG_TRCH_WDT) $(CONFIG_RTPS_R52_WDT) $(CONFIG_HPPS_WDT)),1)
 OBJS += watchdog.o

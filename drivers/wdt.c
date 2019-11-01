@@ -5,7 +5,7 @@
 #include "object.h"
 #include "regops.h"
 #include "panic.h"
-#include "printf.h"
+#include "console.h"
 #include "bit.h"
 
 #include "wdt.h"

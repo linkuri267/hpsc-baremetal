@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "printf.h"
+#include "console.h"
 
 #include "test.h"
 void _out_char(char character, void* buffer, size_t idx, size_t maxlen);

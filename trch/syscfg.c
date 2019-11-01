@@ -1,9 +1,10 @@
 #include <stdint.h>
 
-#include "printf.h"
+#include "console.h"
 #include "subsys.h"
 #include "syscfg.h"
 
+#if CONFIG_CONSOLE
 static const char *rtps_mode_name(unsigned m)
 {
     switch (m) {
@@ -13,6 +14,7 @@ static const char *rtps_mode_name(unsigned m)
         default:                            return "?";
     };
 }
+#endif /* CONFIG_CONSOLE */
 
 const char *memdev_name(enum memdev d)
 {

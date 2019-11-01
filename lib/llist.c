@@ -2,7 +2,7 @@
 
 #include "llist.h"
 #include "object.h"
-#include "printf.h"
+#include "console.h"
 
 static int ll_remove(struct llist_node *node, void *data)
 {

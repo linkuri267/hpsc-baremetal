@@ -1,9 +1,7 @@
 #include <stdint.h>
 
 #include "hwinfo.h"
-#include  "console.h"
-
-#if defined(CONFIG_CONSOLE__NS16550)
+#include "console.h"
 
 #include "ns16550.h"
 
@@ -16,7 +14,3 @@ void _putchar(char c)
 {
     ns16550_putchar(c);
 }
-
-#else // CONFIG_CONSOLE__*
-#error Invalid console choice: see CONFIG_CONSOLE
-#endif // CONFIG_CONSOLE__*

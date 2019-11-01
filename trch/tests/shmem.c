@@ -1,5 +1,5 @@
 #include "mem-map.h"
-#include "printf.h"
+#include "console.h"
 #include "shmem.h"
 
 #include "test.h"

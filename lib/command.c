@@ -2,7 +2,7 @@
 
 #include "mailbox.h"
 #include "mem.h"
-#include "printf.h"
+#include "console.h"
 
 #include "command.h"
 

@@ -2,7 +2,7 @@
 
 #include "wdt.h"
 #include "watchdog.h"
-#include "printf.h"
+#include "console.h"
 #include "nvic.h"
 #include "hwinfo.h"
 #include "sleep.h"

@@ -1,6 +1,6 @@
 #define DEBUG 0
 
-#include "printf.h"
+#include "console.h"
 #include "panic.h"
 
 #include "sleep.h"

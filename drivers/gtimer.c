@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "printf.h"
+
+#include "console.h"
 #include "panic.h"
 
 #include "gtimer.h"

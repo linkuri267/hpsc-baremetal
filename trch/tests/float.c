@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "printf.h"
+#include "console.h"
 
 #include "test.h"
 
