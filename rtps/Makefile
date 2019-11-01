@@ -24,9 +24,9 @@ CONFIG_FLAGS = \
 	TEST_RTPS_DMA \
 	TEST_RTPS_DMA_CB \
 	TEST_SOFT_RESET \
-	TEST_R52_SMP \
 	CONFIG_GTIMER \
 	CONFIG_SLEEP_TIMER \
+	CONFIG_SMP \
 	CONFIG_WDT \
 	CONFIG_RTPS_TRCH_MAILBOX \
 	CONFIG_HPPS_RTPS_MAILBOX \
@@ -67,6 +67,7 @@ OBJS = \
 	lib/object.o \
 	lib/panic.o \
 	lib/printf.o \
+	lib/psci.o \
 	lib/sleep.o \
 	plat/console.o \
 	main.o \
@@ -103,8 +104,11 @@ endif
 ifeq ($(strip $(TEST_RTPS_DMA)),1)
 OBJS += tests/dma.o
 endif
-ifeq ($(strip $(TEST_R52_SMP)),1)
-OBJS += tests/smp.o
+
+ifeq ($(strip $(CONFIG_SMP)),1)
+ifneq ($(strip $(CONFIG_RTPS_TRCH_MAILBOX)),1)
+$(error CONFIG_SMP requires CONFIG_RTPS_TRCH_MAILBOX for power management)
+endif
 endif
 
 TARGET=rtps

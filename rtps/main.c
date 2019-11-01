@@ -22,6 +22,8 @@
 #include "sleep.h"
 #include "test.h"
 #include "watchdog.h"
+#include "mutex.h"
+#include "psci.h"
 
 extern void enable_caches(void);
 
@@ -74,20 +76,65 @@ static void sys_tick(void *arg)
 }
 #endif // CONFIG_GTIMER
 
-int main(void)
+#if CONFIG_SMP
+static unsigned int smp_core1_awake = 0;
+static uint32_t smp_mutex = unlocked; /* TODO: necessary? */
+
+static int bringup_secondary_cores(struct link *psci_link)
 {
+    int rc;
+
+    printf("RTPS-R52 core 0: asking TRCH to reset core 1...\r\n");
+    rc = psci_release_reset(psci_link, COMP_CPU_RTPS_R52_0,
+                            COMP_CPU_RTPS_R52_1);
+    if (rc) {
+        printf("ERROR: PSCI request to release core 1 failed\r\n");
+        return 1;
+    }
+
+    printf("RTPS-R52 core 0: waiting for core 1...\r\n");
+    while (1) {
+        asm volatile ("dmb "); /* TODO: necessary? */
+        lock_mutex(&smp_mutex); /* TODO: necessary? */
+        if (smp_core1_awake)
+            break;
+        unlock_mutex(&smp_mutex);
+    }
+    unlock_mutex(&smp_mutex);
+    printf("RTPS-R52 core 0: core 1 is awake\r\n");
+    return 0;
+}
+
+static int main_secondary(void)
+{
+    /* Don't use UART (printf/panic/etc) from here because conflicts Core 0 */
+
+    /* RTPS-1 is up and about to wake up RTPS-0 */
+    lock_mutex(&smp_mutex); /* TODO: necessary/ */
+    smp_core1_awake = 1;
+    asm volatile ("dmb "); /* TODO: necessary? */
+    unlock_mutex(&smp_mutex);
+
+    while(1) {
+        asm volatile ("wfi");
+    };
+    return 0;
+}
+#endif /* CONFIG_SMP */
+
+static int main_primary(void)
+{
+    unsigned core = self_core_id();
+    ASSERT(core < RTPS_R52_NUM_CORES);
+
     console_init();
-    printf("\r\n\r\nRTPS\r\n");
+    printf("\r\n\r\nRTPS (on CPU %u)\r\n", core);
 
     enable_caches();
     enable_interrupts();
 
     /* Not clear what happens to GIC interface to core 1 in lockstep mode */
     gic_init(RTPS_GIC_BASE, RTPS_R52_NUM_CORES);
-
-#if TEST_R52_SMP
-    test_r52_smp();
-#endif
 
     sleep_set_busyloop_factor(RTPS_R52_BUSYLOOP_FACTOR);
 
@@ -113,7 +160,7 @@ int main(void)
 
 #if TEST_RTI_TIMER
     // Test only one timer, because each timer can only be be tested from its
-    // associated core, and this BM code is not SMP.
+    // associated core, and the SMP mode doesn't support running tests yet.
     if (test_core_rti_timer(&rti_timer))
         panic("RTI Timer test");
 #endif // TEST_RTI_TIMER
@@ -161,7 +208,7 @@ int main(void)
     mldev_trch.ack_int_idx = LSIO_ACK_IRQ_IDX;
 
     struct link *trch_link;
-    switch (self_core_id()) {
+    switch (core) {
         case 0:
             trch_link = mbox_link_connect("RTPS_TRCH_MBOX_LINK",
                 &mldev_trch,
@@ -224,6 +271,12 @@ int main(void)
 
     cmd_handler_register(server_process);
 
+#if CONFIG_SMP
+    int rc = bringup_secondary_cores(trch_link);
+    if (rc)
+        panic("failed to bring up secondary cores");
+#endif /* CONFIG_SMP */
+
     unsigned iter = 0;
     while (1) {
         bool verbose = iter++ % MAIN_LOOP_SILENT_ITERS == 0;
@@ -263,6 +316,15 @@ int main(void)
     }
     
     return 0;
+}
+
+int main(void)
+{
+#if CONFIG_SMP
+    if (self_core_id() > 0)
+        return main_secondary();
+#endif /* CONFIG_SMP */
+    return main_primary();
 }
 
 void irq_handler(unsigned intid) {
