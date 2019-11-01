@@ -15,6 +15,7 @@ MEMORY
 
     HSIO (RW):            ORIGIN = 0xe3000000, LENGTH = 0x15000000
     HPPS_MBOX (RW):       ORIGIN = 0xfff60000, LENGTH = 0x00010000
+    HPPS_UART (RW):       ORIGIN = 0xf92c0000, LENGTH = 0x00010000
 }
 
 /* All the start/end symbols need to be 64-byte aligned for MPU */
@@ -57,4 +58,8 @@ SECTIONS
    __hsio_end__ = ORIGIN(HSIO) + LENGTH(HSIO) - 64;
    __hpps_mbox_start__ = ORIGIN(HPPS_MBOX);
    __hpps_mbox_end__ = ORIGIN(HPPS_MBOX) + LENGTH(HPPS_MBOX) - 64;
+
+   /* When running in SPLIT mode, we don't have enough UARTs in LSIO... */
+   __hpps_uart_start__ = ORIGIN(HPPS_UART);
+   __hpps_uart_end__ = ORIGIN(HPPS_UART) + LENGTH(HPPS_UART) - 64;
 }
