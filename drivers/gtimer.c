@@ -1,5 +1,6 @@
 #define DEBUG 0
 
+#include <stdlib.h>
 #include <stdint.h>
 #include "printf.h"
 #include "panic.h"

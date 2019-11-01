@@ -1,6 +1,8 @@
+#ifndef LIB_SHA256_H
+#define LIB_SHA256_H
 
-#if !defined(__H_SHA256_H__)
-#define __H_SHA256_H__
+#include <stdlib.h>
+
 typedef struct mbedtls_sha256_context
 {
     uint32_t total[2];          /*!< The number of Bytes processed.  */
@@ -15,4 +17,5 @@ int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
 int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen );
 int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32] );
 int mbedtls_sha256_ret( const unsigned char *input, size_t ilen, unsigned char output[32], int is224 );
-#endif
+
+#endif /* LIB_SHA256_H */

@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "panic.h"
 #include "str.h"
 #include "dma.h"

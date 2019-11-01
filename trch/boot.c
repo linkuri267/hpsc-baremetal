@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "printf.h"
 #include "panic.h"
 #include "reset.h"
