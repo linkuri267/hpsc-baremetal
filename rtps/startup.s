@@ -78,6 +78,19 @@
 #define I_Bit 0x80 // when I bit is set, IRQ is disabled
 #define F_Bit 0x40 // when F bit is set, FIQ is disabled
 
+// Write PRBARx, PRLARx, align limit to 64 bytes
+#define MPU_REGION(_start, _end, _op1, _CRm, _op2_b, _op2_l, _attrs) \
+        LDR     r1, =_start; \
+        LDR     r2, =(_attrs); \
+        ORR     r1, r1, r2; \
+        MCR     p15, _op1, r1, c6, _CRm, _op2_b; \
+        LDR     r1, =_end; \
+        ADD     r1, r1, #63; \
+        BFC     r1, #0, #6; \
+        LDR     r2, =((AttrIndx0<<1) | (ENable)); \
+        ORR     r1, r1, r2; \
+        MCR     p15, _op1, r1, c6, _CRm, _op2_l; \
+
 //----------------------------------------------------------------
 
 /*    .section  VECTORS,"ax"
@@ -99,7 +112,7 @@ Start:
 // Note: LDR PC instructions are used here, though branch (B) instructions
 // could also be used, unless the exception handlers are >32MB away.
 
-#ifdef EL2_BARE_METAL
+#if CONFIG_EL2
 EL2_Vectors:
         LDR PC, EL2_Reset_Addr
         LDR PC, EL2_Undefined_Addr
@@ -221,7 +234,7 @@ EL1_FIQ_Handler:
     .thumb
 #endif
 
-#ifdef EL2_BARE_METAL
+#if CONFIG_EL2
 .type EL2_Reset_Handler, "function"
 EL2_Reset_Handler:
 
@@ -315,7 +328,7 @@ EL2_Reset_Handler:
         ORR r0, r0, #(0x1 << 5)         // Set T bit
 // DK end
 
-#endif // EL2_BARE_METAL
+#endif // CONFIG_EL2
 
 EL1_Reset_Handler:
 
@@ -498,19 +511,6 @@ Finished:
 // * The region at 0x0 over the Vector table is needed to support semihosting
 
         LDR     r0, =64
-
-// Write PRBARx, PRLARx, align limit to 64 bytes
-#define MPU_REGION(_start, _end, _op1, _CRm, _op2_b, _op2_l, _attrs) \
-        LDR     r1, =_start; \
-        LDR     r2, =(_attrs); \
-        ORR     r1, r1, r2; \
-        MCR     p15, _op1, r1, c6, _CRm, _op2_b; \
-        LDR     r1, =_end; \
-        ADD     r1, r1, #63; \
-        BFC     r1, #0, #6; \
-        LDR     r2, =((AttrIndx0<<1) | (ENable)); \
-        ORR     r1, r1, r2; \
-        MCR     p15, _op1, r1, c6, _CRm, _op2_l; \
 
         MPU_REGION(__text_start__, __text_end__,        0, c8, 0, 1, ATTR_Non_Shareable | ATTR_RO_Access)
         MPU_REGION(__data_start__, __bss_end__,         0, c8, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never) // .data and .bss (assumed juxtaposed)
