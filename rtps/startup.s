@@ -37,8 +37,11 @@
 #define GICR_IGROUPRn           0x0080
 #define GICR_ISENABLERn         0x0100
 #define GICR_IGROUPMODRn        0x0d00
-// MPU region defines
 
+#define CPUID_ARM_GENTIMER_SHIFT        16
+#define CPUID_ARM_GENTIMER_MASK         (0xF << CPUID_ARM_GENTIMER_SHIFT)
+
+// MPU region defines
 // Protection Base Address Register
 #define Execute_Never 0b1         // Bit 0
 #define RW_Access 0b01            // AP[2:1]
@@ -245,6 +248,13 @@ EL2_Reset_Handler:
     // Init HSCTLR  
         LDR r0, =0x30C5180C             // See TRM for decoding
         MCR p15, 4, r0, c1, c0, 0       // Write to HSCTLR
+
+    // Check if ARM Generic Timer is present, and if so, set CNTFRQ
+        MRC     p15, 0, r0, c0, c1, 1           // read ID_PFR1
+        AND     r0, r0, #CPUID_ARM_GENTIMER_MASK        @ mask arch timer bits
+        CMP     r0, #(1 << CPUID_ARM_GENTIMER_SHIFT)
+        LDREQ   r1, =CONFIG_COUNTER_FREQUENCY
+        MCREQ   p15, 0, r1, c14, c0, 0          // write CNTFRQ
 
 	/* DK's test for EL2 MPU */
 
