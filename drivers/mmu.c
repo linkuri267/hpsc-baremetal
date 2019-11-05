@@ -30,8 +30,8 @@
 #define SMMU__SCR0       0x00000
 #define SMMU__SMR0       0x00800
 #define SMMU__S2CR0      0x00c00
-#define SMMU__CBAR0      0x01000
-#define SMMU__CBA2R0     0x01800
+#define SMMU__CBARn      0x01000
+#define SMMU__CBA2Rn     0x01800
 
 #define SMMU__CB_SCTLR  0x00000
 #define SMMU__CB_TTBR0  0x00020
@@ -42,8 +42,8 @@
 #define SMMU__SMR0__VALID (1 << 31)
 #define SMMU__SCR0__CLIENTPD 0x1
 #define SMMU__S2CR0__EXIDVALID 0x400
-#define SMMU__CBAR0__TYPE__MASK                      0x30000
-#define SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS 0x10000
+#define SMMU__CBARn__TYPE__MASK                      0x30000
+#define SMMU__CBARn__TYPE__STAGE1_WITH_STAGE2_BYPASS 0x10000
 #define SMMU__CB_SCTLR__M 0x1
 #define SMMU__CB_TCR2__PASIZE__40BIT 0b010
 #define SMMU__CB_TCR__EAE__SHORT  0x00000000
@@ -55,7 +55,7 @@
 #define SMMU__CB_TCR__TG0_4KB   0x0000
 #define SMMU__CB_TCR__TG0_16KB  0x8000
 #define SMMU__CB_TCR__TG0_64KB  0x4000
-#define SMMU__CBA2R0__VA64 0x1
+#define SMMU__CBA2Rn__VA64 0x1
 
 // VMSAv8 Long-descriptor fields
 #define VMSA8_DESC__BITS   12 // Lower attributes in stage 1 (D4-2150)
@@ -88,7 +88,10 @@
 #define GL_REG(mmu, reg)    (mmu->base + reg)
 #define CB_REG32(ctx, reg)  (SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg)
 #define CB_REG64(ctx, reg)  (SMMU_CBn_BASE(ctx->mmu->base, ctx->obj.index) + reg)
-#define ST_REG(stream, reg) (stream->ctx->mmu->base + reg + stream->obj.index)
+#define CTX_REG(ctx, reg) \
+    (ctx->mmu->base + (reg) + sizeof(uint32_t) * ctx->obj.index)
+#define ST_REG(stream, reg) \
+    (stream->ctx->mmu->base + (reg) + sizeof(uint32_t) * stream->obj.index)
 
 #define MAX_LEVEL 3 // max level index, not count
 #define MAX_CONTEXTS 8 // TODO: take from ID reg
@@ -335,6 +338,11 @@ struct mmu_context *mmu_context_create(struct mmu *m, struct balloc *ba, enum mm
     REG_WRITE64(CB_REG64(ctx, SMMU__CB_TTBR0), (uint32_t)ctx->pt);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_SCTLR), SMMU__CB_SCTLR__M);
 
+    REG_WRITE32(CTX_REG(ctx, SMMU__CBARn), \
+            SMMU__CBARn__TYPE__STAGE1_WITH_STAGE2_BYPASS);
+    REG_WRITE32(CTX_REG(ctx, SMMU__CBA2Rn), SMMU__CBA2Rn__VA64);
+
+
     printf("MMU: created ctx %u pt %p entries %u size 0x%x\r\n",
            ctx->obj.index, ctx->pt,
            ctx->levels[ctx->granule->start_level].pt_entries,
@@ -351,6 +359,9 @@ int mmu_context_destroy(struct mmu_context *ctx)
 
     printf("MMU %s: context_destroy: ctx %u\r\n",
            ctx->mmu->name, ctx->obj.index);
+
+    REG_WRITE32(CTX_REG(ctx, SMMU__CBARn), 0);
+    REG_WRITE32(CTX_REG(ctx, SMMU__CBA2Rn), 0);
 
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR), 0);
     REG_WRITE32(CB_REG32(ctx, SMMU__CB_TCR2), 0);
@@ -592,8 +603,6 @@ struct mmu_stream *mmu_stream_create(unsigned master, struct mmu_context *ctx)
 
     REG_WRITE32(ST_REG(s, SMMU__SMR0), SMMU__SMR0__VALID | master);
     REG_WRITE32(ST_REG(s, SMMU__S2CR0), SMMU__S2CR0__EXIDVALID | ctx->obj.index);
-    REG_WRITE32(ST_REG(s, SMMU__CBAR0), SMMU__CBAR0__TYPE__STAGE1_WITH_STAGE2_BYPASS);
-    REG_WRITE32(ST_REG(s, SMMU__CBA2R0), SMMU__CBA2R0__VA64);
 
     printf("MMU %s: created stream %u: 0x%x -> ctx %u\r\n",
            m->name, s->obj.index, s->master, ctx->obj.index);
@@ -611,8 +620,6 @@ int mmu_stream_destroy(struct mmu_stream *s)
 
     REG_WRITE32(ST_REG(s, SMMU__SMR0), 0);
     REG_WRITE32(ST_REG(s, SMMU__S2CR0), 0);
-    REG_WRITE32(ST_REG(s, SMMU__CBAR0), 0);
-    REG_WRITE32(ST_REG(s, SMMU__CBA2R0), 0);
 
     OBJECT_FREE(s);
     return 0;
