@@ -1,8 +1,13 @@
+#include <stdint.h>
+
 #include "console.h"
+#include "arm.h"
 #include "gic.h"
 #include "hwinfo.h"
 #include "sleep.h"
 #include "watchdog.h"
+#include "panic.h"
+#include "subsys.h"
 #include "wdt.h"
 
 #include "test.h"
@@ -40,9 +45,15 @@ int test_wdt(struct wdt **wdt_ptr)
     struct wdt *wdt;
     int rc = 1;
 
+    // Each timer can be tested only from its associated core
+    unsigned core = self_core_id();
+    ASSERT(core < RTPS_R52_NUM_CORES);
+
+    uintptr_t base = core ?
+        WDT_RTPS_R52_1_RTPS_BASE : WDT_RTPS_R52_0_RTPS_BASE;
+
     volatile unsigned expired_stage = 0;
-    wdt = wdt_create_target("RTPS0", WDT_RTPS_R52_0_RTPS_BASE,
-                            wdt_tick, (void *)&expired_stage);
+    wdt = wdt_create_target("RTPS_R52", base, wdt_tick, (void *)&expired_stage);
     if (!wdt)
         return 1;
     *wdt_ptr = wdt;
