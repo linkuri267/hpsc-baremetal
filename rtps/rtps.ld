@@ -7,8 +7,12 @@ MEMORY
 
     PERIPH (RW) :         ORIGIN = 0x30000000, LENGTH = 0x10000000
 
-    /* Leave space for bootloader and packed image of ourselves */
-    RTPS_DDR_LOW (RWX):   ORIGIN = 0x40044000, LENGTH = 0x1ffbc000
+    /* RTPS DDR (R52's partition): 512MB                0x20000000 */
+    /* u-boot                      0x40000000           0x00040000 */
+    /* app image                   0x40040000           0x00010000 */
+    /* MMU tables, DMA microcode, SHMEM regions, etc */
+    RTPS_DDR_DMA (RWX):   ORIGIN = 0x40050000, LENGTH = 0x00260000
+    RTPS_DDR_OS (RWX):    ORIGIN = 0x40300000, LENGTH = 0x1fd00000
 
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
@@ -30,22 +34,22 @@ SECTIONS
          *(.rodata*) /* Could define a separate MPU region for RO data */
          . = ALIGN(64);
          __text_end__ = .;
-    } > RTPS_DDR_LOW
+    } > RTPS_DDR_OS
     .data BLOCK(64) : {
         __data_start__ = .;
         *(.data*)
         __data_end__ = .;
-    } > RTPS_DDR_LOW
+    } > RTPS_DDR_OS
     .bss BLOCK(64) : {
         __bss_start__ = .;
         *(.bss)
         *(COMMON)
          . = ALIGN(64);
         __bss_end__ = .;
-    } > RTPS_DDR_LOW
+    } > RTPS_DDR_OS
     end = .;
     __stack_start__ = __bss_end__;
-    __stack_end__ = ORIGIN(RTPS_DDR_LOW) + LENGTH(RTPS_DDR_LOW) - 64;
+    __stack_end__ = ORIGIN(RTPS_DDR_OS) + LENGTH(RTPS_DDR_OS) - 64;
 
    __tcm_a_start__ = ORIGIN(TCM_A);
    __tcm_a_end__ = ORIGIN(TCM_A) + LENGTH(TCM_A) - 64;
@@ -64,6 +68,8 @@ SECTIONS
    __hpps_uart_start__ = ORIGIN(HPPS_UART);
    __hpps_uart_end__ = ORIGIN(HPPS_UART) + LENGTH(HPPS_UART) - 64;
 
+   __rtps_ddr_dma_start__ = ORIGIN(RTPS_DDR_DMA);
+   __rtps_ddr_dma_end__ = ORIGIN(RTPS_DDR_DMA) + LENGTH(RTPS_DDR_DMA) - 64;
    __window_start__ = ORIGIN(WINDOW);
    __window_end__ = ORIGIN(WINDOW) + LENGTH(WINDOW) - 64;
 }

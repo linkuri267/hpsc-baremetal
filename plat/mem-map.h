@@ -6,29 +6,25 @@
 /* Addres of syscfg blob in TRCH SRAM only when preloaded */
 #define PRELOADED_SYSCFG_ADDR               0x000ff000
 
-// Binary images with executables for RTPS
-#define RTPS_R52_DDR_LOW_ADDR               0x40000000
-#define RTPS_R52_DDR_LOW_SIZE               0x3fc00000 // excludes shm
-
 // Shared memory regions accessible to RTPS
-#define RTPS_R52_SHM_ADDR                   0x7fc00000
-#define RTPS_R52_SHM_SIZE                   0x00400000
+#define RTPS_R52_SHM_ADDR                   0x40260000
+#define RTPS_R52_SHM_SIZE                   0x00040000
 
 // Shared memory regions accessible to RTPS
 // TRCH client -> RTPS server
-#define RTPS_R52_SHM_ADDR__TRCH_RTPS_SEND   0x7fc00000
+#define RTPS_R52_SHM_ADDR__TRCH_RTPS_SEND   0x40260000
 #define RTPS_R52_SHM_SIZE__TRCH_RTPS_SEND   0x00008000
-#define RTPS_R52_SHM_ADDR__RTPS_TRCH_REPLY  0x7fc08000
+#define RTPS_R52_SHM_ADDR__RTPS_TRCH_REPLY  0x40268000
 #define RTPS_R52_SHM_SIZE__RTPS_TRCH_REPLY  0x00008000
 // RTPS client -> TRCH server
-#define RTPS_R52_SHM_ADDR__RTPS_TRCH_SEND   0x7fc10000
+#define RTPS_R52_SHM_ADDR__RTPS_TRCH_SEND   0x40270000
 #define RTPS_R52_SHM_SIZE__RTPS_TRCH_SEND   0x00008000
-#define RTPS_R52_SHM_ADDR__TRCH_RTPS_REPLY  0x7fc18000
+#define RTPS_R52_SHM_ADDR__TRCH_RTPS_REPLY  0x40278000
 #define RTPS_R52_SHM_SIZE__TRCH_RTPS_REPLY  0x00008000
 
 // Shared memory regions accessible to RTPS, reserved but not allocated
-#define RTPS_R52_SHM_ADDR__FREE             0x7fc20000
-#define RTPS_R52_DDR_SIZE__FREE             0x003e0000
+#define RTPS_R52_SHM_ADDR__FREE             0x40280000
+#define RTPS_R52_DDR_SIZE__FREE             0x00020000
 
 // Full HPPS DRAM
 #define HPPS_DDR_LOW_ADDR   0x80000000
@@ -76,18 +72,18 @@
 #define RT_MMU_TEST_DATA_HI_SIZE            0x10000
 
 // Page tables for RTPS MMU: in RPTS DRAM
-#define RTPS_PT_ADDR 0x40010000
+#define RTPS_PT_ADDR 0x40060000
 #define RTPS_PT_SIZE   0x200000
 
 // DMA Microcode buffer: in RTPS DRAM (cannot be in TCM)
-#define RTPS_DMA_MCODE_ADDR 0x40000000
+#define RTPS_DMA_MCODE_ADDR 0x40050000
 #define RTPS_DMA_MCODE_SIZE 0x00001000
 
 // Buffers for DMA test: in RTPS DRAM
-#define RTPS_DMA_SRC_ADDR       0x40001000
+#define RTPS_DMA_SRC_ADDR       0x40051000
 #define RTPS_DMA_SIZE           0x00000200
-#define RTPS_DMA_DST_ADDR       0x40002000 // align to page
-#define RTPS_DMA_DST_REMAP_ADDR 0x40003000 // MMU test maps this to DST_ADDR
+#define RTPS_DMA_DST_ADDR       0x40052000 // align to page
+#define RTPS_DMA_DST_REMAP_ADDR 0x40053000 // MMU test maps this to DST_ADDR
 
 
 #endif // MEM_MAP_H
