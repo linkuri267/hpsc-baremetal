@@ -20,11 +20,19 @@ int test_rt_mmu()
     uint32_t val = 0xbeeff00d;
     printf("%p <- %08x\r\n", addr, val);
     *addr = val;
+    if (*addr != val) {
+        printf("TEST: rt mmu: FAILED: read %x (expected %x)\r\n", *addr, val);
+        return 1;
+    }
 
     addr = (volatile uint32_t *)RT_MMU_TEST_DATA_HI_1_WIN_ADDR;
     val = 0xf00dbeef;
     printf("%p <- %08x\r\n", addr, val);
     *addr = val;
+    if (*addr != val) {
+        printf("TEST: rt mmu: FAILED: read %x (expected %x)\r\n", *addr, val);
+        return 1;
+    }
 
     return 0;
 }
