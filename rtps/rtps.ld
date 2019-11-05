@@ -12,6 +12,7 @@ MEMORY
 
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
+    WINDOW (RW):          ORIGIN = 0xc0000000, LENGTH = 0x20000000
 
     HSIO (RW):            ORIGIN = 0xe3000000, LENGTH = 0x15000000
     HPPS_MBOX (RW):       ORIGIN = 0xfff60000, LENGTH = 0x00010000
@@ -62,4 +63,7 @@ SECTIONS
    /* When running in SPLIT mode, we don't have enough UARTs in LSIO... */
    __hpps_uart_start__ = ORIGIN(HPPS_UART);
    __hpps_uart_end__ = ORIGIN(HPPS_UART) + LENGTH(HPPS_UART) - 64;
+
+   __window_start__ = ORIGIN(WINDOW);
+   __window_end__ = ORIGIN(WINDOW) + LENGTH(WINDOW) - 64;
 }

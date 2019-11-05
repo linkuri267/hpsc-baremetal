@@ -275,6 +275,7 @@ EL2_Reset_Handler:
         MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           4, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hpps_uart_start__, __hpps_uart_end__,           4, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hsio_start__, __hsio_end__,                     4, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__window_start__, __window_end__,                 4, c13, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
         LDR r0, =0x30C5180d             // DK's test. Enable EL2 MPU. 
         MCR p15, 4, r0, c1, c0, 0       // Write to HSCTLR
@@ -540,6 +541,7 @@ Finished:
         MPU_REGION(__hpps_uart_start__, __hpps_uart_end__,           0, c12, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hpps_mbox_start__, __hpps_mbox_end__,           0, c12, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
         MPU_REGION(__hsio_start__, __hsio_end__,                     0, c13, 0, 1, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
+        MPU_REGION(__window_start__, __window_end__,                 0, c13, 4, 5, ATTR_Non_Shareable | ATTR_RW_Access | ATTR_Execute_Never)
 
     // MAIR0 configuration
         MRC p15, 0, r0, c10, c2, 0      // Read MAIR0 into r0
