@@ -13,6 +13,8 @@
 static struct mmu *rt_mmu;
 static struct mmu_context *ctx;
 static struct mmu_stream *trch_stream;
+static struct mmu_stream *rtps_r52_0_stream, *rtps_r52_1_stream;
+static struct mmu_stream *rtps_a53_stream;
 static struct balloc *ba;
 
 int rt_mmu_init()
@@ -32,8 +34,13 @@ int rt_mmu_init()
 	goto cleanup_trch_context;
 
     trch_stream = mmu_stream_create(MASTER_ID_TRCH_CPU, ctx);
-    if (!trch_stream)
-	goto cleanup_trch_stream;
+    if (!trch_stream) goto cleanup_trch_stream;
+    rtps_r52_0_stream = mmu_stream_create(MASTER_ID_RTPS_CPU0, ctx);
+    if (!rtps_r52_0_stream) goto cleanup_rtps_r52_0_stream;
+    rtps_r52_1_stream = mmu_stream_create(MASTER_ID_RTPS_CPU1, ctx);
+    if (!rtps_r52_1_stream) goto cleanup_rtps_r52_1_stream;
+    rtps_a53_stream = mmu_stream_create(MASTER_ID_RTPS_A53, ctx);
+    if (!rtps_a53_stream) goto cleanup_rtps_a53_stream;
 
     if (mmu_map(ctx, (uint32_t)MBOX_HPPS_TRCH__BASE,
 			  (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE))
@@ -80,6 +87,12 @@ cleanup_trch_hsio:
 cleanup_rtps_mailbox:
     mmu_unmap(ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_trch_mailbox:
+    mmu_stream_destroy(rtps_a53_stream);
+cleanup_rtps_a53_stream:
+    mmu_stream_destroy(rtps_r52_1_stream);
+cleanup_rtps_r52_1_stream:
+    mmu_stream_destroy(rtps_r52_0_stream);
+cleanup_rtps_r52_0_stream:
     mmu_stream_destroy(trch_stream);
 cleanup_trch_stream:
     mmu_context_destroy(ctx);
