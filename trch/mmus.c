@@ -11,7 +11,7 @@
 #endif
 
 static struct mmu *rt_mmu;
-static struct mmu_context *trch_ctx;
+static struct mmu_context *ctx;
 static struct mmu_stream *trch_stream;
 static struct balloc *ba;
 
@@ -27,37 +27,37 @@ int rt_mmu_init()
     if (!ba)
         goto cleanup_balloc;
 
-    trch_ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
-    if (!trch_ctx)
+    ctx = mmu_context_create(rt_mmu, ba, MMU_PAGESIZE_4KB);
+    if (!ctx)
 	goto cleanup_trch_context;
 
-    trch_stream = mmu_stream_create(MASTER_ID_TRCH_CPU, trch_ctx);
+    trch_stream = mmu_stream_create(MASTER_ID_TRCH_CPU, ctx);
     if (!trch_stream)
 	goto cleanup_trch_stream;
 
-    if (mmu_map(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE,
+    if (mmu_map(ctx, (uint32_t)MBOX_HPPS_TRCH__BASE,
 			  (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE))
         goto cleanup_trch_mailbox;
 
-    if (mmu_map(trch_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE,
+    if (mmu_map(ctx, (uint32_t)MBOX_HPPS_RTPS__BASE,
 			  (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE))
         goto cleanup_rtps_mailbox;
 
-    if (mmu_map(trch_ctx, (uint32_t)HSIO_BASE, (uint32_t)HSIO_BASE, HSIO_SIZE))
+    if (mmu_map(ctx, (uint32_t)HSIO_BASE, (uint32_t)HSIO_BASE, HSIO_SIZE))
         goto cleanup_trch_hsio;
 
-    if (mmu_map(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_ADDR,
+    if (mmu_map(ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_ADDR,
                           HPPS_DDR_LOW_SIZE))
         goto cleanup_trch_hpps_ddr_low;
 
 #if TEST_RT_MMU
-    if (mmu_map(trch_ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_0_ADDR,
+    if (mmu_map(ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_0_ADDR,
                           RT_MMU_TEST_DATA_HI_SIZE))
 	goto cleanup_hi1_win;
-    if (mmu_map(trch_ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_1_ADDR,
+    if (mmu_map(ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_1_ADDR,
                           RT_MMU_TEST_DATA_HI_SIZE))
 	goto cleanup_hi0_win;
-    if (mmu_map(trch_ctx, RT_MMU_TEST_DATA_LO_ADDR,  RT_MMU_TEST_DATA_LO_ADDR,
+    if (mmu_map(ctx, RT_MMU_TEST_DATA_LO_ADDR,  RT_MMU_TEST_DATA_LO_ADDR,
                           RT_MMU_TEST_DATA_LO_SIZE))
 	goto cleanup_lo_win;
 #endif // TEST_RT_MMU
@@ -67,22 +67,22 @@ int rt_mmu_init()
 
 #if TEST_RT_MMU
 cleanup_lo_win:
-    mmu_unmap(trch_ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
+    mmu_unmap(ctx, RT_MMU_TEST_DATA_HI_1_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
 cleanup_hi0_win:
-    mmu_unmap(trch_ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
+    mmu_unmap(ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
 cleanup_hi1_win:
 #endif // TEST_RT_MMU
-    mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
+    mmu_unmap(ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
 cleanup_trch_hpps_ddr_low:
-    mmu_unmap(trch_ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
+    mmu_unmap(ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
 cleanup_trch_hsio:
-    mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
+    mmu_unmap(ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_rtps_mailbox:
-    mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
+    mmu_unmap(ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
 cleanup_trch_mailbox:
     mmu_stream_destroy(trch_stream);
 cleanup_trch_stream:
-    mmu_context_destroy(trch_ctx);
+    mmu_context_destroy(ctx);
 cleanup_trch_context:
     balloc_destroy(ba);
 cleanup_balloc:
@@ -95,13 +95,13 @@ int rt_mmu_deinit()
     int rc = 0;
     mmu_disable(rt_mmu);
 
-    rc |= mmu_unmap(trch_ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
-    rc |= mmu_unmap(trch_ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
-    rc |= mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
-    rc |= mmu_unmap(trch_ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
+    rc |= mmu_unmap(ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
+    rc |= mmu_unmap(ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
+    rc |= mmu_unmap(ctx, (uint32_t)MBOX_HPPS_RTPS__BASE, HPSC_MBOX_AS_SIZE);
+    rc |= mmu_unmap(ctx, (uint32_t)MBOX_HPPS_TRCH__BASE, HPSC_MBOX_AS_SIZE);
 
     rc |= mmu_stream_destroy(trch_stream);
-    rc |= mmu_context_destroy(trch_ctx);
+    rc |= mmu_context_destroy(ctx);
     balloc_destroy(ba);
     rc |= mmu_destroy(rt_mmu);
     return rc;
@@ -109,12 +109,12 @@ int rt_mmu_deinit()
 
 int rt_mmu_map(uint64_t vaddr, uint64_t paddr, unsigned sz)
 {
-    ASSERT(trch_ctx);
-    return mmu_map(trch_ctx, vaddr, paddr, sz);
+    ASSERT(ctx);
+    return mmu_map(ctx, vaddr, paddr, sz);
 }
 
 int rt_mmu_unmap(uint64_t vaddr, unsigned sz)
 {
-    ASSERT(trch_ctx);
-    return mmu_unmap(trch_ctx, vaddr, sz);
+    ASSERT(ctx);
+    return mmu_unmap(ctx, vaddr, sz);
 }
