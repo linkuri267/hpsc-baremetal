@@ -3,9 +3,6 @@
 
 // This file indicates the resource allocations in memory
 
-/* Addres of syscfg blob in TRCH SRAM only when preloaded */
-#define PRELOADED_SYSCFG_ADDR               0x000ff000
-
 // Shared memory regions accessible to RTPS
 #define RTPS_R52_SHM_ADDR                   0x40260000
 #define RTPS_R52_SHM_SIZE                   0x00040000
