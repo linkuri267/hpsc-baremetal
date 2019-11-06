@@ -165,7 +165,12 @@ $(BLDDIR)/%.o : %.s | dirs
 $(BLDDIR)/%.o : %.c | dirs
 	$(CROSS_COMPILE)gcc -MMD -c $(CCOPT) -o $@ $<
 
-$(BLDDIR)/$(TARGET).dbg.elf : rtps.ld $(addprefix $(BLDDIR)/,$(OBJS))
+$(BLDDIR)/$(TARGET).cpp.ld: $(TARGET).ld | dirs
+	$(CROSS_COMPILE)gcc $(CCOPT) -E -P -C -nostdinc -x assembler-with-cpp \
+		-o $@ $<
+
+$(BLDDIR)/$(TARGET).dbg.elf : $(BLDDIR)/$(TARGET).cpp.ld \
+			      $(addprefix $(BLDDIR)/,$(OBJS))
 	$(CROSS_COMPILE)gcc $(LDFLAGS) -o $@ -T $^
 
 $(BLDDIR)/$(TARGET).elf : $(BLDDIR)/$(TARGET).dbg.elf
