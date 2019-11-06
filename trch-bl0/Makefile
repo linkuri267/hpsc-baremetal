@@ -1,18 +1,21 @@
 include ../Makefile.common
 
-# List all possible test flags here
+# List boolean test and config flags here (always defined)
 CONFIG_FLAGS = \
-    CONFIG_CFG_ADDR_0 \
-    CONFIG_CFG_ADDR_1 \
-    CONFIG_CFG_ADDR_2 \
+
+# List value-typed config options here (defined only if non-empty)
+CONFIG_OPTS = \
+	CONFIG_CFG_ADDR_0 \
+	CONFIG_CFG_ADDR_1 \
+	CONFIG_CFG_ADDR_2 \
 	CONFIG_UART_BASE \
 	CONFIG_UART_BAUDRATE \
-
 
 include Makefile.defconfig
 include Makefile.config
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS += $(foreach m,$(CONFIG_OPTS),$(if $($(m)), -D$(m)=$($(m))))
 
 ifneq ($(strip $(CONFIG_CONSOLE)),)
 CONFIG_ARGS += -DCONFIG_CONSOLE

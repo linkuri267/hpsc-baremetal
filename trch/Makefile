@@ -1,6 +1,6 @@
 include ../Makefile.common
 
-# List all possible test flags here
+# List boolean test and config flags here (always defined)
 CONFIG_FLAGS = \
 	TEST_FLOAT \
 	TEST_SYSTICK \
@@ -29,8 +29,13 @@ CONFIG_FLAGS = \
 	CONFIG_RT_MMU \
 	CONFIG_SMC \
 	CONFIG_SFS \
-	CONFIG_SYSCFG_ADDR \
 	CONFIG_RELEASE \
+
+# List value-typed config options here (defined only if non-empty)
+CONFIG_OPTS=\
+	CONFIG_LOAD_ADDR \
+	CONFIG_LOAD_SIZE \
+	CONFIG_SYSCFG_ADDR \
 	CONFIG_UART_BASE \
 	CONFIG_UART_BAUDRATE \
 
@@ -69,6 +74,7 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS += $(foreach m,$(CONFIG_OPTS),$(if $($(m)), -D$(m)=$($(m))))
 CONFIG_ARGS += -DCONFIG_SYSCFG_MEM__$(CONFIG_SYSCFG_MEM)
 
 ifneq ($(strip $(CONFIG_CONSOLE)),)

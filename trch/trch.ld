@@ -1,8 +1,16 @@
 
+/* The BM app binary is not relocatable, this is its address in mem */
+#ifndef CONFIG_LOAD_ADDR
+#define CONFIG_LOAD_ADDR 0x00000000
+#endif
+/* Leave space for syscfg blob (to support the mode with preloaded syscfg) */
+#ifndef CONFIG_LOAD_SIZE
+#define CONFIG_LOAD_SIZE 0x000ff000
+#endif
+
 MEMORY
 {
-    SRAM :          ORIGIN = 0x00000000, LENGTH = 0x0ff000
-    SRAM_BOOT_CFG : ORIGIN = 0x000ff000, LENGTH = 0x001000
+    SRAM : ORIGIN = CONFIG_LOAD_ADDR, LENGTH = CONFIG_LOAD_SIZE
 }
 
 SECTIONS

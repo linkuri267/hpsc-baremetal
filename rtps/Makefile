@@ -11,7 +11,7 @@
 
 include ../Makefile.common
 
-# List all possible test and config flags here
+# List boolean test and config flags here (always defined)
 CONFIG_FLAGS = \
 	TEST_FLOAT \
 	TEST_SORT \
@@ -32,6 +32,13 @@ CONFIG_FLAGS = \
 	CONFIG_WDT \
 	CONFIG_RTPS_TRCH_MAILBOX \
 	CONFIG_HPPS_RTPS_MAILBOX \
+
+# List value-typed config options here (defined only if non-empty)
+CONFIG_OPTS=\
+	CONFIG_DRAM_DMA_ADDR \
+	CONFIG_DRAM_DMA_SIZE \
+	CONFIG_LOAD_ADDR \
+	CONFIG_LOAD_SIZE \
 	CONFIG_UART_BASE \
 	CONFIG_UART_BAUDRATE \
 
@@ -46,6 +53,7 @@ endif
 endif
 
 CONFIG_ARGS = $(foreach m,$(CONFIG_FLAGS),-D$(m)=$($(m)))
+CONFIG_ARGS += $(foreach m,$(CONFIG_OPTS),$(if $($(m)), -D$(m)=$($(m))))
 
 ifneq ($(strip $(CONFIG_CONSOLE)),)
 CONFIG_ARGS += -DCONFIG_CONSOLE

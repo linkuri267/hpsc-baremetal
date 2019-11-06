@@ -1,3 +1,24 @@
+/* The following defaults assume this:
+ * RTPS DDR (R52's partition): 512MB                0x20000000
+ * u-boot                      0x40000000           0x00040000
+ * app image                   0x40040000           0x00010000
+ */
+
+/* MMU tables, DMA microcode, SHMEM regions, etc */
+#ifndef CONFIG_DRAM_DMA_ADDR
+#define CONFIG_DRAM_DMA_ADDR 0x40050000
+#endif
+#ifndef CONFIG_DRAM_DMA_SIZE
+#define CONFIG_DRAM_DMA_SIZE 0x00260000
+#endif
+
+/* The BM app binary is not relocatable, this is its address in mem */
+#ifndef CONFIG_LOAD_ADDR
+#define CONFIG_LOAD_ADDR 0x40300000
+#endif
+#ifndef CONFIG_LOAD_SIZE
+#define CONFIG_LOAD_SIZE 0x1fd00000
+#endif
 
 MEMORY
 {
@@ -7,12 +28,9 @@ MEMORY
 
     PERIPH (RW) :         ORIGIN = 0x30000000, LENGTH = 0x10000000
 
-    /* RTPS DDR (R52's partition): 512MB                0x20000000 */
-    /* u-boot                      0x40000000           0x00040000 */
-    /* app image                   0x40040000           0x00010000 */
-    /* MMU tables, DMA microcode, SHMEM regions, etc */
-    RTPS_DDR_DMA (RWX):   ORIGIN = 0x40050000, LENGTH = 0x00260000
-    RTPS_DDR_OS (RWX):    ORIGIN = 0x40300000, LENGTH = 0x1fd00000
+    RTPS_DDR_DMA (RWX):   ORIGIN = CONFIG_DRAM_DMA_ADDR,
+                          LENGTH = CONFIG_DRAM_DMA_SIZE
+    RTPS_DDR_OS (RWX):    ORIGIN = CONFIG_LOAD_ADDR, LENGTH = CONFIG_LOAD_SIZE
 
     /* Just to define symbols for MPU */
     HPPS_DDR_LOW (RW):    ORIGIN = 0x80000000, LENGTH = 0x40000000
