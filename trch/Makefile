@@ -89,6 +89,7 @@ COPS = \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
 	$(CONFIG_ARGS) \
 	$(INC_FLAGS) \
+	$(CFLAGS) \
 
 # -z max-page-size: alignment of program headers in the ELF file
 #	removes large gaps (0x10000) in the ELF file (see: readelf -l)

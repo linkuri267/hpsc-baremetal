@@ -143,6 +143,7 @@ CCOPT = \
 	-DPRINTF_NO_DOUBLE_WORKAROUND \
 	$(CONFIG_ARGS) \
 	-I. -Itests $(foreach d,$(SUBDIRS),-I../$(d)) \
+	$(CFLAGS) \
 
 # Enable use of TCM in assembler code with -DTCM
 
