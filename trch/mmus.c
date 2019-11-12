@@ -84,8 +84,10 @@ cleanup_hi0_win:
     mmu_unmap(ctx, RT_MMU_TEST_DATA_HI_0_WIN_ADDR, RT_MMU_TEST_DATA_HI_SIZE);
 cleanup_hi1_win:
 #endif // TEST_RT_MMU
+#if CONFIG_HPPS_TRCH_SMMEM || CONFIG_HPPS_TRCH_SHMEM_SSW
     mmu_unmap(ctx, HPPS_SHM_ADDR, HPPS_SHM_SIZE);
 cleanup_hpps_shmem:
+#endif /* CONFIG_HPPS_TRCH_SMMEM || CONFIG_HPPS_TRCH_SHMEM_SSW */
     mmu_unmap(ctx, HPPS_DDR_LOW_ADDR, HPPS_DDR_LOW_SIZE);
 cleanup_trch_hpps_ddr_low:
     mmu_unmap(ctx, (uint32_t)HSIO_BASE, HSIO_SIZE);
