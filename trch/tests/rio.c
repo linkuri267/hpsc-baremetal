@@ -12,7 +12,6 @@
 #include "sleep.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
-#include "syscfg.h"
 #include "test.h"
 
 /* Configurable parameters chosen by this test */
