@@ -1049,6 +1049,8 @@ int test_rio(unsigned instance, struct dma *dmac)
     rc = test_rw_cfg_space(ep0, RIO_DEVID_EP1);
     if (rc) goto fail_map;
 
+    map_teardown(ep0, ep1);
+
     /* Before hop routing test: reset switch routing table */
     rio_switch_unmap_local(sw, RIO_DEVID_EP0);
     rio_switch_unmap_local(sw, RIO_DEVID_EP1);
