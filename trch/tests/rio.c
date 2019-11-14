@@ -9,7 +9,6 @@
 #include "dma.h"
 #include "mmus.h"
 #include "bit.h"
-#include "sleep.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
 #include "test.h"
