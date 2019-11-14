@@ -61,7 +61,7 @@ static int boot_load(subsys_t subsys, struct syscfg *cfg, struct memfs *fs)
 
             // For legacy config of HPPS u-boot, until have u-boot env/script.
             int rc = hpps_boot_mode(cfg->hpps_rootfs_loc,
-                                    (volatile uint32_t *)HPPS_BOOT_MODE_ADDR);
+                                    (volatile uint32_t *)HPPS_DDR_ADDR__HPPS_SMP__BOOT_MODE);
             if (rc)
                 return 1;
 

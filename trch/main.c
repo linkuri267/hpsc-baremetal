@@ -226,8 +226,8 @@ int main ( void )
 
 #if CONFIG_RTPS_TRCH_SHMEM
     struct link *rtps_link_shmem = shmem_link_connect("RTPS_SHMEM_LINK",
-                    (void *)RTPS_R52_SHM_ADDR__TRCH_RTPS_REPLY,
-                    (void *)RTPS_R52_SHM_ADDR__RTPS_TRCH_SEND);
+                    (void *)RTPS_DDR_ADDR__SHM__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RPLY,
+                    (void *)RTPS_DDR_ADDR__SHM__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RQST);
     if (!rtps_link_shmem)
         panic("RTMS_SHMEM_LINK");
     if (llist_insert(&link_list, rtps_link_shmem))
@@ -237,8 +237,8 @@ int main ( void )
 
 #if CONFIG_HPPS_TRCH_SHMEM
     struct link *hpps_link_shmem = shmem_link_connect("HPPS_SHMEM_LINK",
-                    (void *)HPPS_SHM_ADDR__TRCH_HPPS,
-                    (void *)HPPS_SHM_ADDR__HPPS_TRCH);
+                    (void *)HPPS_SHM_ADDR__HPPS_SMP_APP__TRCH_SSW__RQST,
+                    (void *)HPPS_SHM_ADDR__HPPS_SMP_APP__TRCH_SSW__RPLY);
     if (!hpps_link_shmem)
         panic("HPPS_SHMEM_LINK");
     if (llist_insert(&link_list, hpps_link_shmem))
@@ -248,8 +248,8 @@ int main ( void )
 
 #if CONFIG_HPPS_TRCH_SHMEM_SSW
     struct link *hpps_link_shmem_ssw = shmem_link_connect("HPPS_SHMEM_SSW_LINK",
-                    (void *)HPPS_SHM_ADDR__TRCH_HPPS_SSW,
-                    (void *)HPPS_SHM_ADDR__HPPS_TRCH_SSW);
+                    (void *)HPPS_SHM_ADDR__HPPS_SMP_SSW__TRCH_SSW__RQST,
+                    (void *)HPPS_SHM_ADDR__HPPS_SMP_SSW__TRCH_SSW__RPLY);
     if (!hpps_link_shmem_ssw)
         panic("HPPS_SHMEM_SSW_LINK");
     if (llist_insert(&link_list, hpps_link_shmem_ssw))
