@@ -940,11 +940,11 @@ exit:
     return rc;
 }
 
-int test_rio(struct syscfg *syscfg, struct dma *dmac)
+int test_rio(unsigned instance, struct dma *dmac)
 {
     int rc = 1;
 
-    printf("RIO TEST: machine instance %u\r\n", syscfg->instance);
+    printf("RIO TEST: machine instance %u\r\n", instance);
 
     nvic_int_enable(TRCH_IRQ__RIO_1);
 
@@ -980,7 +980,7 @@ int test_rio(struct syscfg *syscfg, struct dma *dmac)
 
     /* Machine instance 1 needs to keep EPs initialized while letting HW
      * listen and process requests from machine 0 (transparent to SW). */
-    if (syscfg->instance == 1) {
+    if (instance == 1) {
         return 0; /* don't destroy anything (TODO: add RIO init to main.c? */
     }
 

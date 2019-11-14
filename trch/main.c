@@ -192,7 +192,7 @@ int main ( void )
 #endif // TEST_RT_MMU
 
 #if TEST_RIO /* must be after RT MMU setup */
-    if (test_rio(&syscfg, trch_dma))
+    if (test_rio(syscfg.instance, trch_dma))
         panic("rio test");
 #endif // TEST_RIO
 
