@@ -150,11 +150,11 @@ int main ( void )
     struct mbox_link_dev mldev_hpps;
     mldev_hpps.base = MBOX_HPPS_TRCH__BASE;
     mldev_hpps.rcv_irq =
-        nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_RCV_INT);
-    mldev_hpps.rcv_int_idx = MBOX_HPPS_TRCH__TRCH_RCV_INT;
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_MBOX0_INT_EVT0__TRCH_SSW);
+    mldev_hpps.rcv_int_idx = HPPS_MBOX0_INT_EVT0__TRCH_SSW;
     mldev_hpps.ack_irq =
-        nvic_request(TRCH_IRQ__HT_MBOX_0 + MBOX_HPPS_TRCH__TRCH_ACK_INT);
-    mldev_hpps.ack_int_idx = MBOX_HPPS_TRCH__TRCH_ACK_INT;
+        nvic_request(TRCH_IRQ__HT_MBOX_0 + HPPS_MBOX0_INT_EVT1__TRCH_SSW);
+    mldev_hpps.ack_int_idx = HPPS_MBOX0_INT_EVT1__TRCH_SSW;
     mbox_link_dev_add(MBOX_DEV_HPPS, &mldev_hpps);
 #endif // CONFIG_MBOX_DEV_HPPS
 
@@ -162,18 +162,18 @@ int main ( void )
     struct mbox_link_dev mldev_lsio;
     mldev_lsio.base = MBOX_LSIO__BASE;
     mldev_lsio.rcv_irq =
-        nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_RCV_INT);
-    mldev_lsio.rcv_int_idx = MBOX_LSIO__TRCH_RCV_INT;
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_MBOX0_INT_EVT0__TRCH_SSW);
+    mldev_lsio.rcv_int_idx = LSIO_MBOX0_INT_EVT0__TRCH_SSW;
     mldev_lsio.ack_irq =
-        nvic_request(TRCH_IRQ__TR_MBOX_0 + MBOX_LSIO__TRCH_ACK_INT);
-    mldev_lsio.ack_int_idx = MBOX_LSIO__TRCH_ACK_INT;
+        nvic_request(TRCH_IRQ__TR_MBOX_0 + LSIO_MBOX0_INT_EVT1__TRCH_SSW);
+    mldev_lsio.ack_int_idx = LSIO_MBOX0_INT_EVT1__TRCH_SSW;
     mbox_link_dev_add(MBOX_DEV_LSIO, &mldev_lsio);
 #endif // CONFIG_MBOX_DEV_LSIO
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
                     &mldev_hpps,
-                    MBOX_HPPS_TRCH__HPPS_TRCH_SSW, MBOX_HPPS_TRCH__TRCH_HPPS_SSW,
+                    HPPS_MBOX0_CHAN__HPPS_SMP_SSW__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_SSW__TRCH_SSW__RPLY,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
@@ -183,7 +183,7 @@ int main ( void )
 
 #if CONFIG_HPPS_TRCH_MAILBOX
     struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mldev_hpps,
-                    MBOX_HPPS_TRCH__HPPS_TRCH, MBOX_HPPS_TRCH__TRCH_HPPS,
+                    HPPS_MBOX0_CHAN__HPPS_SMP_APP__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_APP__TRCH_SSW__RPLY,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -193,7 +193,7 @@ int main ( void )
 
 #if CONFIG_HPPS_TRCH_MAILBOX_ATF
     struct link *hpps_atf_link = mbox_link_connect("HPPS_MBOX_ATF_LINK", &mldev_hpps,
-                    MBOX_HPPS_TRCH__HPPS_ATF_TRCH, MBOX_HPPS_TRCH__TRCH_ATF_HPPS,
+                    HPPS_MBOX0_CHAN__HPPS_SMP_ATF__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_ATF__TRCH_SSW__RPLY,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_atf_link)
@@ -204,7 +204,7 @@ int main ( void )
 
 #if CONFIG_RTPS_TRCH_MAILBOX
     struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK", &mldev_lsio,
-                    MBOX_LSIO__RTPS_TRCH, MBOX_LSIO__TRCH_RTPS,
+                    LSIO_MBOX0_CHAN__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RQST, LSIO_MBOX0_CHAN__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RPLY,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
@@ -214,7 +214,7 @@ int main ( void )
 
 #if CONFIG_RTPS_TRCH_MAILBOX_PSCI
     struct link *rtps_psci_link = mbox_link_connect("RTPS_PSCI_MBOX_LINK", &mldev_lsio,
-                    MBOX_LSIO__RTPS_TRCH_PSCI, MBOX_LSIO__TRCH_RTPS_PSCI,
+                    LSIO_MBOX0_CHAN__RTPS_A53_ATF__TRCH_SSW__RQST, LSIO_MBOX0_CHAN__RTPS_A53_ATF__TRCH_SSW__RPLY,
                     /* server */ MASTER_ID_TRCH_CPU,
                     /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_psci_link)

@@ -159,19 +159,19 @@ int main(void)
     struct mbox_link_dev mldev_hpps;
     mldev_hpps.base = MBOX_HPPS_RTPS__BASE;
     mldev_hpps.rcv_irq =
-        gic_request(RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT,
+        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_MBOX1_INT_EVT0__RTPS_R52_LOCKSTEP_SSW,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    mldev_hpps.rcv_int_idx = MBOX_HPPS_RTPS__RTPS_RCV_INT;
+    mldev_hpps.rcv_int_idx = HPPS_MBOX1_INT_EVT0__RTPS_R52_LOCKSTEP_SSW;
     mldev_hpps.ack_irq =
-        gic_request(RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT,
+        gic_request(RTPS_IRQ__HR_MBOX_0 + HPPS_MBOX1_INT_EVT1__RTPS_R52_LOCKSTEP_SSW,
                     GIC_IRQ_TYPE_SPI, GIC_IRQ_CFG_LEVEL);
-    mldev_hpps.ack_int_idx = MBOX_HPPS_RTPS__RTPS_ACK_INT;
+    mldev_hpps.ack_int_idx = HPPS_MBOX1_INT_EVT1__RTPS_R52_LOCKSTEP_SSW;
     mbox_link_dev_add(MBOX_DEV_HPPS, &mldev_hpps);
 #endif
 
 #if CONFIG_HPPS_RTPS_MAILBOX
     struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mldev_hpps,
-                    MBOX_HPPS_RTPS__HPPS_RTPS, MBOX_HPPS_RTPS__RTPS_HPPS,
+                    HPPS_MBOX1_CHAN__HPPS_SMP_APP__RTPS_R52_LOCKSTEP_SSW__RQST, HPPS_MBOX1_CHAN__HPPS_SMP_APP__RTPS_R52_LOCKSTEP_SSW__RPLY,
                     /* server */ MASTER_ID_RTPS_CPU0,
                     /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
@@ -282,19 +282,19 @@ void irq_handler(unsigned intid) {
             // Only register the ISRs for mailbox ints that are used (see mailbox-map.h)
             // NOTE: we multiplex all mboxes (in one IP block) onto one pair of IRQs
 #if CONFIG_HPPS_RTPS_MAILBOX
-            case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_RCV_INT:
-                    mbox_rcv_isr(MBOX_HPPS_RTPS__RTPS_RCV_INT);
+            case RTPS_IRQ__HR_MBOX_0 + HPPS_MBOX1_INT_EVT0__RTPS_R52_LOCKSTEP_SSW:
+                    mbox_rcv_isr(HPPS_MBOX1_INT_EVT0__RTPS_R52_LOCKSTEP_SSW);
                     break;
-            case RTPS_IRQ__HR_MBOX_0 + MBOX_HPPS_RTPS__RTPS_ACK_INT:
-                    mbox_ack_isr(MBOX_HPPS_RTPS__RTPS_ACK_INT);
+            case RTPS_IRQ__HR_MBOX_0 + HPPS_MBOX1_INT_EVT1__RTPS_R52_LOCKSTEP_SSW:
+                    mbox_ack_isr(HPPS_MBOX1_INT_EVT1__RTPS_R52_LOCKSTEP_SSW);
                     break;
 #endif // CONFIG_HPPS_RTPS_MAILBOX
 #if TEST_RTPS_TRCH_MAILBOX
-            case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_RCV_INT:
-                    mbox_rcv_isr(MBOX_LSIO__RTPS_RCV_INT);
+            case RTPS_IRQ__TR_MBOX_0 + LSIO_MBOX0_INT_EVT0__RTPS_R52_LOCKSTEP_SSW:
+                    mbox_rcv_isr(LSIO_MBOX0_INT_EVT0__RTPS_R52_LOCKSTEP_SSW);
                     break;
-            case RTPS_IRQ__TR_MBOX_0 + MBOX_LSIO__RTPS_ACK_INT:
-                    mbox_ack_isr(MBOX_LSIO__RTPS_ACK_INT);
+            case RTPS_IRQ__TR_MBOX_0 + LSIO_MBOX0_INT_EVT1__RTPS_R52_LOCKSTEP_SSW:
+                    mbox_ack_isr(LSIO_MBOX0_INT_EVT1__RTPS_R52_LOCKSTEP_SSW);
                     break;
 #endif // TEST_RTPS_TRCH_MAILBOX
 #if TEST_RTPS_DMA
