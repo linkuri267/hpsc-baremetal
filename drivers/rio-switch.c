@@ -103,8 +103,7 @@ void rio_switch_unmap_local(struct rio_switch *s, rio_devid_t dest)
     RIO_REGBO_WRITE32(s->base, PORT_MAPPING_TABLE_ENTRY_0, dest, 0);
 }
 
-int rio_switch_map_remote(struct rio_switch *s,
-                          struct rio_ep *ep, rio_dest_t switch_dest,
+int rio_switch_map_remote(struct rio_ep *ep, rio_dest_t switch_dest,
                           rio_devid_t route_dest, enum rio_mapping_type type,
                           uint8_t port_map)
 {
@@ -113,8 +112,7 @@ int rio_switch_map_remote(struct rio_switch *s,
                               mapping_reg_addr(route_dest));
 }
 
-int rio_switch_unmap_remote(struct rio_switch *s,
-                            struct rio_ep *ep, rio_dest_t switch_dest,
+int rio_switch_unmap_remote(struct rio_ep *ep, rio_dest_t switch_dest,
                             rio_devid_t route_dest)
 {
     return rio_ep_write_csr32(ep, 0, switch_dest, mapping_reg_addr(route_dest));

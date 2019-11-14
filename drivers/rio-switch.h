@@ -19,11 +19,11 @@ void rio_switch_map_local(struct rio_switch *s, rio_devid_t dest,
                           enum rio_mapping_type type, uint8_t port_map);
 void rio_switch_unmap_local(struct rio_switch *s, rio_devid_t dest);
 
-int rio_switch_map_remote(struct rio_switch *s, struct rio_ep *ep,
+int rio_switch_map_remote(struct rio_ep *ep,
                           rio_dest_t switch_dest,
                           rio_devid_t route_dest, enum rio_mapping_type type,
                           uint8_t port_map);
-int rio_switch_unmap_remote(struct rio_switch *s, struct rio_ep *ep,
+int rio_switch_unmap_remote(struct rio_ep *ep,
                             rio_dest_t switch_dest, rio_devid_t route_dest);
 
 #endif // RIO_SWITCH_H

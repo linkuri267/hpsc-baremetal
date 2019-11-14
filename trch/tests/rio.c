@@ -9,8 +9,10 @@
 #include "dma.h"
 #include "mmus.h"
 #include "bit.h"
+#include "sleep.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
+#include "syscfg.h"
 #include "test.h"
 
 /* Configurable parameters chosen by this test */
@@ -22,6 +24,10 @@
 /* Normally these are assigned by discovery routine in the driver */
 #define RIO_DEVID_EP0 0x0
 #define RIO_DEVID_EP1 0x1
+
+/* External endpoint to be recheable via the given port */
+#define RIO_DEVID_EP_EXT 0x2
+#define RIO_EP_EXT_SWITCH_PORT 2
 
 #define CFG_SPACE_BASE { 0x0, 0x0 }
 static const rio_addr_t cfg_space_base = CFG_SPACE_BASE;
@@ -80,9 +86,9 @@ static void print_buf(uint8_t *p, unsigned size)
 
 static int test_send_receive(struct rio_ep *ep_from, struct rio_ep *ep_to)
 {
-	int rc = 1;
+    int rc = 1;
 
-	printf("RIO TEST: %s: running send/receive test %s->%s...\r\n",
+    printf("RIO TEST: %s: running send/receive test %s->%s...\r\n",
            __func__, rio_ep_name(ep_from), rio_ep_name(ep_to));
 
     bzero(&out_pkt, sizeof(out_pkt));
@@ -99,18 +105,18 @@ static int test_send_receive(struct rio_ep *ep_from, struct rio_ep *ep_to)
     out_pkt.hop_count = 0xFF; /* not destined to any switch */
     out_pkt.transaction = RIO_TRANS_MAINT_RESP_READ;
 
-	out_pkt.status = 0x1;
+    out_pkt.status = 0x1;
     out_pkt.payload_len = 1;
     out_pkt.payload[0] = 0x01020304deadbeef;
 
     printf("RIO TEST: sending pkt on EP %s:\r\n", rio_ep_name(ep_from));
     rio_print_pkt(&out_pkt);
 
-	rc = rio_ep_sp_send(ep_from, &out_pkt);
-	if (rc) goto exit;
+    rc = rio_ep_sp_send(ep_from, &out_pkt);
+    if (rc) goto exit;
 
     rc = rio_ep_sp_recv(ep_to, &in_pkt);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     printf("RIO TEST: received pkt on EP %s:\r\n", rio_ep_name(ep_to));
     rio_print_pkt(&in_pkt);
@@ -127,33 +133,25 @@ static int test_send_receive(struct rio_ep *ep_from, struct rio_ep *ep_to)
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
-static int test_read_csr(struct rio_ep *ep0, struct rio_ep *ep1)
+static int test_read_csr(struct rio_ep *ep, rio_dest_t dest)
 {
     uint32_t dev_id;
     uint32_t expected_dev_id = RIO_EP_DEV_ID;
     int rc = 1;
-    rio_dest_t dest_ep1 = rio_dev_dest(RIO_DEVID_EP1);
-    rio_dest_t dest_ep0 = rio_dev_dest(RIO_DEVID_EP0);
 
     printf("RIO TEST: running read CSR test...\r\n");
 
-    rc = rio_ep_read_csr32(ep0, &dev_id, dest_ep1, DEV_ID);
+    rc = rio_ep_read_csr32(ep, &dev_id, dest, DEV_ID);
     if (rc) goto exit;
 
     if (dev_id != expected_dev_id) {
-        printf("RIO TEST EP0: unexpected value of DEV_ID CSR in EP1: "
-                "%x (expected %x)\r\n", dev_id, expected_dev_id);
-        goto exit;
-    }
-
-    rc = rio_ep_read_csr32(ep1, &dev_id, dest_ep0, DEV_ID);
-    if (rc) goto exit;
-    if (dev_id != expected_dev_id) {
-        printf("RIO TEST EP1: unexpected value of DEV_ID CSR in EP0: "
-                "%x (expected %x)\r\n", dev_id, expected_dev_id);
+        printf("RIO TEST EP %s: unexpected value of "
+                "DEV_ID CSR in EP (0x%x, %u): %x (expected %x)\r\n",
+                rio_ep_name(ep), dest.devid, dest.hops, expected_dev_id);
+        rc = 1;
         goto exit;
     }
 
@@ -175,11 +173,11 @@ static int wr_csr_field(struct rio_ep *ep, rio_dest_t dest,
 
     ASSERT(len < sizeof(in_bytes));
 
-	rc = rio_ep_write_csr(ep, bytes, len, dest, csr + offset);
-	if (rc) goto exit;
+    rc = rio_ep_write_csr(ep, bytes, len, dest, csr + offset);
+    if (rc) goto exit;
 
-	rc = rio_ep_read_csr32(ep, &read_val, dest, csr);
-	if (rc) goto exit;
+    rc = rio_ep_read_csr32(ep, &read_val, dest, csr);
+    if (rc) goto exit;
 
     if (read_val != csr_val) {
         printf("RIO TEST: FAILED: csr 0x%x on devid %u not of expected value: "
@@ -187,8 +185,8 @@ static int wr_csr_field(struct rio_ep *ep, rio_dest_t dest,
         goto exit;
     }
 
-	rc = rio_ep_read_csr(ep, in_bytes, len, dest, csr + offset);
-	if (rc) goto exit;
+    rc = rio_ep_read_csr(ep, in_bytes, len, dest, csr + offset);
+    if (rc) goto exit;
 
     for (b = 0; b < len; ++b) {
         if (in_bytes[b] != bytes[b]) {
@@ -201,7 +199,7 @@ static int wr_csr_field(struct rio_ep *ep, rio_dest_t dest,
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 /* Write/read in size smaller than dword and smaller than word (bytes) */
@@ -222,28 +220,28 @@ static int test_write_csr(struct rio_ep *ep, rio_dest_t dest)
     uint8_t val_b1  = 0xaa;
     uint8_t val_b2  = 0xdd;
     uint8_t val_b3  = 0x99;
-	uint16_t val_s1 = 0xccbb;
-	uint16_t val_s2 = 0xffee;
-	uint16_t val_s3 = 0x8877;
+    uint16_t val_s1 = 0xccbb;
+    uint16_t val_s2 = 0xffee;
+    uint16_t val_s3 = 0x8877;
 
     int rc = 1;
     uint32_t reg = 0, read_reg, orig_reg;
     uint8_t bytes[sizeof(uint32_t)] = {0};
 
-	printf("RIO TEST: running write CSR test...\r\n");
+    printf("RIO TEST: running write CSR test...\r\n");
 
     printf("RIO TEST: write csr: saving CSR value\r\n");
-	rc = rio_ep_read_csr32(ep, &orig_reg, dest, csr);
-	if (rc) goto exit;
+    rc = rio_ep_read_csr32(ep, &orig_reg, dest, csr);
+    if (rc) goto exit;
 
     printf("RIO TEST: write csr: testing whole CSR\r\n");
     reg = ((uint32_t)val_b1 << b_shift) | ((uint32_t)val_s1 << s_shift);
 
-	rc = rio_ep_write_csr32(ep, reg, dest, csr);
-	if (rc) goto exit;
+    rc = rio_ep_write_csr32(ep, reg, dest, csr);
+    if (rc) goto exit;
 
-	rc = rio_ep_read_csr32(ep, &read_reg, dest, csr);
-	if (rc) goto exit;
+    rc = rio_ep_read_csr32(ep, &read_reg, dest, csr);
+    if (rc) goto exit;
 
     if (read_reg != reg) {
         printf("RIO TEST: FAILED: csr 0x%x on devid %u not of expected value: "
@@ -257,7 +255,7 @@ static int test_write_csr(struct rio_ep *ep, rio_dest_t dest)
     bytes[0] = val_b2;
     rc = wr_csr_field(ep, dest, csr, /* offset */ b_shift / 8,
                       bytes, sizeof(val_b2), reg);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     printf("RIO TEST: write csr: testing field: short\r\n");
     reg &= ~(0xffff << s_shift);
@@ -266,7 +264,7 @@ static int test_write_csr(struct rio_ep *ep, rio_dest_t dest)
     bytes[1] = val_s2 & 0xff;
     rc = wr_csr_field(ep, dest, csr, /* offset */ s_shift / 8,
                       bytes, sizeof(val_s2), reg);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     printf("RIO TEST: write csr: testing fields: byte and short\r\n");
     reg = ((uint32_t)val_b3 << b_shift) | ((uint32_t)val_s3 << s_shift);
@@ -275,16 +273,16 @@ static int test_write_csr(struct rio_ep *ep, rio_dest_t dest)
     bytes[2] = val_b3;
     rc = wr_csr_field(ep, dest, csr, /* offset */ b_shift / 8,
                       bytes, sizeof(val_b3) + sizeof(val_s3), reg);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     printf("RIO TEST: write csr: restoring CSR value\r\n");
-	rc = rio_ep_read_csr32(ep, &orig_reg, dest, csr);
-	if (rc) goto exit;
+    rc = rio_ep_read_csr32(ep, &orig_reg, dest, csr);
+    if (rc) goto exit;
 
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static int test_msg(struct rio_ep *ep0, struct rio_ep *ep1)
@@ -298,11 +296,11 @@ static int test_msg(struct rio_ep *ep0, struct rio_ep *ep1)
 
     int rc = 1;
 
-	printf("RIO TEST: running message test...\r\n");
+    printf("RIO TEST: running message test...\r\n");
 
     rc = rio_ep_msg_send(ep0, dest, launch_time, mbox, letter, seg_size,
                          (uint8_t *)&payload, sizeof(payload));
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     rio_devid_t src_id = 0;
     uint64_t rcv_time = 0;
@@ -310,7 +308,7 @@ static int test_msg(struct rio_ep *ep0, struct rio_ep *ep1)
     unsigned payload_len = sizeof(rx_payload);
     rc = rio_ep_msg_recv(ep1, mbox, letter, &src_id, &rcv_time,
                          (uint8_t *)&rx_payload, &payload_len);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     printf("RIO TEST: recved msg from %u at %08x%08x payload len %u %08x%08x\r\n",
            src_id, (uint32_t)(rcv_time >> 32), (uint32_t)(rcv_time & 0xffffffff),
@@ -324,7 +322,7 @@ static int test_msg(struct rio_ep *ep0, struct rio_ep *ep1)
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static int test_doorbell(struct rio_ep *ep0, struct rio_ep *ep1)
@@ -332,15 +330,15 @@ static int test_doorbell(struct rio_ep *ep0, struct rio_ep *ep1)
     int rc = 1;
     enum rio_status status;
 
-	printf("RIO TEST: running doorbell test...\r\n");
+    printf("RIO TEST: running doorbell test...\r\n");
 
     uint16_t info = 0xf00d, info_recv = 0;
     rc = rio_ep_doorbell_send_async(ep0, RIO_DEVID_EP1, info);
-	if (rc) goto exit;
+    if (rc) goto exit;
     rc = rio_ep_doorbell_recv(ep1, &info_recv);
-	if (rc) goto exit;
+    if (rc) goto exit;
     rc = rio_ep_doorbell_reap(ep0, &status);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     if (status != RIO_STATUS_DONE) {
         printf("RIO TEST: FAILED: doorbell request returned error: "
@@ -355,7 +353,7 @@ static int test_doorbell(struct rio_ep *ep0, struct rio_ep *ep1)
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static uint64_t uint_from_buf(uint8_t *buf, unsigned bytes)
@@ -686,7 +684,7 @@ static int test_map_single(uint8_t *sys_addr, uint8_t *out_addr,
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static int test_map_burst(uint8_t *sys_addr, uint8_t *out_addr,
@@ -754,26 +752,26 @@ static int test_map_burst(uint8_t *sys_addr, uint8_t *out_addr,
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static int test_rw_cfg_space(struct rio_ep *ep, rio_devid_t dest)
 {
-	int rc = 1;
+    int rc = 1;
     uint32_t csr_addr; /* 16MB range */
     rio_addr_t csr_rio_addr; /* up to 66-bit RapidIO address */
     uint32_t csr_ref, csr_val, csr_saved;
 
-	printf("RIO TEST: running read/write cfg space test...\r\n");
+    printf("RIO TEST: running read/write cfg space test...\r\n");
 
     csr_addr = DEV_ID;
     csr_rio_addr = rio_addr_from_u64(csr_addr);
     csr_ref = RIO_EP_DEV_ID;
     csr_val = 0;
 
-	printf("RIO TEST: read cfg space at addr 0x%08x\r\n", csr_addr);
+    printf("RIO TEST: read cfg space at addr 0x%08x\r\n", csr_addr);
     rc = rio_ep_read32(ep, &csr_val, csr_rio_addr, dest);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     if (csr_val != csr_ref) {
         printf("RIO TEST: ERROR: read CSR value mismatches expected: "
@@ -786,26 +784,26 @@ static int test_rw_cfg_space(struct rio_ep *ep, rio_devid_t dest)
     csr_ref = 0xd00df00d;
     csr_val = 0;
 
-	printf("RIO TEST: save/write/read/restore cfg space at addr 0x%08x\r\n",
+    printf("RIO TEST: save/write/read/restore cfg space at addr 0x%08x\r\n",
            csr_addr);
     rc = rio_ep_read32(ep, &csr_saved, csr_rio_addr, dest);
-	if (rc) goto exit;
+    if (rc) goto exit;
     rc = rio_ep_write32(ep, csr_ref, csr_rio_addr, dest);
-	if (rc) goto exit;
+    if (rc) goto exit;
     rc = rio_ep_read32(ep, &csr_val, csr_rio_addr, dest);
-	if (rc) goto exit;
+    if (rc) goto exit;
     if (csr_val != csr_ref) {
         printf("RIO TEST: ERROR: read CSR value mismatches expected: "
                "0x%x != 0x%x\r\n", csr_val, csr_ref);
         goto exit;
     }
     rc = rio_ep_write32(ep, csr_saved, csr_rio_addr, dest);
-	if (rc) goto exit;
+    if (rc) goto exit;
 
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
 static int test_map_rw_cfg_space(uint32_t *csr_out_addr)
@@ -815,13 +813,13 @@ static int test_map_rw_cfg_space(uint32_t *csr_out_addr)
     uint32_t *csr_ptr; /* pointer via outgoing region */
     uint32_t csr_ref, csr_val, csr_saved;
 
-	printf("RIO TEST: running read/write cfg space via mapped region...\r\n");
+    printf("RIO TEST: running read/write cfg space via mapped region...\r\n");
 
     csr_addr = DEV_ID;
     csr_ptr = (uint32_t *)((uint8_t *)csr_out_addr + csr_addr);
     csr_ref = RIO_EP_DEV_ID;
 
-	printf("RIO TEST: read CSR 0x%x at addr %p\r\n", csr_addr, csr_ptr);
+    printf("RIO TEST: read CSR 0x%x at addr %p\r\n", csr_addr, csr_ptr);
     csr_val = *csr_ptr;
     if (csr_val != csr_ref) {
         printf("RIO TEST: ERROR: read CSR value mismatches expected: "
@@ -834,7 +832,7 @@ static int test_map_rw_cfg_space(uint32_t *csr_out_addr)
     csr_ref = 0xd00df00d;
     csr_val = 0;
 
-	printf("RIO TEST: save/write/read/restore CSR 0x%x at addr %p\r\n",
+    printf("RIO TEST: save/write/read/restore CSR 0x%x at addr %p\r\n",
            csr_addr, csr_ptr);
     csr_saved = *csr_ptr;
     *csr_ptr = csr_ref;
@@ -848,12 +846,105 @@ static int test_map_rw_cfg_space(uint32_t *csr_out_addr)
     rc = 0;
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
-	return rc;
+    return rc;
 }
 
-int test_rio(struct dma *dmac)
+int test_hop_routing(struct rio_ep *ep0, struct rio_ep *ep1)
 {
     int rc = 1;
+
+/* We don't do enumeration/discovery traversal, hence hop-based test is limited
+ * (hop-based routing with multiple hops requires device IDs to be assigned
+ * along the way on all but the last hop). */
+#if (RIO_HOPS_FROM_EP0_TO_SWITCH > 0) || (RIO_HOPS_FROM_EP1_TO_SWITCH > 0)
+#error RIO hop-based routing test supports only hop-count 0.
+#endif
+
+    rio_dest_t ep0_to_switch = rio_sw_dest(0, RIO_HOPS_FROM_EP0_TO_SWITCH);
+
+    rc = rio_switch_map_remote(ep0, ep0_to_switch, RIO_DEVID_EP0,
+            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP0_SWITCH_PORT));
+    if (rc) goto exit_0;
+
+    rc = rio_switch_map_remote(ep0, ep0_to_switch, RIO_DEVID_EP1,
+            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP1_SWITCH_PORT));
+    if (rc) goto exit_1;
+
+    rc = test_send_receive(ep0, ep1);
+    if (rc) goto exit;
+    rc = test_send_receive(ep1, ep0);
+    if (rc) goto exit;
+
+    rc = 0;
+exit:
+    rc |= rio_switch_unmap_remote(ep0, ep0_to_switch, RIO_DEVID_EP0);
+exit_1:
+    rc |= rio_switch_unmap_remote(ep0, ep0_to_switch, RIO_DEVID_EP1);
+exit_0:
+    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
+    return rc;
+}
+
+/* To test the backend, have to talk to another Qemu instance or a standalone
+ * device model. Can't test the out-of-process backend using loopback alone
+ * (e.g. send from EP0 to EP1 via external path), because loopback out of the
+ * switch back into the same switch creates an infinite routing loop (would
+ * need to somehow change the routing table in the middle of the test).
+ * Alternatively, could make a proxy that rewrites destination ID, which could
+ * be a standalone process or within Qemu process (slightly weaker test). */
+int test_backend(struct rio_switch *sw, struct rio_ep *ep)
+{
+    int rc = 1;
+
+    printf("RIO TEST: %s: running backend test...\r\n", __func__);
+
+    rio_switch_map_local(sw, RIO_DEVID_EP_EXT, RIO_MAPPING_TYPE_UNICAST,
+                          (1 << RIO_EP_EXT_SWITCH_PORT));
+
+    rio_dest_t ep_ext = rio_dev_dest(RIO_DEVID_EP_EXT);
+    rio_dest_t ep_to_ext_switch = rio_sw_dest(RIO_DEVID_EP_EXT, /* hops */ 1);
+
+    rc = rio_switch_map_remote(ep, ep_to_ext_switch, RIO_DEVID_EP0,
+            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP_EXT_SWITCH_PORT));
+    if (rc) goto exit;
+
+    rc = rio_switch_map_remote(ep, ep_to_ext_switch, RIO_DEVID_EP_EXT,
+            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP0_SWITCH_PORT));
+    if (rc) goto exit;
+
+    printf("RIO TEST: %s: setting dev ID of remote EP...\r\n", __func__);
+
+    /* Device ID in our packet won't match the devid of EXT EP, but the EP
+     * should process the request regardless (by spec). */
+    uint32_t did = 0;
+    did = FIELD_DP32(did, B_DEV_ID, BASE_DEVICE_ID, RIO_DEVID_EP_EXT);
+    did = FIELD_DP32(did, B_DEV_ID, LARGE_BASE_DEVICE_ID, RIO_DEVID_EP_EXT);
+    rc = rio_ep_write_csr32(ep, did, ep_ext, B_DEV_ID);
+    if (rc) goto exit;
+
+    printf("RIO TEST: %s: read/write CSRs in remote EP...\r\n", __func__);
+
+    rc = test_read_csr(ep, ep_ext);
+    if (rc) goto exit;
+    rc = test_write_csr(ep, ep_ext);
+    if (rc) goto exit;
+
+    /* TODO: test mapped regions */
+    /* TODO: test message layer */
+
+    rc = 0;
+exit:
+    rio_switch_unmap_local(sw, RIO_DEVID_EP_EXT);
+
+    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
+    return rc;
+}
+
+int test_rio(struct syscfg *syscfg, struct dma *dmac)
+{
+    int rc = 1;
+
+    printf("RIO TEST: machine instance %u\r\n", syscfg->instance);
 
     nvic_int_enable(TRCH_IRQ__RIO_1);
 
@@ -861,11 +952,6 @@ int test_rio(struct dma *dmac)
                                               RIO_SWITCH_BASE);
     if (!sw)
         goto fail_sw;
-
-    rio_switch_map_local(sw, RIO_DEVID_EP0, RIO_MAPPING_TYPE_UNICAST,
-                         (1 << RIO_EP0_SWITCH_PORT));
-    rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
-                         (1 << RIO_EP1_SWITCH_PORT));
 
     /* Partition buffer memory evenly among the endpoints */
     const unsigned buf_mem_size = RIO_MEM_SIZE / 2;
@@ -876,8 +962,8 @@ int test_rio(struct dma *dmac)
                                        RIO_EP0_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
                                        TRANSPORT_TYPE, ADDR_WIDTH,
                                        buf_mem_ep, buf_mem_cpu, buf_mem_size);
-	if (!ep0)
-		goto fail_ep0;
+    if (!ep0)
+        goto fail_ep0;
     buf_mem_ep += buf_mem_size;
     buf_mem_cpu += buf_mem_size;
 
@@ -885,16 +971,30 @@ int test_rio(struct dma *dmac)
                                        RIO_EP1_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
                                        TRANSPORT_TYPE, ADDR_WIDTH,
                                        buf_mem_ep, buf_mem_cpu, buf_mem_size);
-	if (!ep1)
-		goto fail_ep1;
+    if (!ep1)
+        goto fail_ep1;
     buf_mem_ep += buf_mem_size;
     buf_mem_cpu += buf_mem_size;
 
     /* Device IDs needed for routing any requests in subsequent tests */
+
+    /* Machine instance 1 needs to keep EPs initialized while letting HW
+     * listen and process requests from machine 0 (transparent to SW). */
+    if (syscfg->instance == 1) {
+        return 0; /* don't destroy anything (TODO: add RIO init to main.c? */
+    }
+
     rc = rio_ep_set_devid(ep0, RIO_DEVID_EP0);
     if (rc) goto fail;
     rc = rio_ep_set_devid(ep1, RIO_DEVID_EP1);
     if (rc) goto fail;
+
+    rio_switch_map_local(sw, RIO_DEVID_EP0, RIO_MAPPING_TYPE_UNICAST,
+                         (1 << RIO_EP0_SWITCH_PORT));
+    rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
+                         (1 << RIO_EP1_SWITCH_PORT));
+    rio_switch_map_local(sw, RIO_DEVID_EP_EXT, RIO_MAPPING_TYPE_UNICAST,
+                         (1 << RIO_EP_EXT_SWITCH_PORT));
 
     /* so that we can ifdef tests out without warnings */
     (void)test_send_receive;
@@ -906,6 +1006,8 @@ int test_rio(struct dma *dmac)
     (void)test_map_burst;
     (void)test_rw_cfg_space;
     (void)test_map_rw_cfg_space;
+    (void)test_hop_routing;
+    (void)test_backend;
     (void)map_setup;
     (void)map_teardown;
 
@@ -914,69 +1016,58 @@ int test_rio(struct dma *dmac)
     rc = test_send_receive(ep1, ep0);
     if (rc) goto fail;
 
-    rc = test_read_csr(ep0, ep1);
+    rc = test_read_csr(ep0, rio_dev_dest(RIO_DEVID_EP1));
+    if (rc) goto fail;
+    rc = test_read_csr(ep1, rio_dev_dest(RIO_DEVID_EP0));
     if (rc) goto fail;
 
     rc = test_write_csr(ep0, rio_dev_dest(RIO_DEVID_EP1));
-	if (rc) goto fail;
+    if (rc) goto fail;
     rc = test_write_csr(ep1, rio_dev_dest(RIO_DEVID_EP0));
-	if (rc) goto fail;
+    if (rc) goto fail;
 
     rc = test_msg(ep0, ep1);
-	if (rc) goto fail;
+    if (rc) goto fail;
     rc = test_doorbell(ep0, ep1);
-	if (rc) goto fail;
+    if (rc) goto fail;
 
     rc = map_setup(ep0, ep1);
-	if (rc) goto fail;
+    if (rc) goto fail;
 
     struct map_target_info *buf_tgt = &map_targets[OUT_REGION_TEST_BUF];
     struct map_target_info *cfg_tgt = &map_targets[OUT_REGION_CFG_SPACE];
 
     rc = test_map_single(buf_tgt->bus_win_addr, buf_tgt->window_addr,
                          buf_tgt->size);
-	if (rc) goto fail_map;
+    if (rc) goto fail_map;
     rc = test_map_burst(buf_tgt->bus_win_addr, buf_tgt->window_addr,
                         buf_tgt->size, dmac);
-	if (rc) goto fail_map;
+    if (rc) goto fail_map;
 
     rc = test_map_rw_cfg_space((uint32_t *)cfg_tgt->window_addr);
-	if (rc) goto fail_map;
+    if (rc) goto fail_map;
 
     /* NOTE: EP1->EP0 won't work unless we setup incoming reg on EP0 */
     rc = test_rw_cfg_space(ep0, RIO_DEVID_EP1);
-	if (rc) goto fail_map;
+    if (rc) goto fail_map;
 
-    /* Reset the routing table, and then re-create it via maint requests */
+    /* Before hop routing test: reset switch routing table */
     rio_switch_unmap_local(sw, RIO_DEVID_EP0);
     rio_switch_unmap_local(sw, RIO_DEVID_EP1);
 
-/* We don't do enumeration/discovery traversal, hence limited */
-#if (RIO_HOPS_FROM_EP0_TO_SWITCH > 0) || (RIO_HOPS_FROM_EP1_TO_SWITCH > 0)
-#error RIO Test supports only end-points directly connected to switch.
-#endif
-    rio_dest_t ep0_to_switch = rio_sw_dest(0, RIO_HOPS_FROM_EP0_TO_SWITCH);
-
-    rc = rio_switch_map_remote(sw, ep0, ep0_to_switch, RIO_DEVID_EP0,
-            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP0_SWITCH_PORT));
-	if (rc) goto fail_map;
-
-    rc = rio_switch_map_remote(sw, ep0, ep0_to_switch, RIO_DEVID_EP1,
-            RIO_MAPPING_TYPE_UNICAST, (1 << RIO_EP1_SWITCH_PORT));
-	if (rc) goto fail_map;
-
-    rc = test_send_receive(ep0, ep1);
-    if (rc) goto fail;
-    rc = test_send_receive(ep1, ep0);
+    rc = test_hop_routing(ep0, ep1);
     if (rc) goto fail;
 
-    rc = rio_switch_unmap_remote(sw, ep0, ep0_to_switch, RIO_DEVID_EP0);
-    if (rc) goto fail;
-    rc = rio_switch_unmap_remote(sw, ep0, ep0_to_switch, RIO_DEVID_EP1);
+    /* After hop routing test: restore switch routing table */
+    rio_switch_map_local(sw, RIO_DEVID_EP0, RIO_MAPPING_TYPE_UNICAST,
+                         (1 << RIO_EP0_SWITCH_PORT));
+    rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
+                         (1 << RIO_EP1_SWITCH_PORT));
+
+    rc = test_backend(sw, ep0);
     if (rc) goto fail;
 
     rc = 0;
-
 fail_map:
     map_teardown(ep0, ep1);
 fail:
@@ -992,7 +1083,7 @@ fail_sw:
     nvic_int_disable(TRCH_IRQ__RIO_1);
 
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "SOME FAILED!" : "ALL PASSED");
-	return rc;
+    return rc;
 }
 
 void rio_1_isr()
