@@ -30,6 +30,7 @@ CONFIG_FLAGS = \
 	CONFIG_RT_MMU \
 	CONFIG_SMC \
 	CONFIG_SFS \
+	CONFIG_RIO \
 	CONFIG_RELEASE \
 
 # List value-typed config options here (defined only if non-empty)
@@ -68,8 +69,8 @@ $(error TEST_RT_MMU requires CONFIG_RT_MMU)
 endif
 endif
 ifeq ($(strip $(TEST_RIO)),1)
-ifneq ($(strip $(CONFIG_RT_MMU)),1)
-$(error TEST_RIO requires CONFIG_RT_MMU)
+ifneq ($(call cfg-and,$(CONFIG_RIO) $(CONFIG_RT_MMU) $(CONFIG_TRCH_DMA)),1)
+$(error TEST_RIO requires CONFIG_RIO CONFIG_RT_MMU CONFIG_TRCH_DMA)
 endif
 ifneq ($(strip $(CONFIG_TRCH_DMA)),1)
 $(error TEST_RIO requires CONFIG_TRCH_DMA)
@@ -179,6 +180,9 @@ ifeq ($(call cfg-or,\
 	$(CONFIG_HPPS_TRCH_MAILBOX_PSCI) \
 	$(CONFIG_RTPS_TRCH_MAILBOX)),1)
 OBJS += mailbox-isr.o
+endif
+ifeq ($(strip $(CONFIG_RIO)),1)
+OBJS += rio-svc.o
 endif
 
 ifeq ($(strip $(TEST_FLOAT)),1)

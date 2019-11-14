@@ -20,8 +20,11 @@
 #define SYSCFG__HPPS_ROOTFS_LOC__MASK      (0x7 << SYSCFG__HPPS_ROOTFS_LOC__SHIFT)
 #define SYSCFG__HAVE_SFS_OFFSET__SHIFT     12
 #define SYSCFG__HAVE_SFS_OFFSET__MASK      (0x1 << SYSCFG__HAVE_SFS_OFFSET__SHIFT)
-#define SYSCFG__SFS_OFFSET__WORD           1
-#define SYSCFG__INSTANCE__WORD             2
+#define SYSCFG__RIO_MASTER__SHIFT          13
+#define SYSCFG__RIO_MASTER__MASK           (0x1 << SYSCFG__RIO_MASTER__SHIFT)
+#define SYSCFG__TEST_RIO_BACKEND__SHIFT    14
+#define SYSCFG__TEST_RIO_BACKEND__MASK     (0x1 << SYSCFG__TEST_RIO_BACKEND__SHIFT)
+#define SYSCFG__SFS_OFFSET__WORD           2
 
 enum memdev {
     MEMDEV_TRCH_SMC_SRAM = 0x0,
@@ -46,7 +49,14 @@ struct syscfg {
     bool have_sfs_offset;
     uint32_t sfs_offset;
     bool load_binaries;
-    unsigned instance;
+
+    struct {
+        bool master;
+    } rio;
+
+    struct {
+        bool rio_backend;
+    } test;
 };
 
 int syscfg_load(struct syscfg *cfg, uint8_t *addr);

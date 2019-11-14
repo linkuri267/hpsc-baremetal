@@ -41,13 +41,13 @@ void syscfg_print(struct syscfg *cfg)
            "\trtps mode:\t%s\r\n"
            "\trtps cores bitmask:\t0x%x\r\n"
            "\thpps rootfs loc:\t%s\r\n",
-           "\tinstance:\t%s\r\n",
+           "\trio: master: \t%u\r\n",
            cfg->have_sfs_offset, cfg->sfs_offset,
            cfg->load_binaries,
            subsys_name(cfg->subsystems),
            rtps_mode_name(cfg->rtps_mode), cfg->rtps_cores,
            memdev_name(cfg->hpps_rootfs_loc),
-           cfg->instance);
+           cfg->rio.master);
 }
 
 int syscfg_load(struct syscfg *cfg, uint8_t *addr)
@@ -69,8 +69,11 @@ int syscfg_load(struct syscfg *cfg, uint8_t *addr)
                                 >> SYSCFG__HAVE_SFS_OFFSET__SHIFT;
     cfg->load_binaries = (word0 & SYSCFG__LOAD_BINARIES__MASK)
                                 >> SYSCFG__LOAD_BINARIES__SHIFT;
+    cfg->rio.master = (word0 & SYSCFG__RIO_MASTER__MASK)
+                        >> SYSCFG__RIO_MASTER__SHIFT;
+    cfg->test.rio_backend = (word0 & SYSCFG__TEST_RIO_BACKEND__MASK)
+                                >> SYSCFG__TEST_RIO_BACKEND__SHIFT;
     cfg->sfs_offset = *waddr++;
-    cfg->instance = *waddr++;
 
     syscfg_print(cfg);
     return 0;

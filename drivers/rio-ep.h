@@ -148,7 +148,7 @@ int rio_ep_destroy(struct rio_ep *ep);
 
 const char *rio_ep_name(struct rio_ep *ep);
 
-int rio_ep_set_devid(struct rio_ep *ep, rio_devid_t devid);
+void rio_ep_set_devid(struct rio_ep *ep, rio_devid_t devid);
 rio_devid_t rio_ep_get_devid(struct rio_ep *ep);
 
 int rio_ep_sp_send(struct rio_ep *ep, struct RioPkt *pkt);

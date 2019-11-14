@@ -847,7 +847,7 @@ exit:
     return rc;
 }
 
-int test_hop_routing(struct rio_ep *ep0, struct rio_ep *ep1)
+static int test_hop_routing(struct rio_ep *ep0, struct rio_ep *ep1)
 {
     int rc = 1;
 
@@ -890,7 +890,7 @@ exit_0:
  * need to somehow change the routing table in the middle of the test).
  * Alternatively, could make a proxy that rewrites destination ID, which could
  * be a standalone process or within Qemu process (slightly weaker test). */
-int test_backend(struct rio_switch *sw, struct rio_ep *ep)
+int test_rio_backend(struct rio_switch *sw, struct rio_ep *ep)
 {
     int rc = 1;
 
@@ -938,59 +938,15 @@ exit:
     return rc;
 }
 
-int test_rio(unsigned instance, struct dma *dmac)
+int test_rio_local(struct rio_switch *sw,
+                   struct rio_ep *ep0, struct rio_ep *ep1,
+                   struct dma *dmac)
 {
     int rc = 1;
 
-    printf("RIO TEST: machine instance %u\r\n", instance);
+    printf("RIO TEST: %s: start\r\n", __func__);
 
-    nvic_int_enable(TRCH_IRQ__RIO_1);
-
-    struct rio_switch *sw = rio_switch_create("RIO_SW", /* local */ true,
-                                              RIO_SWITCH_BASE);
-    if (!sw)
-        goto fail_sw;
-
-    /* Partition buffer memory evenly among the endpoints */
-    const unsigned buf_mem_size = RIO_MEM_SIZE / 2;
-    uint8_t *buf_mem_cpu = (uint8_t *)RIO_MEM_WIN_ADDR;
-    rio_bus_addr_t buf_mem_ep = RIO_MEM_ADDR;
-
-    struct rio_ep *ep0 = rio_ep_create("RIO_EP0", RIO_EP0_BASE,
-                                       RIO_EP0_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
-                                       TRANSPORT_TYPE, ADDR_WIDTH,
-                                       buf_mem_ep, buf_mem_cpu, buf_mem_size);
-    if (!ep0)
-        goto fail_ep0;
-    buf_mem_ep += buf_mem_size;
-    buf_mem_cpu += buf_mem_size;
-
-    struct rio_ep *ep1 = rio_ep_create("RIO_EP1", RIO_EP1_BASE,
-                                       RIO_EP1_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
-                                       TRANSPORT_TYPE, ADDR_WIDTH,
-                                       buf_mem_ep, buf_mem_cpu, buf_mem_size);
-    if (!ep1)
-        goto fail_ep1;
-    buf_mem_ep += buf_mem_size;
-    buf_mem_cpu += buf_mem_size;
-
-    /* Device IDs needed for routing any requests in subsequent tests */
-
-    /* Machine instance 1 needs to keep EPs initialized while letting HW
-     * listen and process requests from machine 0 (transparent to SW). */
-    if (instance == 1) {
-        return 0; /* don't destroy anything (TODO: add RIO init to main.c? */
-    }
-
-    rc = rio_ep_set_devid(ep0, RIO_DEVID_EP0);
-    if (rc) goto fail;
-    rc = rio_ep_set_devid(ep1, RIO_DEVID_EP1);
-    if (rc) goto fail;
-
-    rio_switch_map_local(sw, RIO_DEVID_EP0, RIO_MAPPING_TYPE_UNICAST,
-                         (1 << RIO_EP0_SWITCH_PORT));
-    rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
-                         (1 << RIO_EP1_SWITCH_PORT));
+    /* Additional mapping besides one set upon init of RIO */
     rio_switch_map_local(sw, RIO_DEVID_EP_EXT, RIO_MAPPING_TYPE_UNICAST,
                          (1 << RIO_EP_EXT_SWITCH_PORT));
 
@@ -1005,7 +961,7 @@ int test_rio(unsigned instance, struct dma *dmac)
     (void)test_rw_cfg_space;
     (void)test_map_rw_cfg_space;
     (void)test_hop_routing;
-    (void)test_backend;
+    (void)test_rio_backend;
     (void)map_setup;
     (void)map_teardown;
 
@@ -1064,25 +1020,13 @@ int test_rio(unsigned instance, struct dma *dmac)
     rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
                          (1 << RIO_EP1_SWITCH_PORT));
 
-    rc = test_backend(sw, ep0);
-    if (rc) goto fail;
-
     rc = 0;
 fail_map:
     map_teardown(ep0, ep1);
-fail:
-    rio_ep_destroy(ep1);
-fail_ep1:
-    rio_ep_destroy(ep0);
-fail_ep0:
-    /* These unmaps may be redundant on some paths, but it's harmless */
-    rio_switch_unmap_local(sw, RIO_DEVID_EP0);
-    rio_switch_unmap_local(sw, RIO_DEVID_EP1);
-    rio_switch_destroy(sw);
-fail_sw:
-    nvic_int_disable(TRCH_IRQ__RIO_1);
 
-    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "SOME FAILED!" : "ALL PASSED");
+fail:
+    printf("RIO TEST: %s: %s\r\n", __func__,
+           rc ? "SOME FAILED!" : "ALL PASSED");
     return rc;
 }
 

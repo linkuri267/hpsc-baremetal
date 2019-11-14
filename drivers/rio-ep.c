@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "console.h"
 #include "object.h"
 #include "mem.h"
 #include "bit.h"
@@ -738,14 +739,13 @@ const char *rio_ep_name(struct rio_ep *ep) {
     return ep->name;
 }
 
-int rio_ep_set_devid(struct rio_ep *ep, rio_devid_t devid)
+void rio_ep_set_devid(struct rio_ep *ep, rio_devid_t devid)
 {
     /* The driver abstracts dev id width from the consumer */
     uint32_t reg = 0;
     reg = FIELD_DP32(reg, B_DEV_ID, BASE_DEVICE_ID, devid) |
         FIELD_DP32(reg, B_DEV_ID, LARGE_BASE_DEVICE_ID, devid);
     RIO_REGB_WRITE32(ep->base, B_DEV_ID, reg);
-    return 0;
 }
 
 rio_devid_t rio_ep_get_devid(struct rio_ep *ep)

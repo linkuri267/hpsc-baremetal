@@ -30,6 +30,7 @@
 #include "test.h"
 #include "watchdog.h"
 #include "syscfg.h"
+#include "rio-svc.h"
 
 #define SYSTICK_INTERVAL_MS     500
 #define SYSTICK_INTERVAL_CYCLES (SYSTICK_INTERVAL_MS * (SYSTICK_CLK_HZ / 1000))
@@ -46,6 +47,12 @@ static struct syscfg syscfg = {
     .rtps_mode = SYSCFG__RTPS_MODE__LOCKSTEP,
     .hpps_rootfs_loc = MEMDEV_HPPS_DRAM,
     .load_binaries = false,
+    .rio = {
+        .master = true,
+    },
+    .test = {
+        .rio_backend = false,
+    },
 };
 
 
@@ -141,6 +148,8 @@ int main ( void )
         panic("shmem test");
 #endif // TEST_SHMEM
 
+    llist_init(&link_list);
+
 #if CONFIG_TRCH_DMA
     struct dma *trch_dma = trch_dma_init();
     if (!trch_dma)
@@ -191,10 +200,27 @@ int main ( void )
         panic("RTPS/TRCH-HPPS MMU test");
 #endif // TEST_RT_MMU
 
-#if TEST_RIO /* must be after RT MMU setup */
-    if (test_rio(syscfg.instance, trch_dma))
-        panic("rio test");
-#endif // TEST_RIO
+#if CONFIG_RIO
+    struct rio_svc *rio_svc = rio_svc_create(syscfg.rio.master);
+    if (!rio_svc) panic("RIO service");
+#if 0
+    if (llist_insert(&link_list, rio_svc.link))
+        panic("RIO link: llist_insert");
+#endif
+#endif /* CONFIG_RIO */
+
+#if TEST_RIO /* must be after RT_MMU (TODO: RT MMU service */
+    /* This test is not standalone (relies on RIO service), but a standalone
+     * test that intializes the driver could be added smoothly if desired. */
+    if (syscfg.rio.master) {
+        if (test_rio_local(rio_svc->sw, rio_svc->ep0, rio_svc->ep1, trch_dma))
+            panic("RIO service local test");
+        if (syscfg.test.rio_backend) {
+            if (test_rio_backend(rio_svc->sw, rio_svc->ep0))
+                panic("RIO service test of backend");
+        }
+    }
+#endif /* TEST_RIO */
 
 #if CONFIG_MBOX_DEV_HPPS
     struct mbox_link_dev mldev_hpps;
@@ -283,8 +309,6 @@ int main ( void )
         panic("RTPS_A53_PSCI_MBOX_LINK");
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_A53_TRCH_MAILBOX_PSCI
-
-    llist_init(&link_list);
 
 #if CONFIG_RTPS_TRCH_SHMEM
     struct link *rtps_link_shmem = shmem_link_connect("RTPS_SHMEM_LINK",
