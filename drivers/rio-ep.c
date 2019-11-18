@@ -215,7 +215,6 @@ typedef struct MsgDesc {
     uint8_t *payload_ptr;
     uint8_t *next_desc_addr; /* packed, so not a MsgDesc* */
     union {
-        uint64_t launch_time;
         uint64_t rcv_time;
     } timestamp;
 } MsgDesc;
@@ -384,10 +383,6 @@ static unsigned pack_msg_desc(struct rio_ep *ep, uint8_t *buf, unsigned size,
     msg_desc_write_dw(buf, size, &pos, hdr);
     msg_desc_write_dw(buf, size, &pos, cpu_to_ep_addr(ep, desc->payload_ptr));
     msg_desc_write_dw(buf, size, &pos, cpu_to_ep_addr(ep, desc->next_desc_addr));
-
-    if (desc->type == MSG_DESC_INITIATOR_DS) {
-        msg_desc_write_dw(buf, size, &pos, desc->timestamp.launch_time);
-    }
     return pos;
 }
 
@@ -441,9 +436,6 @@ static int unpack_msg_desc(struct rio_ep *ep, MsgDesc *desc,
 
     uint64_t timestamp = msg_desc_read_dw(buf, len, &pos);
     switch (type) {
-        case MSG_DESC_INITIATOR_DS:
-            desc->timestamp.launch_time = timestamp;
-            break;
         case MSG_DESC_TARGET:
             desc->timestamp.rcv_time = timestamp;
             break;
@@ -459,7 +451,6 @@ static void print_msg_desc(MsgDesc *desc)
     uint64_t timestamp;
     switch (desc->type) {
         case MSG_DESC_INITIATOR_PS: timestamp = 0; break;
-        case MSG_DESC_INITIATOR_DS: timestamp = desc->timestamp.launch_time; break;
         case MSG_DESC_TARGET: timestamp = desc->timestamp.rcv_time; break;
         default: ASSERT(!"invalid msg descriptor type");
     }
@@ -983,9 +974,7 @@ int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest, uint64_t launch_time,
         return 4;
     }
 
-    /* TODO: is zero timestamp a reasonable invalid value? */
-    MsgDescType desc_type = launch_time > 0 ?
-        MSG_DESC_INITIATOR_DS : MSG_DESC_INITIATOR_PS;
+    MsgDescType desc_type = MSG_DESC_INITIATOR_PS;
 
     uint8_t *desc_addr = &ep->msg_tx_desc_buf[0];
     uint8_t *payload_addr = desc_addr + MAX_MSG_DESC_SIZE;
@@ -1010,9 +999,6 @@ int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest, uint64_t launch_time,
 
             .msg_len = msg_len,
             .msg_seg = seg,
-
-            /* TODO: save across segments? */
-            .timestamp.launch_time = launch_time,
 
             .payload_ptr = payload_addr,
             .next_desc_addr = (seg == msg_len - 1) ? 0 : next_desc_addr,
