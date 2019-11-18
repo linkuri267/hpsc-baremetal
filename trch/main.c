@@ -37,7 +37,7 @@
 
 // inferred CONFIG settings
 #define CONFIG_MBOX_DEV_HPPS (CONFIG_HPPS_TRCH_MAILBOX_SSW || CONFIG_HPPS_TRCH_MAILBOX || CONFIG_HPPS_TRCH_MAILBOX_ATF)
-#define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX)
+#define CONFIG_MBOX_DEV_LSIO (CONFIG_RTPS_TRCH_MAILBOX || CONFIG_RTPS_TRCH_MAILBOX_PSCI)
 
 static struct syscfg syscfg;
 
@@ -172,51 +172,59 @@ int main ( void )
 
 #if CONFIG_HPPS_TRCH_MAILBOX_SSW
     struct link *hpps_link_ssw = mbox_link_connect("HPPS_MBOX_SSW_LINK",
-                    &mldev_hpps,
-                    HPPS_MBOX0_CHAN__HPPS_SMP_SSW__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_SSW__TRCH_SSW__RPLY,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_HPPS_CPU0);
+        &mldev_hpps,
+        HPPS_MBOX0_CHAN__HPPS_SMP_SSW__TRCH_SSW,
+        HPPS_MBOX0_CHAN__TRCH_SSW__HPPS_SMP_SSW,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link_ssw)
         panic("HPPS_MBOX_SSW_LINK");
     // Never release the link, because we listen on it in main loop
-#endif
+#endif // CONFIG_HPPS_TRCH_MAILBOX_SSW
 
 #if CONFIG_HPPS_TRCH_MAILBOX
-    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mldev_hpps,
-                    HPPS_MBOX0_CHAN__HPPS_SMP_APP__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_APP__TRCH_SSW__RPLY,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_HPPS_CPU0);
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
+        &mldev_hpps,
+        HPPS_MBOX0_CHAN__HPPS_SMP_APP__TRCH_SSW,
+        HPPS_MBOX0_CHAN__TRCH_SSW__HPPS_SMP_APP,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
         panic("HPPS_MBOX_LINK");
     // Never release the link, because we listen on it in main loop
-#endif
+#endif // CONFIG_HPPS_TRCH_MAILBOX
 
 #if CONFIG_HPPS_TRCH_MAILBOX_ATF
-    struct link *hpps_atf_link = mbox_link_connect("HPPS_MBOX_ATF_LINK", &mldev_hpps,
-                    HPPS_MBOX0_CHAN__HPPS_SMP_ATF__TRCH_SSW__RQST, HPPS_MBOX0_CHAN__HPPS_SMP_ATF__TRCH_SSW__RPLY,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_HPPS_CPU0);
+    struct link *hpps_atf_link = mbox_link_connect("HPPS_MBOX_ATF_LINK",
+        &mldev_hpps,
+        HPPS_MBOX0_CHAN__HPPS_SMP_ATF__TRCH_SSW,
+        HPPS_MBOX0_CHAN__TRCH_SSW__HPPS_SMP_ATF,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_atf_link)
         panic("HPPS_MBOX_ATF_LINK");
-
     // Never release the link, because we listen on it in main loop
-#endif
+#endif // CONFIG_HPPS_TRCH_MAILBOX_ATF
 
 #if CONFIG_RTPS_TRCH_MAILBOX
-    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK", &mldev_lsio,
-                    LSIO_MBOX0_CHAN__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RQST, LSIO_MBOX0_CHAN__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW__RPLY,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_RTPS_CPU0);
+    struct link *rtps_link = mbox_link_connect("RTPS_MBOX_LINK",
+        &mldev_lsio,
+        LSIO_MBOX0_CHAN__RTPS_R52_LOCKSTEP_SSW__TRCH_SSW,
+        LSIO_MBOX0_CHAN__TRCH_SSW__RTPS_R52_LOCKSTEP_SSW,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_link)
         panic("RTPS_MBOX_LINK");
     // Never disconnect the link, because we listen on it in main loop
 #endif // CONFIG_RTPS_TRCH_MAILBOX
 
 #if CONFIG_RTPS_TRCH_MAILBOX_PSCI
-    struct link *rtps_psci_link = mbox_link_connect("RTPS_PSCI_MBOX_LINK", &mldev_lsio,
-                    LSIO_MBOX0_CHAN__RTPS_A53_ATF__TRCH_SSW__RQST, LSIO_MBOX0_CHAN__RTPS_A53_ATF__TRCH_SSW__RPLY,
-                    /* server */ MASTER_ID_TRCH_CPU,
-                    /* client */ MASTER_ID_RTPS_CPU0);
+    struct link *rtps_psci_link = mbox_link_connect("RTPS_PSCI_MBOX_LINK",
+        &mldev_lsio,
+        LSIO_MBOX0_CHAN__RTPS_A53_ATF__TRCH_SSW,
+        LSIO_MBOX0_CHAN__TRCH_SSW__RTPS_A53_ATF,
+        /* server */ MASTER_ID_TRCH_CPU,
+        /* client */ MASTER_ID_RTPS_CPU0);
     if (!rtps_psci_link)
         panic("RTPS_PSCI_MBOX_LINK");
     // Never disconnect the link, because we listen on it in main loop

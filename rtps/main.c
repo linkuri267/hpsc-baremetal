@@ -170,10 +170,12 @@ int main(void)
 #endif
 
 #if CONFIG_HPPS_RTPS_MAILBOX
-    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK", &mldev_hpps,
-                    HPPS_MBOX1_CHAN__HPPS_SMP_APP__RTPS_R52_LOCKSTEP_SSW__RQST, HPPS_MBOX1_CHAN__HPPS_SMP_APP__RTPS_R52_LOCKSTEP_SSW__RPLY,
-                    /* server */ MASTER_ID_RTPS_CPU0,
-                    /* client */ MASTER_ID_HPPS_CPU0);
+    struct link *hpps_link = mbox_link_connect("HPPS_MBOX_LINK",
+        &mldev_hpps,
+        HPPS_MBOX1_CHAN__HPPS_SMP_APP__RTPS_R52_LOCKSTEP_SSW,
+        HPPS_MBOX1_CHAN__RTPS_R52_LOCKSTEP_SSW__HPPS_SMP_APP,
+        /* server */ MASTER_ID_RTPS_CPU0,
+        /* client */ MASTER_ID_HPPS_CPU0);
     if (!hpps_link)
         panic("HPPS link");
     // Never release the link, because we listen on it in main loop
