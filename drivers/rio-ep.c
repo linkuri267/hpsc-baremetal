@@ -16,7 +16,7 @@
 #include "rio-ep.h"
 
 #define RIO_MAX_PAYLOAD_SIZE 256 /* TODO: check */
-#define MAX_MSGSEG_XMBOXMENTS 16 /* Spec 2.3.1 */
+#define MAX_MSG_SEGMENTS 16 /* Spec 2.3.1 */
 #define MAX_MSGSEG_XMBOX_SIZE 256 /* keep in sync with msg_seg_sizes list in rio.c */
 #define MAX_MSG_DESC_SIZE 32 /* keep in sync with msg_desc_sizes in rio.c */
 
@@ -30,7 +30,7 @@
 #define NUM_LETTERS 4
 
 #define NUM_MSG_RX_CHAINS 2
-#define MSG_CHAIN_BUF_SIZE ((MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE) * MAX_MSGSEG_XMBOXMENTS)
+#define MSG_CHAIN_BUF_SIZE ((MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE) * MAX_MSG_SEGMENTS)
 
 #define RX_MSG_FIFO_SIZE 4
 
@@ -42,7 +42,7 @@
 struct rx_msg {
     uint8_t payload[MAX_MSG_SIZE];
     unsigned len; /* bytes */
-    uint32_t segments; /* assert(width >= MAX_MSGSEG_XMBOXMENTS) */
+    uint32_t segments; /* assert(width >= MAX_MSG_SEGMENTS) */
     rio_devid_t src_id;
     uint64_t rcv_time;
 };
@@ -951,10 +951,10 @@ int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest, uint64_t launch_time,
     }
 
     uint8_t msg_len = div_ceil(len, seg_size);
-    if (msg_len > MAX_MSGSEG_XMBOXMENTS) {
+    if (msg_len > MAX_MSG_SEGMENTS) {
         printf("RIO EP %s: ERROR: msg of length %u with segment size %u"
                " has too many segments: %u (>= %u)\r\n",
-               ep->name, len, seg_size, MAX_MSGSEG_XMBOXMENTS);
+               ep->name, len, seg_size, MAX_MSG_SEGMENTS);
         return 1;
     }
 
