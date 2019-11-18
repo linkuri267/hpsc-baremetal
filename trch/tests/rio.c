@@ -9,6 +9,8 @@
 #include "dma.h"
 #include "mmus.h"
 #include "bit.h"
+#include "rio-link.h"
+#include "command.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
 #include "test.h"
@@ -18,6 +20,7 @@
 #define TRANSPORT_TYPE RIO_TRANSPORT_DEV8
 #define ADDR_WIDTH RIO_ADDR_WIDTH_34_BIT
 #define CFG_SPACE_SIZE 0x400000 /* for this test, care about only part of 16MB */
+#define TIMEOUT_MS 4000
 
 /* Normally these are assigned by discovery routine in the driver */
 #define RIO_DEVID_EP0 0x0
@@ -289,14 +292,13 @@ static int test_msg(struct rio_ep *ep0, struct rio_ep *ep1)
     const unsigned mbox = 0;
     const unsigned letter = 0;
     const unsigned seg_size = 8;
-    const unsigned launch_time = 0;
     uint64_t payload = 0x01020304deadbeef;
 
     int rc = 1;
 
     printf("RIO TEST: running message test...\r\n");
 
-    rc = rio_ep_msg_send(ep0, dest, launch_time, mbox, letter, seg_size,
+    rc = rio_ep_msg_send(ep0, dest, mbox, letter, seg_size,
                          (uint8_t *)&payload, sizeof(payload));
     if (rc) goto exit;
 
@@ -352,6 +354,108 @@ static int test_doorbell(struct rio_ep *ep0, struct rio_ep *ep1)
 exit:
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
     return rc;
+}
+
+static int test_rpc_ping(struct link *link)
+{
+    uint32_t request[] = { CMD_PING, 42 };
+    /* TODO: rio driver: support last segment < SEG_SIZE, then reply[2] here */
+    uint32_t reply[MSG_SEG_SIZE / sizeof(uint32_t)] = { 0 };
+    int rc = 1;
+
+    rc = link->request(link,
+                       TIMEOUT_MS, request, sizeof(request),
+                       TIMEOUT_MS, reply, sizeof(reply));
+    if (rc) goto fail;
+
+    if (!(reply[0] == CMD_PONG && reply[1] == request[1])) {
+        printf("RIO TEST: ERROR: unexpected reply: 0x%x 0x%x "
+               "(expecting 0x%x 0x%x)\r\n", reply[0], reply[1],
+               request[0], request[1]);
+        rc = 2;
+        goto fail;
+    }
+
+    rc = 0;
+fail:
+    return rc;
+}
+
+static int test_onchip_msg_rpc(struct rio_ep *ep_server, struct rio_ep *ep_client)
+{
+    int rc = 1;
+
+    printf("RIO TEST: %s: running onchip message RPC test...\r\n", __func__);
+
+    struct link *svr_link =
+        rio_link_connect("RIO_SERVER_LINK", /* is_server */ true, ep_server,
+                         /* mbox_local */ 0, /* letter_local */ 0,
+                         rio_ep_get_devid(ep_client),
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         MSG_SEG_SIZE);
+    if (!svr_link) goto fail_svr;
+    /* connecting the link activates listening */
+
+    struct link *cl_link =
+        rio_link_connect("RIO_CLIENT_LINK", /* is_server */ false, ep_client,
+                         /* mbox_local */ 0, /* letter_local */ 0,
+                         rio_ep_get_devid(ep_server),
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         MSG_SEG_SIZE);
+    if (!cl_link) goto fail_cl;
+
+    rc = test_rpc_ping(cl_link);
+    if (rc) goto fail;
+
+    rc = 0;
+fail:
+    rc |= cl_link->disconnect(cl_link);
+fail_cl:
+    rc |= svr_link->disconnect(svr_link);
+fail_svr:
+    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
+    return rc;
+}
+
+static int test_offchip_msg_rpc_client(struct rio_switch *sw, struct rio_ep *ep)
+{
+    printf("RIO TEST: %s: running offchip message RPC test...\r\n", __func__);
+    /* Assumes server machine instance called test_offchip_rpc_server() */
+
+    struct link *cl_link =
+        rio_link_connect("RIO_CLIENT_LINK", /* is_server */ false, ep,
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         RIO_DEVID_EP_EXT,
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         MSG_SEG_SIZE);
+    if (!cl_link) goto fail_link;
+
+    int rc = test_rpc_ping(cl_link);
+    if (rc) goto fail;
+
+    rc = 0;
+fail:
+    rc |= cl_link->disconnect(cl_link);
+fail_link:
+    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
+    return rc;
+}
+
+static int test_offchip_msg_rpc_server(struct rio_switch *sw, struct rio_ep *ep)
+{
+    struct link *svr_link =
+        rio_link_connect("RIO_SERVER_LINK", /* is_server */ true, ep,
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         RIO_DEVID_EP0,
+                         /* mbox_remote */ 0, /* letter_remote */ 0,
+                         MSG_SEG_SIZE);
+    if (!svr_link)
+        return 1;
+
+    /* This function has sideffects: subscribes to IRQ and goes to main loop.
+     * To cleanup after receiving the test message from client, we'd need
+     * to implement notification from the link (or the command server). */
+    return 0;
 }
 
 static uint64_t uint_from_buf(uint8_t *buf, unsigned bytes)
@@ -890,11 +994,11 @@ exit_0:
  * need to somehow change the routing table in the middle of the test).
  * Alternatively, could make a proxy that rewrites destination ID, which could
  * be a standalone process or within Qemu process (slightly weaker test). */
-int test_rio_backend(struct rio_switch *sw, struct rio_ep *ep)
+int test_rio_offchip_client(struct rio_switch *sw, struct rio_ep *ep)
 {
     int rc = 1;
 
-    printf("RIO TEST: %s: running backend test...\r\n", __func__);
+    printf("RIO TEST: %s: running offchip test...\r\n", __func__);
 
     rio_switch_map_local(sw, RIO_DEVID_EP_EXT, RIO_MAPPING_TYPE_UNICAST,
                           (1 << RIO_EP_EXT_SWITCH_PORT));
@@ -927,8 +1031,10 @@ int test_rio_backend(struct rio_switch *sw, struct rio_ep *ep)
     rc = test_write_csr(ep, ep_ext);
     if (rc) goto exit;
 
+    rc = test_offchip_msg_rpc_client(sw, ep);
+    if (rc) goto exit;
+
     /* TODO: test mapped regions */
-    /* TODO: test message layer */
 
     rc = 0;
 exit:
@@ -936,6 +1042,15 @@ exit:
 
     printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
     return rc;
+}
+
+int test_rio_offchip_server(struct rio_switch *sw, struct rio_ep *ep)
+{
+    /* For read/write CSR test, nothing is needed except init of the endpoints
+     * which is done outside of the test */
+
+    /* For msg rpc test: listen on the link */
+    return test_offchip_msg_rpc_server(sw, ep);
 }
 
 int test_rio_local(struct rio_switch *sw,
@@ -961,7 +1076,9 @@ int test_rio_local(struct rio_switch *sw,
     (void)test_rw_cfg_space;
     (void)test_map_rw_cfg_space;
     (void)test_hop_routing;
-    (void)test_rio_backend;
+    (void)test_onchip_msg_rpc;
+    (void)test_offchip_msg_rpc_client;
+    (void)test_offchip_msg_rpc_server;
     (void)map_setup;
     (void)map_teardown;
 
@@ -1020,6 +1137,13 @@ int test_rio_local(struct rio_switch *sw,
     rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
                          (1 << RIO_EP1_SWITCH_PORT));
 
+#if 0 /* TODO: won't work yet: can't block, need to let main loop run */
+    rc = test_onchip_msg_rpc(ep0, ep1);
+    if (rc) goto fail;
+    rc = test_onchip_msg_rpc(ep1, ep0);
+    if (rc) goto fail;
+#endif
+
     rc = 0;
 fail_map:
     map_teardown(ep0, ep1);
@@ -1028,9 +1152,4 @@ fail:
     printf("RIO TEST: %s: %s\r\n", __func__,
            rc ? "SOME FAILED!" : "ALL PASSED");
     return rc;
-}
-
-void rio_1_isr()
-{
-    nvic_int_disable(TRCH_IRQ__RIO_1);
 }

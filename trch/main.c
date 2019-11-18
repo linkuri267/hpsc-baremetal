@@ -51,7 +51,7 @@ static struct syscfg syscfg = {
         .master = true,
     },
     .test = {
-        .rio_backend = false,
+        .rio_offchip = false,
     },
 };
 
@@ -203,24 +203,24 @@ int main ( void )
 #if CONFIG_RIO
     struct rio_svc *rio_svc = rio_svc_create(syscfg.rio.master);
     if (!rio_svc) panic("RIO service");
-#if 0
-    if (llist_insert(&link_list, rio_svc.link))
-        panic("RIO link: llist_insert");
-#endif
-#endif /* CONFIG_RIO */
 
 #if TEST_RIO /* must be after RT_MMU (TODO: RT MMU service */
     /* This test is not standalone (relies on RIO service), but a standalone
      * test that intializes the driver could be added smoothly if desired. */
     if (syscfg.rio.master) {
-        if (test_rio_local(rio_svc->sw, rio_svc->ep0, rio_svc->ep1, trch_dma))
+        if (test_rio_local(rio_svc->sw, rio_svc->eps[0], rio_svc->eps[1],
+                           trch_dma))
             panic("RIO service local test");
-        if (syscfg.test.rio_backend) {
-            if (test_rio_backend(rio_svc->sw, rio_svc->ep0))
-                panic("RIO service test of backend");
-        }
+    }
+    if (syscfg.test.rio_offchip) {
+        int rc = syscfg.rio.master ?
+            test_rio_offchip_client(rio_svc->sw, rio_svc->eps[0]) :
+            test_rio_offchip_server(rio_svc->sw, rio_svc->eps[0]);
+        if (rc)
+            panic("RIO service offchip test");
     }
 #endif /* TEST_RIO */
+#endif /* CONFIG_RIO */
 
 #if CONFIG_MBOX_DEV_HPPS
     struct mbox_link_dev mldev_hpps;

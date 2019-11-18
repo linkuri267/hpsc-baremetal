@@ -22,8 +22,8 @@
 #define SYSCFG__HAVE_SFS_OFFSET__MASK      (0x1 << SYSCFG__HAVE_SFS_OFFSET__SHIFT)
 #define SYSCFG__RIO_MASTER__SHIFT          13
 #define SYSCFG__RIO_MASTER__MASK           (0x1 << SYSCFG__RIO_MASTER__SHIFT)
-#define SYSCFG__TEST_RIO_BACKEND__SHIFT    14
-#define SYSCFG__TEST_RIO_BACKEND__MASK     (0x1 << SYSCFG__TEST_RIO_BACKEND__SHIFT)
+#define SYSCFG__TEST_RIO_OFFCHIP__SHIFT    14
+#define SYSCFG__TEST_RIO_OFFCHIP__MASK     (0x1 << SYSCFG__TEST_RIO_OFFCHIP__SHIFT)
 #define SYSCFG__SFS_OFFSET__WORD           2
 
 enum memdev {
@@ -55,7 +55,7 @@ struct syscfg {
     } rio;
 
     struct {
-        bool rio_backend;
+        bool rio_offchip;
     } test;
 };
 

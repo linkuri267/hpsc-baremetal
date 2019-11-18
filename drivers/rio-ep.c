@@ -61,6 +61,11 @@ struct rio_ep {
     enum rio_transport_type ttype;
     unsigned addr_width;
 
+    msg_cb_t *msg_tx_cb;
+    void *msg_tx_cb_arg;
+    msg_cb_t *msg_rx_cb;
+    void *msg_rx_cb_arg;
+
     rio_bus_addr_t buf_mem_ep;
     uint8_t *buf_mem_cpu;
     unsigned buf_mem_size;
@@ -493,7 +498,8 @@ static unsigned init_rx_chain(struct rio_ep *ep, uint8_t *buf, int size)
     while (desc + MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE <= buf + size) {
         unsigned pos = 0;
         uint64_t hdr = 0;
-        hdr = FIELD_DP64(hdr, MSG_DESC, INTERRUPT, 0);
+        /* TODO: enable int only when subscribed -- would need to reinit. ugh */
+        hdr = FIELD_DP64(hdr, MSG_DESC, INTERRUPT, 1);
         hdr = FIELD_DP64(hdr, MSG_DESC, FREE, 0);
         msg_desc_write_dw(desc, size, &pos, hdr);
 
@@ -940,7 +946,33 @@ int rio_ep_write_csr32(struct rio_ep *ep, const uint32_t data,
     return rio_ep_write_csr(ep, bytes, sizeof(uint32_t), dest, addr);
 }
 
-int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest, uint64_t launch_time,
+
+void rio_ep_sub_msg_tx(struct rio_ep *ep, msg_cb_t *cb, void *arg)
+{
+   ASSERT(ep);
+   ASSERT(!ep->msg_tx_cb && "only one callback supported");
+   ASSERT(cb);
+   ep->msg_tx_cb = cb;
+   ep->msg_tx_cb_arg = arg;
+}
+void rio_ep_sub_msg_rx(struct rio_ep *ep, msg_cb_t *cb, void *arg)
+{
+   ASSERT(ep);
+   ASSERT(!ep->msg_rx_cb && "only one callback supported");
+   ASSERT(cb);
+   ep->msg_rx_cb = cb;
+   ep->msg_rx_cb_arg = arg;
+}
+void rio_ep_unsub_msg_tx(struct rio_ep *ep)
+{
+   ep->msg_tx_cb = ep->msg_tx_cb_arg = NULL;
+}
+void rio_ep_unsub_msg_rx(struct rio_ep *ep)
+{
+   ep->msg_rx_cb = ep->msg_rx_cb_arg = NULL;
+}
+
+int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest,
                     uint8_t mbox, uint8_t letter, uint8_t seg_size,
                     uint8_t *payload, unsigned len)
 {
@@ -1149,6 +1181,8 @@ int rio_ep_msg_recv(struct rio_ep *ep, uint8_t mbox, uint8_t letter,
     while (msg->segments) { /* while msg not complete */
         receive_msg_segment(ep);
     }
+    printf("RIO EP %s: msg recv: reply size %u, msg len %u\r\n",
+           ep->name, *len, msg->len);
     ASSERT(*len >= msg->len);
     *len = msg->len;
     *src = msg->src_id;
@@ -1532,4 +1566,19 @@ int rio_ep_write32(struct rio_ep *ep, uint32_t data,
     uint8_t bytes[sizeof(uint32_t)];
     uint32_to_be(bytes, data);
     return rio_ep_write(ep, bytes, sizeof(bytes), addr, dest);
+}
+
+void rio_ep_msg_tx_isr(struct rio_ep *ep)
+{
+   ASSERT(ep);
+   DPRINTF("RIO EP %s: msg TX ISR\r\n", ep->name);
+   if (ep->msg_tx_cb)
+      ep->msg_tx_cb(ep->msg_tx_cb_arg);
+}
+void rio_ep_msg_rx_isr(struct rio_ep *ep)
+{
+   ASSERT(ep);
+   DPRINTF("RIO EP %s: msg RX ISR\r\n", ep->name);
+   if (ep->msg_rx_cb)
+      ep->msg_rx_cb(ep->msg_rx_cb_arg);
 }

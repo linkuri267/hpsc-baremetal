@@ -116,6 +116,8 @@ static inline rio_addr_t rio_addr_add64(rio_addr_t addr, uint64_t val)
 
 struct rio_ep;
 
+typedef void (msg_cb_t)(void *opaque);
+
 enum rio_addr_width {
     RIO_ADDR_WIDTH_34_BIT = 34,
     RIO_ADDR_WIDTH_50_BIT = 50,
@@ -163,7 +165,11 @@ int rio_ep_read_csr32(struct rio_ep *ep, uint32_t *data,
 int rio_ep_write_csr32(struct rio_ep *ep, uint32_t data,
                         rio_dest_t dest, uint32_t offset);
 
-int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest, uint64_t launch_time,
+void rio_ep_sub_msg_tx(struct rio_ep *ep, msg_cb_t *cb, void *arg);
+void rio_ep_unsub_msg_tx(struct rio_ep *ep);
+void rio_ep_sub_msg_rx(struct rio_ep *ep, msg_cb_t *cb, void *arg);
+void rio_ep_unsub_msg_rx(struct rio_ep *ep);
+int rio_ep_msg_send(struct rio_ep *ep, rio_devid_t dest,
                     uint8_t mbox, uint8_t letter, uint8_t seg_size,
                     uint8_t *payload, unsigned len);
 int rio_ep_msg_recv(struct rio_ep *ep, uint8_t mbox, uint8_t letter,
@@ -203,5 +209,8 @@ int rio_ep_read32(struct rio_ep *ep, uint32_t *data,
                   rio_addr_t addr, rio_devid_t dest);
 int rio_ep_write32(struct rio_ep *ep, uint32_t data,
                    rio_addr_t addr, rio_devid_t dest);
+
+void rio_ep_msg_rx_isr(struct rio_ep *ep);
+void rio_ep_msg_tx_isr(struct rio_ep *ep);
 
 #endif // RIO_H

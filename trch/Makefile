@@ -140,6 +140,7 @@ OBJS = \
        lib/mem.o \
        lib/object.o \
        lib/panic.o \
+       lib/rio-link.o \
        lib/sfs.o \
        lib/sha256.o \
        lib/shmem.o \

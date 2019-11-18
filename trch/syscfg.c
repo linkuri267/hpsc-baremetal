@@ -71,8 +71,8 @@ int syscfg_load(struct syscfg *cfg, uint8_t *addr)
                                 >> SYSCFG__LOAD_BINARIES__SHIFT;
     cfg->rio.master = (word0 & SYSCFG__RIO_MASTER__MASK)
                         >> SYSCFG__RIO_MASTER__SHIFT;
-    cfg->test.rio_backend = (word0 & SYSCFG__TEST_RIO_BACKEND__MASK)
-                                >> SYSCFG__TEST_RIO_BACKEND__SHIFT;
+    cfg->test.rio_offchip = (word0 & SYSCFG__TEST_RIO_OFFCHIP__MASK)
+                                >> SYSCFG__TEST_RIO_OFFCHIP__SHIFT;
     cfg->sfs_offset = *waddr++;
 
     syscfg_print(cfg);

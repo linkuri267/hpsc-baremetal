@@ -6,6 +6,7 @@
 #include "nvic.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
+#include "rio-link.h"
 
 #include "hwinfo.h"
 #include "mem-map.h"
@@ -50,7 +51,11 @@ struct rio_svc *rio_svc_create(bool master)
     printf("RIO: initialize\r\n");
     ASSERT(!initialized);
 
-    nvic_int_enable(TRCH_IRQ__RIO_1);
+    /* TODO: this should be done only upon subscribing to IRQ, but
+       this requires an interrupt controller abstraction, which is
+       not yet complete. */
+    nvic_int_enable(TRCH_IRQ__RIO_EP_0_MSG_RX);
+    nvic_int_enable(TRCH_IRQ__RIO_EP_1_MSG_RX);
 
     svc->sw = rio_switch_create("RIO_SW", /* local */ true, RIO_SWITCH_BASE);
     if (!svc->sw)
@@ -61,27 +66,29 @@ struct rio_svc *rio_svc_create(bool master)
     uint8_t *buf_mem_cpu = (uint8_t *)RIO_MEM_WIN_ADDR;
     rio_bus_addr_t buf_mem_ep = RIO_MEM_ADDR;
 
-    svc->ep0 = rio_ep_create("RIO_EP0", RIO_EP0_BASE,
+    ASSERT(0 < RIO_SVC_NUM_ENDPOINTS);
+    svc->eps[0] = rio_ep_create("RIO_EP0", RIO_EP0_BASE,
                         RIO_EP0_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
                         TRANSPORT_TYPE, ADDR_WIDTH,
                         buf_mem_ep, buf_mem_cpu, buf_mem_size);
-    if (!svc->ep0)
+    if (!svc->eps[0])
         goto fail_ep0;
     buf_mem_ep += buf_mem_size;
     buf_mem_cpu += buf_mem_size;
 
-    svc->ep1 = rio_ep_create("RIO_EP1", RIO_EP1_BASE,
+    ASSERT(1 < RIO_SVC_NUM_ENDPOINTS);
+    svc->eps[1] = rio_ep_create("RIO_EP1", RIO_EP1_BASE,
                         RIO_EP1_OUT_AS_BASE, RIO_OUT_AS_WIDTH,
                         TRANSPORT_TYPE, ADDR_WIDTH,
                         buf_mem_ep, buf_mem_cpu, buf_mem_size);
-    if (!svc->ep1)
+    if (!svc->eps[1])
         goto fail_ep1;
     buf_mem_ep += buf_mem_size;
     buf_mem_cpu += buf_mem_size;
 
     if (master) {
-        rio_ep_set_devid(svc->ep0, RIO_DEVID_EP0);
-        rio_ep_set_devid(svc->ep1, RIO_DEVID_EP1);
+        rio_ep_set_devid(svc->eps[0], RIO_DEVID_EP0);
+        rio_ep_set_devid(svc->eps[1], RIO_DEVID_EP1);
 
         rio_switch_map_local(svc->sw, RIO_DEVID_EP0, RIO_MAPPING_TYPE_UNICAST,
                              (1 << RIO_EP0_SWITCH_PORT));
@@ -90,15 +97,17 @@ struct rio_svc *rio_svc_create(bool master)
         
         /* Discover algorithm would run here and assign Device IDs... */
     }
+
     initialized = true;
     return svc;
 
 fail_ep1:
-    rio_ep_destroy(svc->ep0);
+    rio_ep_destroy(svc->eps[0]);
 fail_ep0:
     rio_switch_destroy(svc->sw);
 fail_sw:
-    nvic_int_disable(TRCH_IRQ__RIO_1);
+    nvic_int_disable(TRCH_IRQ__RIO_EP_1_MSG_RX);
+    nvic_int_disable(TRCH_IRQ__RIO_EP_0_MSG_RX);
     return NULL;
 }
 
@@ -106,17 +115,25 @@ void rio_svc_destroy(struct rio_svc *svc)
 {
     ASSERT(initialized);
     ASSERT(svc == &svc_obj);
-    ASSERT(svc->ep0 && svc->ep1 && svc->sw);
+    ASSERT(svc->eps[0] && svc->eps[1] && svc->sw);
+
+    nvic_int_disable(TRCH_IRQ__RIO_EP_1_MSG_RX);
+    nvic_int_disable(TRCH_IRQ__RIO_EP_0_MSG_RX);
 
     rio_switch_unmap_local(svc->sw, RIO_DEVID_EP0);
     rio_switch_unmap_local(svc->sw, RIO_DEVID_EP1);
 
-    rio_ep_set_devid(svc->ep0, 0);
-    rio_ep_set_devid(svc->ep1, 0);
+    rio_ep_set_devid(svc->eps[0], 0);
+    rio_ep_set_devid(svc->eps[1], 0);
 
-    rio_ep_destroy(svc->ep1);
-    rio_ep_destroy(svc->ep0);
+    rio_ep_destroy(svc->eps[1]);
+    rio_ep_destroy(svc->eps[0]);
     rio_switch_destroy(svc->sw);
-
-    nvic_int_disable(TRCH_IRQ__RIO_1);
 }
+
+/* This is helping out the driver to subscribe to IRQs, since
+   our interrupt controller driver does not have a subscription API */
+void rio_ep_0_msg_tx_isr() { rio_ep_msg_tx_isr(svc_obj.eps[0]); }
+void rio_ep_0_msg_rx_isr() { rio_ep_msg_rx_isr(svc_obj.eps[0]); }
+void rio_ep_1_msg_tx_isr() { rio_ep_msg_tx_isr(svc_obj.eps[1]); }
+void rio_ep_1_msg_rx_isr() { rio_ep_msg_rx_isr(svc_obj.eps[1]); }
