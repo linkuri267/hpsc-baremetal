@@ -1576,6 +1576,7 @@ void rio_ep_msg_tx_isr(struct rio_ep *ep)
 {
    ASSERT(ep);
    DPRINTF("RIO EP %s: msg TX ISR\r\n", ep->name);
+   /* TODO: the callback should be called on last segment only! */
    if (ep->msg_tx_cb)
       ep->msg_tx_cb(ep->msg_tx_cb_arg);
 }
@@ -1583,6 +1584,7 @@ void rio_ep_msg_rx_isr(struct rio_ep *ep)
 {
    ASSERT(ep);
    DPRINTF("RIO EP %s: msg RX ISR\r\n", ep->name);
+   /* TODO: the callback should be called on last segment only! */
    if (ep->msg_rx_cb)
       ep->msg_rx_cb(ep->msg_rx_cb_arg);
 }
