@@ -10,6 +10,7 @@
 #include "mmus.h"
 #include "bit.h"
 #include "rio-link.h"
+#include "event.h"
 #include "command.h"
 #include "rio-ep.h"
 #include "rio-switch.h"
@@ -62,6 +63,16 @@ static const rio_addr_t cfg_space_base = CFG_SPACE_BASE;
 
 #define STR_(s) #s
 #define STR(s) STR_(s)
+
+enum t_rio_ev {
+    T_RIO_EV_START,
+    T_RIO_EV_DONE,
+};
+
+enum t_rpc_ev {
+    T_RPC_EV_START,
+    T_RPC_EV_PONG,
+};
 
 static struct RioPkt in_pkt, out_pkt;
 static uint8_t test_buf[RIO_MEM_TEST_SIZE]
@@ -356,36 +367,130 @@ exit:
     return rc;
 }
 
-static int test_rpc_ping(struct link *link)
+#if 0 /* TODO: rio driver: support last segment < SEG_SIZE */
+#define MSG_PING_WORDS 2
+#else
+#define MSG_PING_WORDS (MSG_SEG_SIZE / sizeof(uint32_t))
+#endif
+#define MSG_PING_BYTES (MSG_PING_WORDS * sizeof(uint32_t))
+
+static bool check_pong(uint32_t *request, uint32_t *reply, size_t reply_len)
 {
-    uint32_t request[] = { CMD_PING, 42 };
-    /* TODO: rio driver: support last segment < SEG_SIZE, then reply[2] here */
-    uint32_t reply[MSG_SEG_SIZE / sizeof(uint32_t)] = { 0 };
-    int rc = 1;
-
-    rc = link->request(link,
-                       TIMEOUT_MS, request, sizeof(request),
-                       TIMEOUT_MS, reply, sizeof(reply));
-    if (rc) goto fail;
-
-    if (!(reply[0] == CMD_PONG && reply[1] == request[1])) {
-        printf("RIO TEST: ERROR: unexpected reply: 0x%x 0x%x "
-               "(expecting 0x%x 0x%x)\r\n", reply[0], reply[1],
-               request[0], request[1]);
-        rc = 2;
-        goto fail;
+    if (!(reply_len == MSG_PING_BYTES &&
+          reply[0] == CMD_PONG && reply[1] == request[1])) {
+        printf("RIO TEST: ERROR: unexpected pong: len %u cmd 0x%x arg 0x%x "
+               "(expecting len %u cmd 0x%x arg 0x%x)\r\n",
+               reply_len, reply[0], reply[1],
+               MSG_PING_BYTES, CMD_PONG, request[1]);
+        return false;
     }
-
-    rc = 0;
-fail:
-    return rc;
+    return true;
 }
 
-static int test_onchip_msg_rpc(struct rio_ep *ep_server, struct rio_ep *ep_client)
+enum t_rpc_state {
+    T_RPC_ST_INIT,
+    T_RPC_ST_PONG_WAIT,
+};
+
+struct t_rpc {
+    struct ev_loop *ev_loop;
+    struct ev_actor actor;
+    struct ev_actor *parent_actor;
+    struct link *cl_link;
+    struct link *svr_link;
+
+    uint32_t request[MSG_PING_WORDS];
+    uint32_t reply[MSG_PING_WORDS];
+    size_t reply_len;
+
+    enum link_rpc_status rpc_status;
+    enum t_rpc_state state;
+};
+
+static void test_rpc_on_pong(void *opaque)
+{
+    struct t_rpc *s = opaque;
+    int rc = ev_loop_post(s->ev_loop, &s->actor, (void *)T_RPC_EV_PONG);
+    if (rc) panic("RIO TEST: onchip rpc: post event");
+}
+
+static void test_rpc_on_event(void *obj, void *event)
+{
+    struct t_rpc *s = obj;
+    enum t_rpc_ev ev = (enum t_rpc_ev)event;
+    ASSERT(s);
+
+    int rc = 1;
+    ssize_t sz;
+
+    printf("RIO TEST: onchip rpc ping: state 0x%x event 0x%x\r\n",
+           s->state, ev);
+    switch (s->state) {
+        case T_RPC_ST_INIT:
+            ASSERT(ev == T_RPC_EV_START);
+
+            s->request[0] = CMD_PING;
+            s->request[1] = 42;
+            bzero(s->reply, sizeof(s->reply));
+            s->reply_len = sizeof(s->reply);
+            s->rpc_status = LINK_RPC_UNKNOWN;
+
+            s->state = T_RPC_ST_PONG_WAIT;
+            ASSERT(s->cl_link);
+            sz = s->cl_link->request_async(s->cl_link,
+                                   TIMEOUT_MS, s->request, sizeof(s->request),
+                                   TIMEOUT_MS, s->reply, &s->reply_len,
+                                   &s->rpc_status, test_rpc_on_pong, s);
+            if (sz != sizeof(s->request)) {
+                printf("RIO TEST: onchip rpc ping: req failed: sz %d\r\n", sz);
+                /* keep going, rely on default value of rc */
+            }
+            rc = 0;
+            break;
+        case T_RPC_ST_PONG_WAIT:
+            ASSERT(ev == T_RPC_EV_PONG);
+            if (s->rpc_status != LINK_RPC_OK) {
+                printf("RIO TEST: onchip rpc ping: status 0x%x\r\n",
+                       s->rpc_status);
+                break;
+            }
+            if (!check_pong(s->request, s->reply, s->reply_len))
+                break;
+            rc = s->cl_link->disconnect(s->cl_link);
+            if (rc) break;
+            rc = s->svr_link->disconnect(s->svr_link);
+            if (rc) break;
+            rc = ev_loop_post(s->ev_loop, s->parent_actor,
+                              (void *)T_RIO_EV_DONE);
+            if (rc) break;
+            printf("RIO TEST: onchip rpc: test done\r\n");
+            s->state = T_RPC_ST_INIT;
+            rc = 0;
+            break;
+        default:
+            /* not a test failure: a logic error */
+            panic("RIO TEST: onchip rpc: invalid ping test state");
+    }
+
+    /* Don't have a good way of returning test status when running via
+       event loop. Would need to decorate event actors with desired behavior on
+       failure (currently actors are void). */
+    if (rc) {
+        printf("RIO TEST: onchip rpc test failed: rc %d state 0x%x\r\n",
+               rc, s->state);
+        panic("RIO TEST: onchip rpc test failed");
+    }
+}
+
+static int test_onchip_msg_rpc_start(struct rio_ep *ep_server,
+                                     struct rio_ep *ep_client,
+                                     struct ev_loop *el,
+                                     struct ev_actor *parent)
 {
     int rc = 1;
 
-    printf("RIO TEST: %s: running onchip message RPC test...\r\n", __func__);
+    printf("RIO TEST: %s: starting onchip msg RPC test %s->%s...\r\n",
+           __func__, rio_ep_name(ep_client), rio_ep_name(ep_server));
 
     struct link *svr_link =
         rio_link_connect("RIO_SERVER_LINK", /* is_server */ true, ep_server,
@@ -404,21 +509,38 @@ static int test_onchip_msg_rpc(struct rio_ep *ep_server, struct rio_ep *ep_clien
                          MSG_SEG_SIZE);
     if (!cl_link) goto fail_cl;
 
-    rc = test_rpc_ping(cl_link);
-    if (rc) goto fail;
+    /* Use asynchronous API using event loop, since while we wait for
+       response we cannot block main loop, so that command server can run. */
 
-    rc = 0;
-fail:
-    rc |= cl_link->disconnect(cl_link);
+    static struct t_rpc s = {
+        .actor = { .func = test_rpc_on_event, .state = &s },
+        .state = T_RPC_ST_INIT,
+    };
+    s.ev_loop = el;
+    s.cl_link = cl_link;
+    s.svr_link = svr_link;
+    s.parent_actor = parent;
+
+    rc = ev_loop_post(s.ev_loop, &s.actor, (void *)T_RPC_EV_START);
+    if (rc) goto fail_post;
+
+    printf("RIO TEST: %s: started successfully...\r\n", __func__);
+    return 0; /* test not over yet, links are cleaned up in the event actor */
+
+fail_post:
+    cl_link->disconnect(cl_link);
 fail_cl:
-    rc |= svr_link->disconnect(svr_link);
+    svr_link->disconnect(svr_link);
 fail_svr:
-    printf("RIO TEST: %s: %s\r\n", __func__, rc ? "FAILED" : "PASSED");
+    printf("RIO TEST: %s: FAILED\r\n", __func__);
     return rc;
 }
 
 static int test_offchip_msg_rpc_client(struct rio_switch *sw, struct rio_ep *ep)
 {
+    int rc = 1;
+    ssize_t sz;
+
     printf("RIO TEST: %s: running offchip message RPC test...\r\n", __func__);
     /* Assumes server machine instance called test_offchip_rpc_server() */
 
@@ -430,8 +552,19 @@ static int test_offchip_msg_rpc_client(struct rio_switch *sw, struct rio_ep *ep)
                          MSG_SEG_SIZE);
     if (!cl_link) goto fail_link;
 
-    int rc = test_rpc_ping(cl_link);
-    if (rc) goto fail;
+    static uint32_t request[] = { CMD_PING, 42 };
+    /* TODO: rio driver: support last segment < SEG_SIZE, then reply[2] here */
+    static uint32_t reply[MSG_SEG_SIZE / sizeof(uint32_t)] = { 0 };
+
+    sz = cl_link->request(cl_link,
+                          TIMEOUT_MS, request, sizeof(request),
+                          TIMEOUT_MS, reply, sizeof(reply));
+    if (sz <= 0) {
+        printf("RIO TEST: %s: request failed: rc %d\r\n", __func__, sz);
+        goto fail;
+    }
+    if (!check_pong(request, reply, sz))
+        goto fail;
 
     rc = 0;
 fail:
@@ -994,7 +1127,7 @@ exit_0:
  * need to somehow change the routing table in the middle of the test).
  * Alternatively, could make a proxy that rewrites destination ID, which could
  * be a standalone process or within Qemu process (slightly weaker test). */
-int test_rio_offchip_client(struct rio_switch *sw, struct rio_ep *ep)
+static int test_offchip_client(struct rio_switch *sw, struct rio_ep *ep)
 {
     int rc = 1;
 
@@ -1044,7 +1177,7 @@ exit:
     return rc;
 }
 
-int test_rio_offchip_server(struct rio_switch *sw, struct rio_ep *ep)
+static int test_offchip_server(struct rio_switch *sw, struct rio_ep *ep)
 {
     /* For read/write CSR test, nothing is needed except init of the endpoints
      * which is done outside of the test */
@@ -1053,17 +1186,14 @@ int test_rio_offchip_server(struct rio_switch *sw, struct rio_ep *ep)
     return test_offchip_msg_rpc_server(sw, ep);
 }
 
-int test_rio_local(struct rio_switch *sw,
+/* Tests that can run synchronously (without event loop) */
+static int test_local(struct rio_switch *sw,
                    struct rio_ep *ep0, struct rio_ep *ep1,
                    struct dma *dmac)
 {
     int rc = 1;
 
     printf("RIO TEST: %s: start\r\n", __func__);
-
-    /* Additional mapping besides one set upon init of RIO */
-    rio_switch_map_local(sw, RIO_DEVID_EP_EXT, RIO_MAPPING_TYPE_UNICAST,
-                         (1 << RIO_EP_EXT_SWITCH_PORT));
 
     /* so that we can ifdef tests out without warnings */
     (void)test_send_receive;
@@ -1076,9 +1206,6 @@ int test_rio_local(struct rio_switch *sw,
     (void)test_rw_cfg_space;
     (void)test_map_rw_cfg_space;
     (void)test_hop_routing;
-    (void)test_onchip_msg_rpc;
-    (void)test_offchip_msg_rpc_client;
-    (void)test_offchip_msg_rpc_server;
     (void)map_setup;
     (void)map_teardown;
 
@@ -1124,6 +1251,7 @@ int test_rio_local(struct rio_switch *sw,
 
     map_teardown(ep0, ep1);
 
+    /* TODO: this save/restore is not great b/c the setting is in rio-svc.c */
     /* Before hop routing test: reset switch routing table */
     rio_switch_unmap_local(sw, RIO_DEVID_EP0);
     rio_switch_unmap_local(sw, RIO_DEVID_EP1);
@@ -1137,19 +1265,120 @@ int test_rio_local(struct rio_switch *sw,
     rio_switch_map_local(sw, RIO_DEVID_EP1, RIO_MAPPING_TYPE_UNICAST,
                          (1 << RIO_EP1_SWITCH_PORT));
 
-#if 0 /* TODO: won't work yet: can't block, need to let main loop run */
-    rc = test_onchip_msg_rpc(ep0, ep1);
-    if (rc) goto fail;
-    rc = test_onchip_msg_rpc(ep1, ep0);
-    if (rc) goto fail;
-#endif
-
     rc = 0;
 fail_map:
     map_teardown(ep0, ep1);
-
 fail:
     printf("RIO TEST: %s: %s\r\n", __func__,
            rc ? "SOME FAILED!" : "ALL PASSED");
+    return rc;
+}
+
+enum t_rio_state {
+    T_RIO_ST_INIT,
+    T_RIO_ST_ONCHIP_MSG_RPC_EP0_EP1,
+    T_RIO_ST_ONCHIP_MSG_RPC_EP1_EP0,
+    T_RIO_ST_OFFCHIP,
+};
+
+struct t_rio {
+    struct ev_loop *ev_loop;
+    struct ev_actor actor;
+    struct rio_switch *sw;
+    struct rio_ep *ep0;
+    struct rio_ep *ep1;
+    struct dma *dmac;
+    bool offchip;
+    bool master;
+    enum t_rio_state state;
+};
+
+static void test_rio_on_event(void *obj, void *event)
+{
+    struct t_rio *s = obj;
+    enum t_rio_ev ev = (enum t_rio_ev)event;
+    int rc = 1;
+
+    switch (s->state) {
+        case T_RIO_ST_INIT:
+            s->state = T_RIO_ST_ONCHIP_MSG_RPC_EP0_EP1;
+            rc = test_onchip_msg_rpc_start(s->ep0, s->ep1,
+                                           s->ev_loop, &s->actor);
+            break;
+        case T_RIO_ST_ONCHIP_MSG_RPC_EP0_EP1:
+            ASSERT(ev == T_RIO_EV_DONE);
+            s->state = T_RIO_ST_ONCHIP_MSG_RPC_EP1_EP0;
+            rc = test_onchip_msg_rpc_start(s->ep1, s->ep0,
+                                           s->ev_loop, &s->actor);
+            break;
+        case T_RIO_ST_ONCHIP_MSG_RPC_EP1_EP0:
+            ASSERT(ev == T_RIO_EV_DONE);
+            if (s->offchip) {
+                s->state = T_RIO_ST_OFFCHIP;
+                rc = test_offchip_client(s->sw, s->ep0);
+                if (rc) break;
+            }
+            printf("RIO TEST: test done\r\n");
+            s->state = T_RIO_ST_INIT;
+            rc = 0;
+            break;
+        default:
+            panic("RIO TEST: unexpected test state"); /* bug */
+    }
+    /* Don't have a good way of returning test status when running via
+       event loop. Would need to decorate event actors with desired behavior on
+       failure (currently actors are void). */
+    if (rc) {
+        printf("RIO TEST: failed: rc %d state 0x%x\r\n", rc, s->state);
+        panic("RIO TEST: failed");
+    }
+}
+
+/* Launches the test state machine: test not done upon return. */
+int test_rio_start(struct rio_switch *sw,
+                   struct rio_ep *ep0, struct rio_ep *ep1,
+                   struct dma *dmac, struct ev_loop *ev_loop,
+                   bool offchip, bool master)
+{
+    int rc;
+
+    /* Only master can run the local test because we are testing against
+       RIO service, which sets up routing table only in master mode. If we
+       change/add a fully standalone test, then both master and non-masters
+       would be able to run the local test. */
+    if (master) {
+        rc = test_local(sw, ep0, ep1, dmac);
+        if (rc) goto exit;
+    }
+
+    printf("RIO TEST: %s: starting state machine...\r\n", __func__);
+
+    static struct t_rio s = {
+        .actor = { .func = test_rio_on_event, .state = &s },
+        .state = T_RIO_ST_INIT,
+    };
+    s.sw = sw;
+    s.ep0 = ep0;
+    s.ep1 = ep1;
+    s.dmac = dmac;
+    s.ev_loop = ev_loop;
+    s.offchip = offchip;
+    s.master = master;
+
+    if (master) {
+        rc = ev_loop_post(s.ev_loop, &s.actor, (void *)T_RIO_EV_START);
+        if (rc) goto exit;
+        printf("RIO TEST: %s: state machine started...\r\n", __func__);
+    } else if (offchip) {
+        /* TODO: clean up after the test. Can't do it yet because need a
+           notification when server has processed the ping request. */
+        rc = test_offchip_server(sw, ep0);
+        if (rc) goto exit;
+        printf("RIO TEST: %s: server for rpc offchip test started...\r\n",
+               __func__);
+    }
+    return 0; /* in cases that launched state machine, test not over yet */
+exit:
+    printf("RIO TEST: %s: FAILED\r\n", __func__);
     return rc;
 }

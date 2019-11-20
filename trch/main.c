@@ -209,19 +209,15 @@ int main ( void )
     if (!rio_svc) panic("RIO service");
 
 #if TEST_RIO /* must be after RT_MMU (TODO: RT MMU service */
-    /* This test is not standalone (relies on RIO service), but a standalone
+    /* This test is not standalone (it tests the RIO service, i.e. the test
+     * tests some SW functionality besides the driver), but a standalone
      * test that intializes the driver could be added smoothly if desired. */
-    if (syscfg.rio.master) {
-        if (test_rio_local(rio_svc->sw, rio_svc->eps[0], rio_svc->eps[1],
-                           trch_dma))
-            panic("RIO service local test");
-    }
-    if (syscfg.test.rio_offchip) {
-        int rc = syscfg.rio.master ?
-            test_rio_offchip_client(rio_svc->sw, rio_svc->eps[0]) :
-            test_rio_offchip_server(rio_svc->sw, rio_svc->eps[0]);
-        if (rc)
-            panic("RIO service offchip test");
+
+    /* This call starts a state machine, it runs as we run the main loop. */
+    if (test_rio_start(rio_svc->sw, rio_svc->eps[0], rio_svc->eps[1],
+                       trch_dma, &main_event_loop,
+                       syscfg.test.rio_offchip, syscfg.rio.master)) {
+        panic("RIO service test startup");
     }
 #endif /* TEST_RIO */
 #endif /* CONFIG_RIO */
