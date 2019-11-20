@@ -1206,7 +1206,7 @@ int rio_ep_doorbell_send_async(struct rio_ep *ep, rio_devid_t dest, uint16_t inf
     printf("RIO EP %s: sending doorbell req:\r\n", ep->name);
     rio_print_pkt(&ep->out_pkt);
 
-	return rio_ep_sp_send(ep, &ep->out_pkt);
+    return rio_ep_sp_send(ep, &ep->out_pkt);
 }
 
 int rio_ep_doorbell_reap(struct rio_ep *ep, enum rio_status *status)
