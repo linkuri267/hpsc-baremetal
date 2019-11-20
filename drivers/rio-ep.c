@@ -498,6 +498,7 @@ static unsigned init_rx_chain(struct rio_ep *ep, uint8_t *buf, int size)
     while (desc + MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE <= buf + size) {
         unsigned pos = 0;
         uint64_t hdr = 0;
+        /* If change init value of int here, also change in reserve_rx_chain */
         /* TODO: enable int only when subscribed -- would need to reinit. ugh */
         hdr = FIELD_DP64(hdr, MSG_DESC, INTERRUPT, 1);
         hdr = FIELD_DP64(hdr, MSG_DESC, FREE, 0);
@@ -513,9 +514,8 @@ static unsigned init_rx_chain(struct rio_ep *ep, uint8_t *buf, int size)
 
         msg_desc_write_dw(desc, size, &pos, payload_addr_ep);
 
-        desc += MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE;
-
-        uint8_t *next_desc_addr_cpu = desc;
+        uint8_t *next_desc_addr_cpu =
+           desc + MAX_MSG_DESC_SIZE + MAX_MSGSEG_XMBOX_SIZE;
         ASSERT(ep->buf_mem_cpu <= next_desc_addr_cpu &&
                next_desc_addr_cpu < ep->buf_mem_cpu + ep->buf_mem_size - MAX_MSG_DESC_SIZE);
 
@@ -526,6 +526,7 @@ static unsigned init_rx_chain(struct rio_ep *ep, uint8_t *buf, int size)
         msg_desc_write_dw(desc, size, &pos, next_desc_addr_ep);
         msg_desc_write_dw(desc, size, &pos, 0); /* timestamp */
 
+        desc = next_desc_addr_cpu;
         ++num_desc;
     }
     return num_desc;
@@ -537,6 +538,7 @@ static void reserve_rx_chain(struct rio_ep *ep, uint8_t *desc, unsigned size)
 
     while (desc_addr) {
         unsigned rd_pos = 0, wr_pos = 0;
+        uint64_t next_desc_field, payload_addr_field;
 
         /* Mark descriptor as used (not free) */
         uint64_t hdr = msg_desc_read_dw(desc_addr, size, &rd_pos);
@@ -545,13 +547,15 @@ static void reserve_rx_chain(struct rio_ep *ep, uint8_t *desc, unsigned size)
 
         /* Do some consistency checks, while walking the chain */
         uint8_t interrupt = FIELD_EX64(hdr, MSG_DESC, INTERRUPT);
-        ASSERT(interrupt == 0);
+        ASSERT(interrupt == 1); /* we enable it upon init unconditionally */
 
-        desc_addr = ep_to_cpu_addr(ep, msg_desc_read_dw(desc_addr, size, &rd_pos));
+        next_desc_field = msg_desc_read_dw(desc_addr, size, &rd_pos);
+        payload_addr_field = msg_desc_read_dw(desc_addr, size, &rd_pos);
+
+        desc_addr = ep_to_cpu_addr(ep, next_desc_field);
         ASSERT(desc_addr <= desc + size);
 
-        payload_addr =
-            ep_to_cpu_addr(ep, msg_desc_read_dw(desc_addr, size, &rd_pos));
+        payload_addr = ep_to_cpu_addr(ep, payload_addr_field);
         ASSERT(payload_addr <= desc + size);
     }
 }
@@ -1140,7 +1144,7 @@ static void receive_msg_segment(struct rio_ep *ep)
                ep->name, msg->segments);
     }
 
-    if (!desc.next_desc_addr) { /* chain still has unused buffers */
+    if (desc.next_desc_addr) { /* chain still has unused buffers */
         ep->msg_rx_desc_addr = (uint8_t *)desc.next_desc_addr;
     } else { /* all buffers in the chain have been used */
 
